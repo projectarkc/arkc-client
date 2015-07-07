@@ -1,3 +1,5 @@
+#! /usr/bin/env python3
+
 import socket
 import asyncore
 import threading
@@ -17,9 +19,9 @@ class servercontrol(asyncore.dispatcher):
 
     def handle_accept(self):
         conn, addr = self.accept()
-        print 'Serv_recv_Accept'
+        print('Serv_recv_Accept')
         self.receivernum += 1
-        print 'Current Receivers = %d', self.receivernum
+        print('Current Receivers = %d' % self.receivernum)
         serverreceiver(conn, self.clientip, self.clientport)
 
 
@@ -29,11 +31,11 @@ class serverreceiver(asyncore.dispatcher):
         self.clientip = clientip
         self.clientport = clientport
         asyncore.dispatcher.__init__(self, conn)
-        self.from_remote_buffer = ''
-        self.to_remote_buffer = ''
+        self.from_remote_buffer = b''
+        self.to_remote_buffer = b''
         t1 = threading.Thread(target=self.clientctl)
         t1.start()
-        print getattr(self, 'to_remote_buffer', 'not find')
+        print(getattr(self, 'to_remote_buffer', 'not find'))
 
     def clientctl(self):
         clientcontrol(self, self.clientip, self.clientport)
@@ -62,7 +64,7 @@ class clientcontrol(asyncore.dispatcher):
 
     def __init__(self, receiver, clientip, clientport, backlog=5):
         self.receiver = receiver
-        print getattr(receiver, 'to_remote_buffer', 'not find')
+        print(getattr(receiver, 'to_remote_buffer', 'not find'))
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.set_reuse_addr()
@@ -71,7 +73,7 @@ class clientcontrol(asyncore.dispatcher):
 
     def handle_accept(self):
         conn, addr = self.accept()
-        print 'Client_recv_Accept'
+        print('Client_recv_Accept')
         clientreceiver(conn, self.receiver)
 
 
@@ -79,17 +81,17 @@ class clientreceiver(asyncore.dispatcher):
 
     def __init__(self, conn, sreceiver):
         self.sreceiver = sreceiver
-        print getattr(sreceiver, 'to_remote_buffer', 'not find')
+        print(getattr(sreceiver, 'to_remote_buffer', 'not find'))
         asyncore.dispatcher.__init__(self, conn)
-        self.from_remote_buffer = ''
-        self.to_remote_buffer = ''
+        self.from_remote_buffer = b''
+        self.to_remote_buffer = b''
 
     def handle_connect(self):
         pass
 
     def handle_read(self):
         read = self.recv(4096)
-        print '%04i -->' % len(read)
+        print('%04i -->' % len(read))
         self.sreceiver.to_remote_buffer += read
 
     def writable(self):
@@ -97,7 +99,7 @@ class clientreceiver(asyncore.dispatcher):
 
     def handle_write(self):
         sent = self.send(self.sreceiver.from_remote_buffer)
-        print '%04i <--' % sent
+        print('%04i <--' % sent)
         self.sreceiver.from_remote_buffer = self.sreceiver.from_remote_buffer[
             sent:]
 
