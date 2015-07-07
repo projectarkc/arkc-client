@@ -27,6 +27,7 @@ class serverreceiver(asyncore.dispatcher):
         self.to_remote_buffer=''
         t1=threading.Thread(target=self.clientctl)
         t1.start()
+        print getattr(self, 'to_remote_buffer', 'not find')
 
     def clientctl(self):
         clientcontrol(self, self.clientip, self.clientport)
@@ -53,6 +54,7 @@ class serverreceiver(asyncore.dispatcher):
 class clientcontrol(asyncore.dispatcher):
     def __init__(self, receiver, clientip, clientport, backlog=5):
         self.receiver=receiver
+        print getattr(receiver, 'to_remote_buffer', 'not find')
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET,socket.SOCK_STREAM)
         self.set_reuse_addr()
@@ -65,8 +67,9 @@ class clientcontrol(asyncore.dispatcher):
         clientreceiver(conn, self.receiver)
 
 class clientreceiver(asyncore.dispatcher):
-    def __init__(self,conn, serverreceiver):
-        self.serverreceiver=serverreceiver
+    def __init__(self,conn, sreceiver):
+        self.sreceiver=sreceiver
+        print getattr(sreceiver, 'to_remote_buffer', 'not find')
         asyncore.dispatcher.__init__(self,conn)
         self.from_remote_buffer=''
         self.to_remote_buffer=''
@@ -77,15 +80,15 @@ class clientreceiver(asyncore.dispatcher):
     def handle_read(self):
         read = self.recv(4096)
         print '%04i -->'%len(read)
-        self.serverreceiver.to_remote_buffer +=read
+        self.sreceiver.to_remote_buffer +=read
  
     def writable(self):
-        return (len(self.serverreceiver.from_remote_buffer) > 0)
+        return (len(self.sreceiver.from_remote_buffer) > 0)
 
     def handle_write(self):
-        sent = self.send(self.serverreceiver.from_remote_buffer)
+        sent = self.send(self.sreceiver.from_remote_buffer)
         print '%04i <--'%sent
-        self.serverreceiver.from_remote_buffer = serverreceiver.from_remote_buffer[sent:]
+        self.sreceiver.from_remote_buffer = self.sreceiver.from_remote_buffer[sent:]
  
     def handle_close(self):
         self.close()
