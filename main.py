@@ -35,7 +35,7 @@ class serverreceiver(asyncore.dispatcher):
         self.from_remote_buffer = b''
         self.to_remote_buffer = b''
         if not serverctl.clientctlstarted:
-            serverctl.clientctlstarted = true
+            serverctl.clientctlstarted = True
             t1 = threading.Thread(target=self.clientctl)
             t1.start()
             print(getattr(self, 'to_remote_buffer', 'not find'))
