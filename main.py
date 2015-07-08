@@ -10,6 +10,7 @@ class servercontrol(asyncore.dispatcher):
     def __init__(self, serverip, serverport, clientip, clientport, backlog=5):
         self.clientip = clientip
         self.clientport = clientport
+        self.clientctlstarted = False
         self.receivernum = 0
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -22,20 +23,22 @@ class servercontrol(asyncore.dispatcher):
         print('Serv_recv_Accept')
         self.receivernum += 1
         print('Current Receivers = %d' % self.receivernum)
-        serverreceiver(conn, self.clientip, self.clientport)
+        serverreceiver(conn, self.clientip, self.clientport, self)
 
 
 class serverreceiver(asyncore.dispatcher):
 
-    def __init__(self, conn, clientip, clientport):
+    def __init__(self, conn, clientip, clientport, serverctl):
         self.clientip = clientip
         self.clientport = clientport
         asyncore.dispatcher.__init__(self, conn)
         self.from_remote_buffer = b''
         self.to_remote_buffer = b''
-        t1 = threading.Thread(target=self.clientctl)
-        t1.start()
-        print(getattr(self, 'to_remote_buffer', 'not find'))
+        if not serverctl.clientctlstarted:
+            serverctl.clientctlstarted = true
+            t1 = threading.Thread(target=self.clientctl)
+            t1.start()
+            print(getattr(self, 'to_remote_buffer', 'not find'))
 
     def clientctl(self):
         clientcontrol(self, self.clientip, self.clientport)
