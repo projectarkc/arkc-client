@@ -98,15 +98,16 @@ class clientreceiver(asyncore.dispatcher):
         self.sreceiver.to_remote_buffer += read
 
     def writable(self):
-        return (len(self.sreceiver.from_remote_buffer) > 0)
+        return (len(self.sreceiver.from_remote_buffer) > 0 or (not self.sreceiver.connected))
 
     def handle_write(self):
+        if not self.sreceiver.connected:
+            self.close()
+            return
         sent = self.send(self.sreceiver.from_remote_buffer)
         print('%04i to client' % sent)
         self.sreceiver.from_remote_buffer = self.sreceiver.from_remote_buffer[
             sent:]
-        if not self.sreceiver.from_remote_buffer:
-            self.close()
 
     def handle_close(self):
         self.close()
