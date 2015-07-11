@@ -58,8 +58,6 @@ class serverreceiver(asyncore.dispatcher):
         sent = self.send(self.to_remote_buffer)
         print('%04i <--' % sent)
         self.to_remote_buffer = self.to_remote_buffer[sent:]
-        if not self.to_remote_buffer:
-            self.shutdown(1)
 
     def handle_close(self):
         self.close()
@@ -108,7 +106,7 @@ class clientreceiver(asyncore.dispatcher):
         self.sreceiver.from_remote_buffer = self.sreceiver.from_remote_buffer[
             sent:]
         if not self.sreceiver.from_remote_buffer:
-            self.shutdown(1)
+            self.close()
 
     def handle_close(self):
         self.close()
