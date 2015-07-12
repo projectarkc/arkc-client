@@ -15,7 +15,7 @@ class coordinate(object):
         self.count = 0
         self.available = 0
         self.recvs = []
-        self.udpsock = self.create_socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.addr = (ctlip, ctlport)
         self.reqconn()       
 
