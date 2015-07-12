@@ -4,24 +4,50 @@
 
 import socket
 import asyncore
+from time import sleep
 
 class coordinate(object):
 
-    def __init__(self):
-        pass
+    required = 4
+    requestdata = "NEED"
 
-    def newconn(self):
-        pass
+    def __init__(self, ctlip, ctlport):
+        self.count = 0
+        self.available = 0
+        self.recvs = []
+        self.udpsock = self.create_socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.addr = (ctlip, ctlport)
+        self.reqconn()       
 
+    def newconn(self, recv):
+        self.available += 1
+        self.count += 1
+        self.recvs.append(recv)
+        print("available socket %d" % self.available)
+            
     def closeconn(self):
-        pass
+        self.count -=1
+        if self.count <0:
+            self.count =0
+            print("coordinate: minus count error")
+        print("available socket %d" % self.available)
 
     def reqconn(self):
-        pass
+        while self.available < self.required:
+            self.udpsock.sendto(self.requestdata,self.addr)
+            sleep(0.05)
 
     def issufficient(self):
         pass
-#to be done
+    
+    def offerconn(self):
+        while self.available <=0:
+            self.reqconn()
+        self.available -=1
+        offer = self.recvs [0]
+        self.recvs = self.recvs[1:]
+        print("available socket %d" % self.available)
+        return offer
 
 class servercontrol(asyncore.dispatcher):
 
@@ -33,29 +59,24 @@ class servercontrol(asyncore.dispatcher):
         self.set_reuse_addr()
         self.bind((serverip, serverport))
         self.listen(backlog)
-#ctl init
 
     def handle_accept(self):
         conn, addr = self.accept()
-        print('Serv_recv_Accept')
+        print('Serv_recv_Accept from %s' % addr)
         self.receivernum += 1
         print('Current Receivers = %d' % self.receivernum)
-        serverreceiver(conn, self)
-#updating ctl
-
+        self.ctl.newconn(serverreceiver(conn, self))
+        
     def getrecv(self):
-        pass
-#using ctl
+        return self.ctl.offerconn()
+        
     def closeconn(self):
-        pass
-#using ctl
+        self.ctl.closeconn()
 
 class serverreceiver(asyncore.dispatcher):
 
     def __init__(self, conn, serverctl):
         self.serverctl = serverctl
-        self.clientip = clientip
-        self.clientport = clientport
         asyncore.dispatcher.__init__(self, conn)
         self.from_remote_buffer = b''
         self.to_remote_buffer = b''
@@ -93,8 +114,8 @@ class clientcontrol(asyncore.dispatcher):
 
     def handle_accept(self):
         conn, addr = self.accept()
-        print('Client_recv_Accept')
-        clientreceiver(conn, self.scontrol.getrecv)
+        print('Client_recv_Accept from %s' % addr)
+        clientreceiver(conn, self.scontrol.getrecv())
 
 
 class clientreceiver(asyncore.dispatcher):
@@ -126,8 +147,9 @@ class clientreceiver(asyncore.dispatcher):
             sent:]
 
     def handle_close(self):
+        self.sreceiver.close()
         self.close()
 
 if __name__ == '__main__':
-    clientcontrol(servercontrol('0.0.0.0', 8000, coordinate()),"0.0.0.0",8001)
+    clientcontrol(servercontrol('0.0.0.0', 8000, coordinate("0.0.0.0", 8002)),"0.0.0.0",8001)
     asyncore.loop()
