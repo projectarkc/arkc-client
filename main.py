@@ -1,47 +1,64 @@
 #! /usr/bin/env python3
 
+#Need to switch to asyncio
+
 import socket
 import asyncore
-import threading
 
+class coordinate(object):
+
+    def __init__(self):
+        pass
+
+    def newconn(self):
+        pass
+
+    def closeconn(self):
+        pass
+
+    def reqconn(self):
+        pass
+
+    def issufficient(self):
+        pass
+#to be done
 
 class servercontrol(asyncore.dispatcher):
 
-    def __init__(self, serverip, serverport, clientip, clientport, backlog=5):
-        self.clientip = clientip
-        self.clientport = clientport
-        self.clientctlstarted = False
+    def __init__(self, serverip, serverport, ctl, backlog=5):
         self.receivernum = 0
+        self.ctl = ctl
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.set_reuse_addr()
         self.bind((serverip, serverport))
         self.listen(backlog)
+#ctl init
 
     def handle_accept(self):
         conn, addr = self.accept()
         print('Serv_recv_Accept')
         self.receivernum += 1
         print('Current Receivers = %d' % self.receivernum)
-        serverreceiver(conn, self.clientip, self.clientport, self)
+        serverreceiver(conn, self)
+#updating ctl
 
+    def getrecv(self):
+        pass
+#using ctl
+    def closeconn(self):
+        pass
+#using ctl
 
 class serverreceiver(asyncore.dispatcher):
 
-    def __init__(self, conn, clientip, clientport, serverctl):
+    def __init__(self, conn, serverctl):
+        self.serverctl = serverctl
         self.clientip = clientip
         self.clientport = clientport
         asyncore.dispatcher.__init__(self, conn)
         self.from_remote_buffer = b''
         self.to_remote_buffer = b''
-        if not serverctl.clientctlstarted:
-            serverctl.clientctlstarted = True
-            t1 = threading.Thread(target=self.clientctl)
-            t1.start()
-            print(getattr(self, 'to_remote_buffer', 'not find'))
-
-    def clientctl(self):
-        clientcontrol(self, self.clientip, self.clientport)
 
     def handle_connect(self):
         pass
@@ -62,14 +79,14 @@ class serverreceiver(asyncore.dispatcher):
             self.shutdown(1)
 
     def handle_close(self):
+        self.serverctl.closeconn()
         self.close()
 
 
 class clientcontrol(asyncore.dispatcher):
 
-    def __init__(self, receiver, clientip, clientport, backlog=5):
-        self.receiver = receiver
-        print(getattr(receiver, 'to_remote_buffer', 'not find'))
+    def __init__(self, scontrol, clientip, clientport, backlog=5):
+        self.scontrol = scontrol
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.set_reuse_addr()
@@ -79,14 +96,13 @@ class clientcontrol(asyncore.dispatcher):
     def handle_accept(self):
         conn, addr = self.accept()
         print('Client_recv_Accept')
-        clientreceiver(conn, self.receiver)
+        clientreceiver(conn, self.scontrol.getrecv)
 
 
 class clientreceiver(asyncore.dispatcher):
 
     def __init__(self, conn, sreceiver):
         self.sreceiver = sreceiver
-        print(getattr(sreceiver, 'to_remote_buffer', 'not find'))
         asyncore.dispatcher.__init__(self, conn)
         self.from_remote_buffer = b''
         self.to_remote_buffer = b''
@@ -114,5 +130,5 @@ class clientreceiver(asyncore.dispatcher):
         self.close()
 
 if __name__ == '__main__':
-    servercontrol('0.0.0.0', 8000, '0.0.0.0', 8001)
+    clientcontrol(servercontrol('0.0.0.0', 8000, coordinate()),"0.0.0.0",8001)
     asyncore.loop()
