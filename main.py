@@ -4,7 +4,15 @@
 
 import socket
 import asyncore
+import optparse
+
 from time import sleep
+
+DEFAULT_LOCAL_HOST = "127.0.0.1"
+DEFAULT_LOCAL_PORT = 8001
+
+DEFAULT_REMOTE_PORT = 8000
+DEFAULT_REMOTE_CONTROL_PORT = 8002
 
 class coordinate(object):
 
@@ -41,7 +49,7 @@ class coordinate(object):
         pass
     
     def offerconn(self):
-        while self.available <=0:
+        if self.available <=0:
             self.reqconn()
         self.available -=1
         offer = self.recvs [0]
@@ -151,5 +159,23 @@ class clientreceiver(asyncore.dispatcher):
         self.close()
 
 if __name__ == '__main__':
-    clientcontrol(servercontrol('0.0.0.0', 8000, coordinate("0.0.0.0", 8002)),"0.0.0.0",8001)
+    parser = optparse.OptionParser()
+    try:
+        parser.add_option('--local-host', dest="local_host", default=DEFAULT_LOCAL_HOST)
+        parser.add_option('--local-port',  dest="local_port", type='int', default=DEFAULT_LOCAL_PORT)
+        parser.add_option('--remote-host',  dest="remote_host")
+        parser.add_option('--remote-port',  dest="remote_port", type='int', default=DEFAULT_REMOTE_PORT)
+        parser.add_option('--remote-control-host',  dest="remote_control_host", default="0.0.0.0")
+        parser.add_option('--remote-control-port',  dest="remote_control_port", type='int', default=DEFAULT_REMOTE_CONTROL_PORT)
+        options, args = parser.parse_args()
+        remote_control_host = options.remote_control_host
+        if remote_control_host == "0.0.0.0":
+            remote_control_host = options.remote_host
+    except Exception as e:
+        print (e)
+    
+    try:
+        clientcontrol(servercontrol(options.remote_host, options.remote_port, coordinate(remote_control_host, options.remote_control_port)),options.local_host,options.local_port)
+    except Exception as e:
+        print (e)
     asyncore.loop()
