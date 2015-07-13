@@ -169,12 +169,15 @@ if __name__ == '__main__':
     try:
         parser.add_option('--local-host', dest="local_host", default=DEFAULT_LOCAL_HOST)
         parser.add_option('--local-port',  dest="local_port", type='int', default=DEFAULT_LOCAL_PORT)
-        parser.add_option('--remote-host',  dest="remote_host")
+        parser.add_option('--remote-host',  dest="remote_host", default = "")
         parser.add_option('--remote-port',  dest="remote_port", type='int', default=DEFAULT_REMOTE_PORT)
         parser.add_option('--remote-control-host',  dest="remote_control_host", default="0.0.0.0")
         parser.add_option('--remote-control-port',  dest="remote_control_port", type='int', default=DEFAULT_REMOTE_CONTROL_PORT)
         parser.add_option('--local-control-port', dest="local_control_port", type='int', default=DEFAULT_LOCAL_CONTROL_PORT)
         options, args = parser.parse_args()
+        if options.remote_host == "":
+            print("Fatal error, remote host not specified.")
+            quit()
         remote_control_host = options.remote_control_host
         if remote_control_host == "0.0.0.0":
             remote_control_host = options.remote_host
