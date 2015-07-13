@@ -1,29 +1,26 @@
 #ArkC-client
------------------
 
 ArkC is a lightweight proxy based on Python 3 and Twisted. It is designed to be proof to IP blocking measures.
 
 ArkC-Client is the client-side utility. It may require NAT configuration if the client is behind a router.
 
-#Setup and Requirement
------------------
+##Setup and Requirement
 
 Running ArkC-Client requires Python 3 only.
 
 For Debian or Ubuntu users:
-sudo apt-get install python3
+    
+    sudo apt-get install python3
 
 NAT configuration may be necessary to make the client receives requests from the server, so that a connection may start.
 
-#Usage
------------------
+##Usage
 
 Run 
 
 	python3 main.py --remote-host [remote host domain/ip] (--remote-port [remote host port]) (--local-host [local host ip to listen at]) (--local-port [local port to listen at])
 
-#License
------------------
+##License
 
 Copyright 2015 ArkC contributers
 
