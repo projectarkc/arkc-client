@@ -12,19 +12,22 @@ DEFAULT_LOCAL_HOST = "127.0.0.1"
 DEFAULT_LOCAL_PORT = 8001
 
 DEFAULT_REMOTE_PORT = 8000
-DEFAULT_REMOTE_CONTROL_PORT = 8002
+
+DEFAULT_LOCAL_CONTROL_PORT = 8002
+DEFAULT_REMOTE_CONTROL_PORT = 9000
 
 class coordinate(object):
 
     required = 4
     requestdata = b"0"
 
-    def __init__(self, ctlip, ctlport):
+    def __init__(self, ctlip, ctlport_remote, ctlport_local):
         self.count = 0
         self.available = 0
         self.recvs = []
         self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.addr = (ctlip, ctlport)
+        self.udpsock.bind(('', ctlport_local))
+        self.addr = (ctlip, ctlport_remote)
         self.reqconn()       
 
     def newconn(self, recv):
@@ -167,6 +170,7 @@ if __name__ == '__main__':
         parser.add_option('--remote-port',  dest="remote_port", type='int', default=DEFAULT_REMOTE_PORT)
         parser.add_option('--remote-control-host',  dest="remote_control_host", default="0.0.0.0")
         parser.add_option('--remote-control-port',  dest="remote_control_port", type='int', default=DEFAULT_REMOTE_CONTROL_PORT)
+        parser.add_option('--local-control-port', dest="local_control_port", type='int', default=DEFAULT_LOCAL_CONTROL_PORT)
         options, args = parser.parse_args()
         remote_control_host = options.remote_control_host
         if remote_control_host == "0.0.0.0":
@@ -175,7 +179,7 @@ if __name__ == '__main__':
         print (e)
     
     try:
-        clientcontrol(servercontrol(options.remote_host, options.remote_port, coordinate(remote_control_host, options.remote_control_port)),options.local_host,options.local_port)
+        clientcontrol(servercontrol(options.remote_host, options.remote_port, coordinate(remote_control_host, options.remote_control_port, options.local_control_port)),options.local_host,options.local_port)
     except Exception as e:
         print (e)
     asyncore.loop()
