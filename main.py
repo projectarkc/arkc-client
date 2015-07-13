@@ -73,7 +73,8 @@ class servercontrol(asyncore.dispatcher):
 
     def handle_accept(self):
         conn, addr = self.accept()
-        print('Serv_recv_Accept from %s' % addr)
+        #print('Serv_recv_Accept from %s' % addr)
+        #print(type( addr))
         self.receivernum += 1
         print('Current Receivers = %d' % self.receivernum)
         self.ctl.newconn(serverreceiver(conn, self))
@@ -125,7 +126,7 @@ class clientcontrol(asyncore.dispatcher):
 
     def handle_accept(self):
         conn, addr = self.accept()
-        print('Client_recv_Accept from %s' % addr)
+        #print('Client_recv_Accept from %s' % addr)
         clientreceiver(conn, self.scontrol.getrecv())
 
 
