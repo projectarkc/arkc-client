@@ -5,6 +5,7 @@
 import socket
 import asyncore
 import optparse
+import threading
 
 from time import sleep
 
@@ -28,6 +29,8 @@ class coordinate(object):
         self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udpsock.bind(('', ctlport_local))
         self.addr = (ctlip, ctlport_remote)
+        req = threading.Thread(target=self.reqconn)
+        req.start()
 #TODO how to request available sockets with out obstruction? keep servercontrol initialized?
 
     def newconn(self, recv):
@@ -53,7 +56,7 @@ class coordinate(object):
     
     def offerconn(self):
         if self.available <=0:
-            self.reqconn()
+            return None
         self.available -=1
         offer = self.recvs [0]
         self.recvs = self.recvs[1:]
@@ -76,21 +79,19 @@ class servercontrol(asyncore.dispatcher):
         print('Serv_recv_Accept from %s' % str(addr))
         self.receivernum += 1
         print('Current Receivers = %d' % self.receivernum)
-        self.ctl.newconn(serverreceiver(conn, self))
+        serverreceiver(conn, self.ctl)
         
     def getrecv(self):
         return self.ctl.offerconn()
         
-    def closeconn(self):
-        self.ctl.closeconn()
-
 class serverreceiver(asyncore.dispatcher):
 
-    def __init__(self, conn, serverctl):
-        self.serverctl = serverctl
+    def __init__(self, conn, ctl):
+        self.ctl = ctl
         asyncore.dispatcher.__init__(self, conn)
         self.from_remote_buffer = b''
         self.to_remote_buffer = b''
+        self.ctl.newconn(self)
 
     def handle_connect(self):
         pass
@@ -109,7 +110,7 @@ class serverreceiver(asyncore.dispatcher):
         self.to_remote_buffer = self.to_remote_buffer[sent:]
 
     def handle_close(self):
-        self.serverctl.closeconn()
+        self.ctl.closeconn()
         self.close()
 #TODO, on this occasion, it needs to close the clientreceiver's socket
 
@@ -126,14 +127,15 @@ class clientcontrol(asyncore.dispatcher):
     def handle_accept(self):
         conn, addr = self.accept()
         print('Client_recv_Accept from %s' % str(addr))
-        clientreceiver(conn, self.scontrol.getrecv())
-
+        clientreceiver(conn, self.scontrol)
 
 class clientreceiver(asyncore.dispatcher):
 
-    def __init__(self, conn, sreceiver):
-        self.sreceiver = sreceiver
+    def __init__(self, conn, scontrol):
         asyncore.dispatcher.__init__(self, conn)
+        self.sreceiver = scontrol.getrecv()
+        if self.sreceiver == None:
+            self.close()
         self.from_remote_buffer = b''
         self.to_remote_buffer = b''
 
