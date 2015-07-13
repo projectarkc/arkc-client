@@ -6,7 +6,9 @@ import socket
 import asyncore
 import optparse
 import threading
-
+import random
+import string
+from Crypto.PublicKey import RSA
 from time import sleep
 
 DEFAULT_LOCAL_HOST = "127.0.0.1"
@@ -20,12 +22,15 @@ DEFAULT_REMOTE_CONTROL_PORT = 9000
 class coordinate(object):
 
     required = 4
-    requestdata = b"0"
+    authdata = b"0" #authdata needs to be unique for every client certificate
 
-    def __init__(self, ctlip, ctlport_remote, ctlport_local):
+    def __init__(self, ctlip, ctlport_remote, ctlport_local, localcert, remotecert):
         self.count = 0
         self.available = 0
+        self.remotepub = remotecert
+        self.localcert = localcert
         self.recvs = []
+        self.str = ''.join(random.shuffle(list(string.ascii_letters)[:5])) #TODO: should be used for AES in every data transmission
         self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udpsock.bind(('', ctlport_local))
         self.addr = (ctlip, ctlport_remote)
@@ -54,9 +59,16 @@ class coordinate(object):
     def reqconn(self):
         while True:
             self.check.wait()
+            self.requestdata = self.generatereq()
             self.udpsock.sendto(self.requestdata,self.addr)
             sleep(0.05)
-
+            
+    def generatereq(self):
+        salt = ''.join(random.shuffle(list(string.ascii_letters)[:5]))
+        blank = salt.join(self.authdata)
+        blank.join(self.localcert.encrypt(salt.join(self.str), "r"))
+        return self.remotepub.encrypt(blank, "r")
+    
     def issufficient(self):
         return self.available >= self.required
     
@@ -98,8 +110,11 @@ class serverreceiver(asyncore.dispatcher):
         self.to_remote_buffer = b''
         self.ctl.newconn(self)
 
-    def handle_connect(self):
-        pass
+    def handle_connect(self): #TODO: make sure it is necessarily first to happen
+        read = self.recv(4096)
+        if not self.ctl.remotepub.decrypt(read) == self.ctl.str:
+            print("Auth failed")
+            self.close()
 
     def handle_read(self):
         read = self.recv(4096)
@@ -177,10 +192,39 @@ if __name__ == '__main__':
         parser.add_option('--remote-control-host',  dest="remote_control_host", default="0.0.0.0")
         parser.add_option('--remote-control-port',  dest="remote_control_port", type='int', default=DEFAULT_REMOTE_CONTROL_PORT)
         parser.add_option('--local-control-port', dest="local_control_port", type='int', default=DEFAULT_LOCAL_CONTROL_PORT)
+        parser.add_option('--remote-cert',  dest="remote_cert", default = "")
+        parser.add_option('--local-cert',  dest="local_cert", default = "")
         options, args = parser.parse_args()
         if options.remote_host == "":
             print("Fatal error, remote host not specified.")
             quit()
+        if options.remote_cert == "":
+            print("Fatal error, remote host certificate not specified.")
+            quit()
+        if options.local_cert == "":
+            print("Fatal error, local certificate not specified.")
+            quit()
+        try:
+            remote_cert_file = open(options.remote_cert, "r")
+            cert = RSA.importKey(remote_cert_file.read())
+            remotecert = cert.publickey()
+            remote_cert_file.close()
+        except Exception as err:
+            print ("Fatal error while loading remote host certificate.")
+            print (err)
+            quit()
+            
+        try:
+            local_cert_file = open(options.local_cert, "r")
+            localcert = RSA.importKey(remote_cert_file.read())
+            local_cert_file.close()
+            if not localcert.has_private():
+                print("Fatal error, no private key included in local certificate.")
+        except IOError as err:
+            print ("Fatal error while loading local certificate.")
+            print (err)
+            quit()
+        
         remote_control_host = options.remote_control_host
         if remote_control_host == "0.0.0.0":
             remote_control_host = options.remote_host
@@ -195,7 +239,9 @@ if __name__ == '__main__':
                 coordinate(
                     remote_control_host,
                     options.remote_control_port,
-                    options.local_control_port
+                    options.local_control_port,
+                    localcert,
+                    remotecert
                     )
                 ),
             options.local_host,
