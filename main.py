@@ -17,7 +17,7 @@ DEFAULT_REMOTE_CONTROL_PORT = 8002
 class coordinate(object):
 
     required = 4
-    requestdata = b"NEED"
+    requestdata = b"0"
 
     def __init__(self, ctlip, ctlport):
         self.count = 0
