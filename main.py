@@ -179,7 +179,19 @@ if __name__ == '__main__':
         print (e)
     
     try:
-        clientcontrol(servercontrol(options.remote_host, options.remote_port, coordinate(remote_control_host, options.remote_control_port, options.local_control_port)),options.local_host,options.local_port)
+        clientcontrol(
+            servercontrol(
+                options.remote_host,
+                options.remote_port,
+                coordinate(
+                    remote_control_host,
+                    options.remote_control_port,
+                    options.local_control_port
+                    )
+                ),
+            options.local_host,
+            options.local_port
+            )
     except Exception as e:
         print (e)
     asyncore.loop()
