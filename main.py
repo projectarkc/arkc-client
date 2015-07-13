@@ -33,7 +33,6 @@ class coordinate(object):
         self.check.set()
         req = threading.Thread(target=self.reqconn)
         req.start()
-#TODO how to request available sockets with out obstruction? keep servercontrol initialized?
 
     def newconn(self, recv):
         self.available += 1
@@ -139,6 +138,7 @@ class clientreceiver(asyncore.dispatcher):
         asyncore.dispatcher.__init__(self, conn)
         self.sreceiver = scontrol.getrecv()
         if self.sreceiver == None:
+            print("No available socket from server. Closing this socket.")
             self.close()
         self.from_remote_buffer = b''
         self.to_remote_buffer = b''
