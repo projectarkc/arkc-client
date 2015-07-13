@@ -47,8 +47,9 @@ class coordinate(object):
         print("available socket %d" % self.available)
 
     def reqconn(self):
-        while self.available < self.required:
-            self.udpsock.sendto(self.requestdata,self.addr)
+        while True:
+            if self.available < self.required:
+                self.udpsock.sendto(self.requestdata,self.addr)
             sleep(0.05)
 
     def issufficient(self):
