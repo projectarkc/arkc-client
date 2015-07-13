@@ -37,20 +37,21 @@ class coordinate(object):
         self.available += 1
         self.count += 1
         self.recvs.append(recv)
-        print("available socket %d" % self.available)
+        print("Available socket %d" % self.available)
             
     def closeconn(self):
         self.count -=1
         if self.count <0:
             self.count =0
             print("coordinate: minus count error")
-        print("available socket %d" % self.available)
+        print("Available socket %d" % self.available)
 
     def reqconn(self):
         while True:
             if self.available < self.required:
                 self.udpsock.sendto(self.requestdata,self.addr)
             sleep(0.05)
+            #not an elegant way? threading.Condition?
 
     def issufficient(self):
         pass
@@ -61,13 +62,12 @@ class coordinate(object):
         self.available -=1
         offer = self.recvs [0]
         self.recvs = self.recvs[1:]
-        print("available socket %d" % self.available)
+        print("Available socket %d" % self.available)
         return offer
 
 class servercontrol(asyncore.dispatcher):
 
     def __init__(self, serverip, serverport, ctl, backlog=5):
-        self.receivernum = 0
         self.ctl = ctl
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -78,8 +78,6 @@ class servercontrol(asyncore.dispatcher):
     def handle_accept(self):
         conn, addr = self.accept()
         print('Serv_recv_Accept from %s' % str(addr))
-        self.receivernum += 1
-        print('Current Receivers = %d' % self.receivernum)
         serverreceiver(conn, self.ctl)
         
     def getrecv(self):
