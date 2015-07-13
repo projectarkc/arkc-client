@@ -28,7 +28,7 @@ class coordinate(object):
         self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udpsock.bind(('', ctlport_local))
         self.addr = (ctlip, ctlport_remote)
-        self.reqconn()       
+#TODO how to request available sockets with out obstruction? keep servercontrol initialized?
 
     def newconn(self, recv):
         self.available += 1
@@ -111,7 +111,7 @@ class serverreceiver(asyncore.dispatcher):
     def handle_close(self):
         self.serverctl.closeconn()
         self.close()
-
+#TODO, on this occasion, it needs to close the clientreceiver's socket
 
 class clientcontrol(asyncore.dispatcher):
 
