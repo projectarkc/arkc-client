@@ -29,6 +29,8 @@ class coordinate(object):
         self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udpsock.bind(('', ctlport_local))
         self.addr = (ctlip, ctlport_remote)
+        self.check = threading.Event()
+        self.check.set()
         req = threading.Thread(target=self.reqconn)
         req.start()
 #TODO how to request available sockets with out obstruction? keep servercontrol initialized?
@@ -37,6 +39,8 @@ class coordinate(object):
         self.available += 1
         self.count += 1
         self.recvs.append(recv)
+        if self.issufficient():
+            self.check.clear()
         print("Available socket %d" % self.available)
             
     def closeconn(self):
@@ -44,17 +48,18 @@ class coordinate(object):
         if self.count <0:
             self.count =0
             print("coordinate: minus count error")
+        if not self.issufficient():
+            self.check.set()
         print("Available socket %d" % self.available)
 
     def reqconn(self):
         while True:
-            if self.available < self.required:
-                self.udpsock.sendto(self.requestdata,self.addr)
+            self.check.wait()
+            self.udpsock.sendto(self.requestdata,self.addr)
             sleep(0.05)
-            #not an elegant way? threading.Condition?
 
     def issufficient(self):
-        pass
+        return self.available >= self.required
     
     def offerconn(self):
         if self.available <=0:
@@ -62,6 +67,8 @@ class coordinate(object):
         self.available -=1
         offer = self.recvs [0]
         self.recvs = self.recvs[1:]
+        if not self.issufficient():
+            self.check.set()
         print("Available socket %d" % self.available)
         return offer
 
@@ -109,10 +116,8 @@ class serverreceiver(asyncore.dispatcher):
         self.to_remote_buffer = self.to_remote_buffer[sent:]
 
     def handle_close(self):
-        self.ctl.closeconn()
         self.close()
-#TODO, on this occasion, it needs to close the clientreceiver's socket
-
+        
 class clientcontrol(asyncore.dispatcher):
 
     def __init__(self, scontrol, clientip, clientport, backlog=5):
