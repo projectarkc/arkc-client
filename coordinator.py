@@ -15,7 +15,9 @@ class coordinate(object):
         self.remotepub = remotecert
         self.localcert = localcert
         self.recvs = []
-        self.str = ''.join(random.shuffle(list(string.ascii_letters)[:16])) #TODO: should be used for AES in every data transmission
+        salt = list(string.ascii_letters)
+        random.shuffle(salt)
+        self.str = salt[:16] #TODO: should be used for AES in every data transmission
         self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udpsock.bind(('', ctlport_local))
         self.addr = (ctlip, ctlport_remote)
@@ -49,9 +51,11 @@ class coordinate(object):
             sleep(0.05)
             
     def generatereq(self):
-        salt = ''.join(random.shuffle(list(string.ascii_letters)[:16]))
-        blank = salt.join(self.authdata)
-        blank.join(self.localcert.encrypt(salt.join(self.str), "r"))
+        salt = list(string.ascii_letters)
+        random.shuffle(salt)
+        salt = salt[:16]
+        blank = salt + self.authdata
+        blank = blank + self.localcert.encrypt(salt + self.str, "r")
         return self.remotepub.encrypt(blank, "r")
     
     def issufficient(self):
