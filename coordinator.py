@@ -15,7 +15,7 @@ class coordinate(object):
         self.remotepub = remotecert
         self.localcert = localcert
         self.recvs = []
-        self.str = ''.join(random.shuffle(list(string.ascii_letters)[:5])) #TODO: should be used for AES in every data transmission
+        self.str = ''.join(random.shuffle(list(string.ascii_letters)[:16])) #TODO: should be used for AES in every data transmission
         self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udpsock.bind(('', ctlport_local))
         self.addr = (ctlip, ctlport_remote)
@@ -49,7 +49,7 @@ class coordinate(object):
             sleep(0.05)
             
     def generatereq(self):
-        salt = ''.join(random.shuffle(list(string.ascii_letters)[:5]))
+        salt = ''.join(random.shuffle(list(string.ascii_letters)[:16]))
         blank = salt.join(self.authdata)
         blank.join(self.localcert.encrypt(salt.join(self.str), "r"))
         return self.remotepub.encrypt(blank, "r")

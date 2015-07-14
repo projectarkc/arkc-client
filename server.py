@@ -1,8 +1,9 @@
 import socket
 import asyncore
 
+from Crypto.Cipher import AES
+
 #Need to switch to asyncio
-#Need to use AES
 
 class servercontrol(asyncore.dispatcher):
 
@@ -29,6 +30,7 @@ class serverreceiver(asyncore.dispatcher):
         asyncore.dispatcher.__init__(self, conn)
         self.from_remote_buffer = b''
         self.to_remote_buffer = b''
+        self.cipher = AES.new(self.str, AES.MODE_CFB, self.str)
         self.ctl.newconn(self)
 
     def handle_connect(self): #TODO: make sure it is necessarily first to happen
@@ -38,7 +40,7 @@ class serverreceiver(asyncore.dispatcher):
             self.close()
 
     def handle_read(self):
-        read = self.recv(4096)
+        read = self.cipher.decrypt(self.recv(4096)) #fragments?
         print('%04i from server' % len(read))
         self.from_remote_buffer += read
 
@@ -46,7 +48,12 @@ class serverreceiver(asyncore.dispatcher):
         return (len(self.to_remote_buffer) > 0)
 
     def handle_write(self):
-        sent = self.send(self.to_remote_buffer)
+        if len(self.to_remote_buffer)<=4096:
+            sent = len(self.to_remote_buffer)
+            self.send(self.cipher.encrypt(self.to_remote_buffer))
+        else:
+            self.send(self.cipher.encrypt(self.to_remote_buffer[:4096])) #complete message for encryption?
+            sent = 4096
         print('%04i to server' % sent)
         self.to_remote_buffer = self.to_remote_buffer[sent:]
 
