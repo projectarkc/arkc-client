@@ -33,7 +33,7 @@ class serverreceiver(asyncore.dispatcher):
 
     def handle_connect(self): #TODO: make sure it is necessarily first to happen
         read = self.recv(4096)
-        if not self.ctl.remotepub.decrypt(read) == self.ctl.localcert.encrypt(self.ctl.str):
+        if not self.ctl.remotepub.decrypt(read)[16:] == self.ctl.localcert.encrypt(self.ctl.str):
             print("Authentication failed")
             self.close()
 
