@@ -38,22 +38,22 @@ if __name__ == '__main__':
     try:
         parser.add_option('--local-host', dest="local_host", default=DEFAULT_LOCAL_HOST)
         parser.add_option('--local-port',  dest="local_port", type='int', default=DEFAULT_LOCAL_PORT)
-        parser.add_option('--remote-host',  dest="remote_host", default = "")
+        parser.add_option('--remote-host',  dest="remote_host", default=DEFAULT_LOCAL_HOST)
         parser.add_option('--remote-port',  dest="remote_port", type='int', default=DEFAULT_REMOTE_PORT)
-        parser.add_option('--remote-control-host',  dest="remote_control_host", default="0.0.0.0")
+        parser.add_option('--remote-control-host',  dest="remote_control_host", help="You must specify a remote control host to activate.")
         parser.add_option('--remote-control-port',  dest="remote_control_port", type='int', default=DEFAULT_REMOTE_CONTROL_PORT)
         parser.add_option('--local-control-port', dest="local_control_port", type='int', default=DEFAULT_LOCAL_CONTROL_PORT)
-        parser.add_option('--remote-cert',  dest="remote_cert", default = "")
-        parser.add_option('--local-cert',  dest="local_cert", default = "")
+        parser.add_option('--remote-cert',  dest="remote_cert", help = "Remote host public key must be specified.")
+        parser.add_option('--local-cert',  dest="local_cert", help = "Local host key must be specified.")
         options, args = parser.parse_args()
-        if options.remote_host == "":
-            print("Fatal error, remote host not specified.")
-            quit()
-        if options.remote_cert == "":
+        if options.remote_cert == None:
             print("Fatal error, remote host certificate not specified.")
             quit()
-        if options.local_cert == "":
+        if options.local_cert == None:
             print("Fatal error, local certificate not specified.")
+            quit()
+        if options.remote_control_host == None:
+            print("Fatal error, remote control host not specified.")
             quit()
         try:
             remote_cert_file = open(options.remote_cert, "r")            
@@ -76,8 +76,6 @@ if __name__ == '__main__':
             quit()
         
         remote_control_host = options.remote_control_host
-        if remote_control_host == "0.0.0.0":
-            remote_control_host = options.remote_host
     except Exception as e:
         print (e)
     
