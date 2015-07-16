@@ -59,8 +59,8 @@ class coordinate(object):
         salt = salt[:16]
         saltstr = ''.join(salt)
         blank = saltstr + self.authdata
-        blank = blank + self.localcert.encrypt(saltstr + self.str, "r")
-        return self.remotepub.encrypt(blank, "r")
+        blank = blank + str(self.localcert.encrypt(bytes(saltstr + self.str, "UTF-8"), 'k')[0])
+        return self.remotepub.encrypt(bytes(blank, "UTF-8"), 'k')[0]
     
     def issufficient(self):
         return self.available >= self.required
