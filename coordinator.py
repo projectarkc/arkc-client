@@ -7,14 +7,17 @@ from time import sleep
 class coordinate(object):
 
     required = 4 #should be set by users?
-    authdata = b"0" #authdata needs to be unique for every client certificate
 
     def __init__(self, ctlip, ctlport_remote, ctlport_local, localcert, remotecert):
         self.count = 0
         self.available = 0
         self.remotepub = remotecert
         self.localcert = localcert
+        self.authdata = "8eac74242041e540b43ac0845683a7b761ec5b81"
+        
+        #TODO self.authdata = self.localcert.  get SHA1
         self.recvs = []
+        #TODO: make the following string more random
         salt = list(string.ascii_letters)
         random.shuffle(salt)
         self.str = salt[:16] #TODO: should be used for AES in every data transmission
@@ -54,7 +57,7 @@ class coordinate(object):
         salt = list(string.ascii_letters)
         random.shuffle(salt)
         salt = salt[:16]
-        blank = salt + self.authdata
+        blank = str(salt) + self.authdata
         blank = blank + self.localcert.encrypt(salt + self.str, "r")
         return self.remotepub.encrypt(blank, "r")
     

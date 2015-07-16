@@ -3,6 +3,8 @@
 import asyncore
 import optparse
 
+#should include a try-except part for third-party modules
+
 from Crypto.PublicKey import RSA
 
 from coordinator import coordinate
@@ -16,6 +18,20 @@ DEFAULT_REMOTE_PORT = 8000
 
 DEFAULT_LOCAL_CONTROL_PORT = 8002
 DEFAULT_REMOTE_CONTROL_PORT = 9000
+
+class certloader:
+    
+    def __init__(self, certfile):
+        self.certfile = certfile
+    #need to support more formats
+    def importKey(self):
+        try:
+            data = self.certfile.read()
+            return RSA.importKey(data)
+        except Exception as err:
+            print ("Fatal error while loading certificate.")
+            print (err)
+            quit()
 
 if __name__ == '__main__':
     parser = optparse.OptionParser()
@@ -40,9 +56,8 @@ if __name__ == '__main__':
             print("Fatal error, local certificate not specified.")
             quit()
         try:
-            remote_cert_file = open(options.remote_cert, "r")
-            cert = RSA.importKey(remote_cert_file.read())
-            remotecert = cert.publickey()
+            remote_cert_file = open(options.remote_cert, "r")            
+            remotecert = certloader(remote_cert_file).importKey()
             remote_cert_file.close()
         except Exception as err:
             print ("Fatal error while loading remote host certificate.")
@@ -51,7 +66,7 @@ if __name__ == '__main__':
             
         try:
             local_cert_file = open(options.local_cert, "r")
-            localcert = RSA.importKey(remote_cert_file.read())
+            localcert = certloader(local_cert_file).importKey()
             local_cert_file.close()
             if not localcert.has_private():
                 print("Fatal error, no private key included in local certificate.")
