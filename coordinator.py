@@ -49,7 +49,8 @@ class coordinate(object):
     def reqconn(self):
         while True:
             self.check.wait()
-            requestdata = bytes(self.generatereq(), "UTF-8")
+            requestdata = self.generatereq()      
+            print(len(requestdata))     
             self.udpsock.sendto(requestdata, self.addr)
             sleep(0.05)
             
@@ -58,10 +59,10 @@ class coordinate(object):
         random.shuffle(salt)
         salt = salt[:16]
         saltstr = ''.join(salt)
-        return  (saltstr
-                +self.authdata
-                +str(self.localcert.encrypt(bytes(saltstr,"UTF-8"), 'k')[0])
-                +str(self.remotepub.encrypt(bytes(self.str, "UTF-8"), 'k')[0]))
+        return  (bytes(saltstr, "UTF-8")
+                +bytes(self.authdata, "UTF-8")
+                +self.localcert.encrypt(bytes(saltstr,"UTF-8"), 'k')[0]
+                +self.remotepub.encrypt(bytes(self.str, "UTF-8"), 'k')[0])
 
     def issufficient(self):
         return self.available >= self.required
