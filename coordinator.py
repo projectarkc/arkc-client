@@ -20,7 +20,7 @@ class coordinate(object):
         #TODO: make the following string more random
         salt = list(string.ascii_letters)
         random.shuffle(salt)
-        self.str = salt[:16] #TODO: should be used for AES in every data transmission
+        self.str = ''.join(salt[:16]) #TODO: should be used for AES in every data transmission
         self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udpsock.bind(('', ctlport_local))
         self.addr = (ctlip, ctlport_remote)
@@ -57,8 +57,9 @@ class coordinate(object):
         salt = list(string.ascii_letters)
         random.shuffle(salt)
         salt = salt[:16]
-        blank = str(salt) + self.authdata
-        blank = blank + self.localcert.encrypt(salt + self.str, "r")
+        saltstr = ''.join(salt)
+        blank = saltstr + self.authdata
+        blank = blank + self.localcert.encrypt(saltstr + self.str, "r")
         return self.remotepub.encrypt(blank, "r")
     
     def issufficient(self):
