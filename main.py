@@ -44,7 +44,7 @@ if __name__ == '__main__':
         parser.add_option('--remote-control-host',  dest="remote_control_host", help="You must specify a remote control host to activate.")
         parser.add_option('--remote-control-port',  dest="remote_control_port", type='int', default=DEFAULT_REMOTE_CONTROL_PORT)
         parser.add_option('--local-control-port', dest="local_control_port", type='int', default=DEFAULT_LOCAL_CONTROL_PORT)
-        parser.add_option('--remote-cert',  dest="remote_cert", help = "Remote host public key must be specified.")
+        parser.add_option('--remote-cert',  dest="remote_cert", help = "Remote host public key must be specified.",)
         parser.add_option('--local-cert',  dest="local_cert", help = "Local host key must be specified.")
         options, args = parser.parse_args()
         if options.remote_cert == None:

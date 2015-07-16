@@ -50,7 +50,6 @@ class coordinate(object):
         while True:
             self.check.wait()
             requestdata = self.generatereq()      
-            print(len(requestdata))     
             self.udpsock.sendto(requestdata, self.addr)
             sleep(0.05)
             
@@ -61,8 +60,8 @@ class coordinate(object):
         saltstr = ''.join(salt)
         return  (bytes(saltstr, "UTF-8")
                 +bytes(self.authdata, "UTF-8")
-                +self.localcert.encrypt(bytes(saltstr,"UTF-8"), 'k')[0]
-                +self.remotepub.encrypt(bytes(self.str, "UTF-8"), 'k')[0])
+                +bytes('%X' % self.localcert.sign(bytes(saltstr,"UTF-8"), None)[0], "UTF-8")
+                +self.remotepub.encrypt(bytes(self.str, "UTF-8"), None)[0])
 
     def issufficient(self):
         return self.available >= self.required

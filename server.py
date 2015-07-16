@@ -34,9 +34,9 @@ class serverreceiver(asyncore.dispatcher):
         self.ctl.newconn(self)
 
     def handle_connect(self): #TODO: make sure it is necessarily first to happen
-        read = self.recv(512)
-        blank = self.ctl.remotepub.decrypt(read[:256])
-        if not blank == bytes(self.ctl.str, "UTF-8"):
+        read = self.recv(768)
+        blank = read[:512]
+        if not self.remotepub.verify(bytes(self.ctl.str, "UTF-8"), int(blank, 16), None):
             print("Authentication failed")
             self.close()
         else:
