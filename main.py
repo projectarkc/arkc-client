@@ -6,6 +6,7 @@ import optparse
 #should include a try-except part for third-party modules
 
 from Crypto.PublicKey import RSA
+#TODO:Need to switch to PKCS for better security
 
 from coordinator import coordinate
 from server import servercontrol
