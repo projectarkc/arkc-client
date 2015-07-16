@@ -30,14 +30,17 @@ class serverreceiver(asyncore.dispatcher):
         asyncore.dispatcher.__init__(self, conn)
         self.from_remote_buffer = b''
         self.to_remote_buffer = b''
-        self.cipher = AES.new(self.str, AES.MODE_CFB, self.str)
+        self.cipher = None
         self.ctl.newconn(self)
 
     def handle_connect(self): #TODO: make sure it is necessarily first to happen
         read = self.recv(4096)
-        if not self.ctl.remotepub.decrypt(read)[16:] == self.ctl.localcert.encrypt(self.ctl.str):
+        blank = self.ctl.localcert.decrypt(read)
+        if not blank[16:] == bytes(self.ctl.str, "UTF-8"):
             print("Authentication failed")
             self.close()
+        else:
+            self.cipher = AES.new(blank, AES.MODE_CFB, blank)
 
     def handle_read(self):
         read = self.cipher.decrypt(self.recv(4096)) #fragments?

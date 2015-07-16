@@ -58,9 +58,10 @@ class coordinate(object):
         random.shuffle(salt)
         salt = salt[:16]
         saltstr = ''.join(salt)
-        blank = saltstr + self.authdata
-        blank = blank + str(self.localcert.encrypt(bytes(saltstr + self.str, "UTF-8"), 'k')[0])
-        return self.remotepub.encrypt(bytes(blank, "UTF-8"), 'k')[0]
+        return bytes(saltstr
+                     +self.authdata
+                     +str(self.localcert.encrypt(bytes(saltstr,"UTF-8"), 'k')[0])
+                     +str(self.remotepub.encrypt(bytes(self.str, "UTF-8"), 'k')[0]), "UTF-8")
     
     def issufficient(self):
         return self.available >= self.required
