@@ -34,18 +34,25 @@ class serverreceiver(asyncore.dispatcher):
         self.ctl.newconn(self)
 
     def handle_connect(self): #TODO: make sure it is necessarily first to happen
-        read = self.recv(768)
-        blank = read[:512]
-        if not self.remotepub.verify(bytes(self.ctl.str, "UTF-8"), int(blank, 16), None):
-            print("Authentication failed")
-            self.close()
-        else:
-            self.cipher = AES.new(self.ctl.localcert.decrypt(read[256:]), AES.MODE_CFB, blank)
+        pass
 
     def handle_read(self):
-        read = self.cipher.decrypt(self.recv(4096)) #fragments?
-        print('%04i from server' % len(read))
-        self.from_remote_buffer += read
+        if self.cipher == None:
+            try:
+                read = self.recv(768)
+                blank = read[:512]
+                if not self.ctl.remotepub.verify(bytes(self.ctl.str, "UTF-8"), int(blank, 16), None):
+                    print("Authentication failed, socket closing")
+                    self.close()
+                else:
+                    self.cipher = AES.new(self.ctl.localcert.decrypt(read[256:]), AES.MODE_CFB, blank)
+            except Exception as e:
+                print("Authentication failed, socket closing")
+                self.close()
+        else:
+            read = self.cipher.decrypt(self.recv(4096)) #fragments?
+            print('%04i from server' % len(read))
+            self.from_remote_buffer += read
 
     def writable(self):
         return (len(self.to_remote_buffer) > 0)
