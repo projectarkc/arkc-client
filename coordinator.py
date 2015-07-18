@@ -39,9 +39,7 @@ class coordinate(object):
             
     def closeconn(self):
         self.count -=1
-        if self.count <0:
-            self.count =0
-            print("coordinate: minus count error")
+        self.available -= 1
         if not self.issufficient():
             self.check.set()
         print("Available socket %d" % self.available)

@@ -2,6 +2,7 @@
 
 import asyncore
 import optparse
+#TODO: should switch to argparse, which includes a prompt with it
 
 #should include a try-except part for third-party modules
 
