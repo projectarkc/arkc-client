@@ -6,21 +6,20 @@ from time import sleep
 
 class coordinate(object):
 
-    required = 4 #should be set by users?
-
-    def __init__(self, ctlip, ctlport_remote, ctlport_local, localcert, remotecert):
+    def __init__(self, ctlip, ctlport_remote, ctlport_local, localcert, remotecert, required):
         self.count = 0
         self.available = 0
         self.remotepub = remotecert
         self.localcert = localcert
         self.authdata = "8eac74242041e540b43ac0845683a7b761ec5b81"
+        self.required = required
         
         #TODO self.authdata = self.localcert.  get SHA1
         self.recvs = []
         #TODO: make the following string more random
         salt = list(string.ascii_letters)
         random.shuffle(salt)
-        self.str = ''.join(salt[:16]) #TODO: should be used for AES in every data transmission
+        self.str = ''.join(salt[:16])
         self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.udpsock.bind(('', ctlport_local))
         self.addr = (ctlip, ctlport_remote)
@@ -59,7 +58,7 @@ class coordinate(object):
         return  (bytes(saltstr, "UTF-8")
                 +bytes(self.authdata, "UTF-8")
                 +bytes('%X' % self.localcert.sign(bytes(saltstr,"UTF-8"), None)[0], "UTF-8")
-                +self.remotepub.encrypt(bytes(self.str, "UTF-8"), None)[0])
+                +self.remotepub.encrypt(bytes(self.str, "UTF-8"), None)[0]) #TODO: Replay attack?
 
     def issufficient(self):
         return self.available >= self.required
