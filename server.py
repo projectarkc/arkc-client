@@ -5,6 +5,8 @@ from Crypto.Cipher import AES
 
 #Need to switch to asyncio
 
+SPLITCHAR = chr(30)
+
 class servercontrol(asyncore.dispatcher):
 
     def __init__(self, serverip, serverport, ctl, backlog=5):
@@ -56,8 +58,8 @@ class serverreceiver(asyncore.dispatcher):
                 self.ctl.closeconn()
                 self.close()
         else:
-            self.from_remote_buffer_raw += self.recv()
-            strsplit = self.from_remote_buffer_raw.decode("UTF-8").split(chr(30))
+            self.from_remote_buffer_raw += self.recv(8192)
+            strsplit = self.from_remote_buffer_raw.decode("UTF-8").split(SPLITCHAR)
             for Index in range(len(strsplit)):
                 if Index < len(strsplit):
                     decryptedtext = self.cipher.decrypt(bytes(strsplit(Index),"UTF-8"))
@@ -73,9 +75,9 @@ class serverreceiver(asyncore.dispatcher):
     def handle_write(self):
         if len(self.to_remote_buffer)<=4096:
             sent = len(self.to_remote_buffer)
-            self.send(self.cipher.encrypt(self.to_remote_buffer) + bytes(chr(30), "UTF-8"))
+            self.send(self.cipher.encrypt(self.to_remote_buffer) + bytes(SPLITCHAR, "UTF-8"))
         else:
-            self.send(self.cipher.encrypt(self.to_remote_buffer[:4096]) + bytes(chr(30), "UTF-8"))
+            self.send(self.cipher.encrypt(self.to_remote_buffer[:4096]) + bytes(SPLITCHAR, "UTF-8"))
             sent = 4096
         print('%04i to server' % sent)
         self.to_remote_buffer = self.to_remote_buffer[sent:]
