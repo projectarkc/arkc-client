@@ -50,7 +50,7 @@ class serverreceiver(asyncore.dispatcher):
                         self.close()
                     else:
                         self.cipher = AES.new(self.ctl.localcert.decrypt(read[-256:]), AES.MODE_CFB, bytes(self.ctl.str, "UTF-8"))
-            except Exception as e:
+            except Exception as err:
                 print("Authentication failed, socket closing")
                 self.ctl.closeconn()
                 self.close()

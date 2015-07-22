@@ -6,12 +6,12 @@ from time import sleep
 
 class coordinate(object):
 
-    def __init__(self, ctlip, ctlport_remote, ctlport_local, localcert, remotecert, required):
+    def __init__(self, ctlip, ctlport_remote, ctlport_local, localcert, remotecert, localpub, required):
         self.count = 0
         self.available = 0
         self.remotepub = remotecert
         self.localcert = localcert
-        self.authdata = "8eac74242041e540b43ac0845683a7b761ec5b81"
+        self.authdata = localpub
         self.required = required
         
         #TODO self.authdata = self.localcert.  get SHA1

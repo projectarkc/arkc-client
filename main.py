@@ -2,6 +2,7 @@
 
 import asyncore
 import argparse
+from hashlib import sha1
 
 try:
     from Crypto.PublicKey import RSA
@@ -37,6 +38,16 @@ class certloader:
             print ("Fatal error while loading certificate.")
             print (err)
             quit()
+    def getSHA1(self):
+        try:
+            data = self.certfile.read()
+            #TODO: should use compatible SHA1 value
+            return sha1(data).hexdigest()
+        except Exception as err:
+            print ("Cannot get SHA1 of the certificate.")
+            print (err)
+            quit()
+                
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="ArkC Client")
@@ -51,6 +62,7 @@ if __name__ == '__main__':
         parser.add_argument('-lcp', '--local-control-port', dest="local_control_port", type=int, default=DEFAULT_LOCAL_CONTROL_PORT)
         parser.add_argument('-rc', '--remote-cert',  dest="remote_cert", help = "Remote host public key (must be specified)", required = True)
         parser.add_argument('-lc', '--local-cert',  dest="local_cert", help = "Local host key (must be specified)", required = True)
+        parser.add_argument('-lcp', '--local-cert-public',  dest="local_cert_pub", help = "Local host public key for SHA1 (must be specified)", required = True)
         parser.add_argument('-n', '--number',  dest="number", type=int, default=DEFAULT_REQUIRED)
         options = parser.parse_args()
         try:
@@ -68,11 +80,20 @@ if __name__ == '__main__':
             local_cert_file.close()
             if not localcert.has_private():
                 print("Fatal error, no private key included in local certificate.")
-        except IOError as err:
+        except Exception as err:
             print ("Fatal error while loading local certificate.")
             print (err)
             quit()
-
+            
+        try:
+            local_pub_file = open(options.local_cert_pub, "r")
+            localpub = certloader(local_pub_file).getSHA1()
+            local_pub_file.close()
+        except Exception as err:
+            print ("Fatal error while calculating SHA1 digest.")
+            print (err)
+            quit()
+            
     except Exception as e:
         print (e)
     
@@ -87,6 +108,7 @@ if __name__ == '__main__':
                     options.local_control_port,
                     localcert,
                     remotecert,
+                    localpub,
                     options.number
                     )
                 ),
