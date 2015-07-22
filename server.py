@@ -29,6 +29,7 @@ class serverreceiver(asyncore.dispatcher):
         self.ctl = ctl
         asyncore.dispatcher.__init__(self, conn)
         self.from_remote_buffer = b''
+        self.from_remote_buffer_raw = b''
         self.to_remote_buffer = b''
         self.cipher = None
         self.ctl.newconn(self)
@@ -55,9 +56,16 @@ class serverreceiver(asyncore.dispatcher):
                 self.ctl.closeconn()
                 self.close()
         else:
-            read = self.cipher.decrypt(self.recv(4096)) #fragments?
-            print('%04i from server' % len(read))
-            self.from_remote_buffer += read
+            self.from_remote_buffer_raw += self.recv()
+            strsplit = self.from_remote_buffer_raw.decode("UTF-8").split(chr(30))
+            for Index in range(len(strsplit)):
+                if Index < len(strsplit):
+                    decryptedtext = self.cipher.decrypt(bytes(strsplit(Index),"UTF-8"))
+                    self.from_remote_buffer += decryptedtext
+                    read += len(decryptedtext)
+                else:
+                    self.from_remote_buffer_raw = bytes(strsplit(Index), "UTF-8")
+            print('%04i from server' % read)
 
     def writable(self):
         return (len(self.to_remote_buffer) > 0)
@@ -65,9 +73,9 @@ class serverreceiver(asyncore.dispatcher):
     def handle_write(self):
         if len(self.to_remote_buffer)<=4096:
             sent = len(self.to_remote_buffer)
-            self.send(self.cipher.encrypt(self.to_remote_buffer))
+            self.send(self.cipher.encrypt(self.to_remote_buffer) + bytes(chr(30), "UTF-8"))
         else:
-            self.send(self.cipher.encrypt(self.to_remote_buffer[:4096])) #complete message for encryption?
+            self.send(self.cipher.encrypt(self.to_remote_buffer[:4096]) + bytes(chr(30), "UTF-8"))
             sent = 4096
         print('%04i to server' % sent)
         self.to_remote_buffer = self.to_remote_buffer[sent:]
