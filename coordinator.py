@@ -2,6 +2,7 @@ import socket
 import threading
 import random
 import string
+from time import sleep
 
 class coordinate(object):
 
@@ -46,6 +47,8 @@ class coordinate(object):
             self.check.wait()
             requestdata = self.generatereq()      
             self.udpsock.sendto(requestdata, self.addr)
+            if self.available + 2 >= self.required:
+                sleep(0.05) 
             
     def generatereq(self):
         salt = list(string.ascii_letters)
