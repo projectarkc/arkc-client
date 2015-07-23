@@ -58,16 +58,17 @@ class serverreceiver(asyncore.dispatcher):
                 self.ctl.closeconn()
                 self.close()
         else:
+            read_count = 0
             self.from_remote_buffer_raw += self.recv(8192)
             strsplit = self.from_remote_buffer_raw.decode("UTF-8").split(SPLITCHAR)
             for Index in range(len(strsplit)):
                 if Index < len(strsplit):
                     decryptedtext = self.cipher.decrypt(bytes(strsplit[Index],"UTF-8"))
                     self.from_remote_buffer += decryptedtext
-                    read += len(decryptedtext)
+                    read_count += len(decryptedtext)
                 else:
                     self.from_remote_buffer_raw = bytes(strsplit[Index], "UTF-8")
-            print('%04i from server' % read)
+            print('%04i from server' % read_count)
 
     def writable(self):
         return (len(self.to_remote_buffer) > 0)
