@@ -5,7 +5,7 @@ from Crypto.Cipher import AES
 
 #Need to switch to asyncio
 
-SPLITCHAR = chr(30)
+SPLITCHAR = chr(30) * 5
 
 class servercontrol(asyncore.dispatcher):
 
