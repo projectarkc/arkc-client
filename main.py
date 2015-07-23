@@ -42,7 +42,7 @@ class certloader:
         try:
             data = self.certfile.read()
             #TODO: should use compatible SHA1 value
-            return sha1(data).hexdigest()
+            return sha1(data.encode("UTF-8")).hexdigest()
         except Exception as err:
             print ("Cannot get SHA1 of the certificate.")
             print (err)
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         parser.add_argument('-lcp', '--local-control-port', dest="local_control_port", type=int, default=DEFAULT_LOCAL_CONTROL_PORT)
         parser.add_argument('-rc', '--remote-cert',  dest="remote_cert", help = "Remote host public key (must be specified)", required = True)
         parser.add_argument('-lc', '--local-cert',  dest="local_cert", help = "Local host key (must be specified)", required = True)
-        parser.add_argument('-lcp', '--local-cert-public',  dest="local_cert_pub", help = "Local host public key for SHA1 (must be specified)", required = True)
+        parser.add_argument('--local-cert-public',  dest="local_cert_pub", help = "Local host public key for SHA1 (must be specified)", required = True)
         parser.add_argument('-n', '--number',  dest="number", type=int, default=DEFAULT_REQUIRED)
         options = parser.parse_args()
         try:
