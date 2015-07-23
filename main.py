@@ -42,7 +42,7 @@ class certloader:
         try:
             data = self.certfile.read()
             #TODO: should use compatible SHA1 value
-            return sha1(data).hexdigest()
+            return sha1(data.encode("UTF-8")).hexdigest()
         except Exception as err:
             print ("Cannot get SHA1 of the certificate.")
             print (err)
