@@ -48,7 +48,6 @@ class coordinate(object):
             self.check.wait()
             requestdata = self.generatereq()      
             self.udpsock.sendto(requestdata, self.addr)
-            sleep(0.05)
             
     def generatereq(self):
         salt = list(string.ascii_letters)
