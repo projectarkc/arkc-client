@@ -33,7 +33,8 @@ class serverreceiver(asyncore.dispatcher):
         self.from_remote_buffer = b''
         self.from_remote_buffer_raw = b''
         self.to_remote_buffer = b''
-        self.cipher = None
+        self.cipher1 = None
+        self.cipher2 = None
         self.ctl.newconn(self)
 
     def handle_connect(self):
@@ -41,7 +42,7 @@ class serverreceiver(asyncore.dispatcher):
 
     def handle_read(self):
         read = b''
-        if self.cipher == None:
+        if self.cipher1 == None:
             try:
                 read += self.recv(768)
                 if len(read) >= 768:
@@ -52,7 +53,8 @@ class serverreceiver(asyncore.dispatcher):
                         self.ctl.closeconn()
                         self.close()
                     else:
-                        self.cipher = AES.new(self.ctl.localcert.decrypt(read[-256:]), AES.MODE_CFB, bytes(self.ctl.str, "UTF-8"))
+                        self.cipher1 = AES.new(self.ctl.localcert.decrypt(read[-256:]), AES.MODE_CFB, bytes(self.ctl.str, "UTF-8"))
+                        self.cipher2 = AES.new(self.ctl.localcert.decrypt(read[-256:]), AES.MODE_CFB, bytes(self.ctl.str, "UTF-8"))
             except Exception as err:
                 print("Authentication failed, socket closing")
                 self.ctl.closeconn()
@@ -62,7 +64,7 @@ class serverreceiver(asyncore.dispatcher):
             strsplit = self.from_remote_buffer_raw.decode("UTF-8").split(SPLITCHAR)
             for Index in range(len(strsplit)):
                 if Index < len(strsplit):
-                    decryptedtext = self.cipher.decrypt(bytes(strsplit(Index),"UTF-8"))
+                    decryptedtext = self.cipher1.decrypt(bytes(strsplit(Index),"UTF-8"))
                     self.from_remote_buffer += decryptedtext
                     read += len(decryptedtext)
                 else:
@@ -75,9 +77,9 @@ class serverreceiver(asyncore.dispatcher):
     def handle_write(self):
         if len(self.to_remote_buffer)<=4096:
             sent = len(self.to_remote_buffer)
-            self.send(self.cipher.encrypt(self.to_remote_buffer) + bytes(SPLITCHAR, "UTF-8"))
+            self.send(self.cipher2.encrypt(self.to_remote_buffer) + bytes(SPLITCHAR, "UTF-8"))
         else:
-            self.send(self.cipher.encrypt(self.to_remote_buffer[:4096]) + bytes(SPLITCHAR, "UTF-8"))
+            self.send(self.cipher2.encrypt(self.to_remote_buffer[:4096]) + bytes(SPLITCHAR, "UTF-8"))
             sent = 4096
         print('%04i to server' % sent)
         self.to_remote_buffer = self.to_remote_buffer[sent:]
