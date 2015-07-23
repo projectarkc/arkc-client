@@ -2,7 +2,6 @@ import socket
 import threading
 import random
 import string
-from time import sleep
 
 class coordinate(object):
 
@@ -14,7 +13,6 @@ class coordinate(object):
         self.authdata = localpub
         self.required = required
         
-        #TODO self.authdata = self.localcert.  get SHA1
         self.recvs = []
         #TODO: make the following string more random
         salt = list(string.ascii_letters)
