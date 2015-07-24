@@ -49,6 +49,8 @@ class coordinate(object):
             self.udpsock.sendto(requestdata, self.addr)
             if self.available + 2 >= self.required:
                 sleep(0.05) 
+            else:
+                sleep(0.01)
             
     def generatereq(self):
         salt = list(string.ascii_letters)
