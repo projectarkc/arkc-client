@@ -1,6 +1,6 @@
 #ArkC-client
 
-ArkC is a lightweight proxy based on Python 3 and Twisted. It is designed to be proof to IP blocking measures.
+ArkC is a lightweight proxy based on Python 3 and PyCrypto. It is designed to be proof to IP blocking measures.
 
 ArkC-Client is the client-side utility. It may require NAT configuration if the client is behind a router.
 
@@ -10,7 +10,7 @@ Running ArkC-Client requires Python 3 and PyCrypto.
 
 For Debian or Ubuntu users:
     
-    sudo apt-get install python3
+    sudo apt-get install python3 python3-pip python3-dev
     sudo pip3 install pycrypto
 
 NAT configuration may be necessary to make the client receives requests from the server, so that a connection may start.
@@ -19,7 +19,12 @@ NAT configuration may be necessary to make the client receives requests from the
 
 Run 
 
-	python3 main.py --remote-host [remote host domain/ip] (--remote-port [remote host port]) (--local-host [local host ip to listen at]) (--local-port [local port to listen at]) --local-cert [local certificate (PEM)] --remote-cert [remote host certificate (PEM)]
+	python3 main.py [-h] [-lh LOCAL_HOST] [-lp LOCAL_PORT] [-rh REMOTE_HOST (Listening on)]
+               [-rp REMOTE_PORT] -rch REMOTE_CONTROL_HOST
+               [-rcp REMOTE_CONTROL_PORT] -rc REMOTE_CERT -lc LOCAL_CERT
+               --local-cert-public LOCAL_CERT_PUB [-n NUMBER (connections kept ready)]
+
+In this version, any private certificate should be in the form of PEM without encryption, while any public certificate should be in the form of ssh-rsa. Note that ssh-rsa files should not include extra blank lines because they are used for hash.
 
 ##License
 
