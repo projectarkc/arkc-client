@@ -16,6 +16,7 @@ from server import servercontrol
 from client import clientcontrol
 
 DEFAULT_LOCAL_HOST = "127.0.0.1"
+DEFAULT_REMOTE_HOST = "0.0.0.0"
 DEFAULT_LOCAL_PORT = 8001
 
 DEFAULT_REMOTE_PORT = 8000
@@ -55,7 +56,7 @@ if __name__ == '__main__':
         #TODO: Help files
         parser.add_argument('-lh', '--local-host', dest="local_host", default=DEFAULT_LOCAL_HOST)
         parser.add_argument('-lp', '--local-port',  dest="local_port", type=int, default=DEFAULT_LOCAL_PORT)
-        parser.add_argument('-rh', '--remote-host',  dest="remote_host", default=DEFAULT_LOCAL_HOST)
+        parser.add_argument('-rh', '--remote-host',  dest="remote_host", default=DEFAULT_REMOTE_HOST)
         parser.add_argument('-rp', '--remote-port',  dest="remote_port", type=int, default=DEFAULT_REMOTE_PORT)
         parser.add_argument('-rch', '--remote-control-host',  dest="remote_control_host", help="You must specify a remote control host to activate.", required = True)
         parser.add_argument('-rcp', '--remote-control-port',  dest="remote_control_port", type=int, default=DEFAULT_REMOTE_CONTROL_PORT)
