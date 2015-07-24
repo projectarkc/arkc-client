@@ -60,7 +60,6 @@ if __name__ == '__main__':
         parser.add_argument('-rp', '--remote-port',  dest="remote_port", type=int, default=DEFAULT_REMOTE_PORT)
         parser.add_argument('-rch', '--remote-control-host',  dest="remote_control_host", help="You must specify a remote control host to activate.", required = True)
         parser.add_argument('-rcp', '--remote-control-port',  dest="remote_control_port", type=int, default=DEFAULT_REMOTE_CONTROL_PORT)
-        parser.add_argument('-lcp', '--local-control-port', dest="local_control_port", type=int, default=DEFAULT_LOCAL_CONTROL_PORT)
         parser.add_argument('-rc', '--remote-cert',  dest="remote_cert", help = "Remote host public key (must be specified)", required = True)
         parser.add_argument('-lc', '--local-cert',  dest="local_cert", help = "Local host key (must be specified)", required = True)
         parser.add_argument('--local-cert-public',  dest="local_cert_pub", help = "Local host public key for SHA1 (must be specified)", required = True)
@@ -106,7 +105,6 @@ if __name__ == '__main__':
                 coordinate(
                     options.remote_control_host,
                     options.remote_control_port,
-                    options.local_control_port,
                     localcert,
                     remotecert,
                     localpub,

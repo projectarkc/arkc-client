@@ -6,7 +6,7 @@ from time import sleep
 
 class coordinate(object):
 
-    def __init__(self, ctlip, ctlport_remote, ctlport_local, localcert, remotecert, localpub, required):
+    def __init__(self, ctlip, ctlport_remote, localcert, remotecert, localpub, required):
         self.count = 0
         self.available = 0
         self.remotepub = remotecert
@@ -21,7 +21,6 @@ class coordinate(object):
         random.shuffle(salt)
         self.str = ''.join(salt[:16])
         self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.udpsock.bind(('', ctlport_local))
         self.addr = (ctlip, ctlport_remote)
         self.check = threading.Event()
         self.check.set()
