@@ -44,9 +44,7 @@ class coordinate(object):
     def reqconn(self):
         while True:
             self.check.wait()
-            requestdata = self.generatereq()
-            print(len(requestdata))
-            print(requestdata)      
+            requestdata = self.generatereq()    
             self.udpsock.sendto(requestdata, self.addr)
             sleep(0.01)
             
@@ -56,12 +54,15 @@ class coordinate(object):
         salt = salt[:16]
         saltstr = ''.join(salt)
         required_hex = "%X" % min((self.required - self.available + self.count), 255)
+        sign_hex = '%X' % self.localcert.sign(bytes(saltstr,"UTF-8"), None)[0]
         if len(required_hex) == 1:
             required_hex = '0' + required_hex
+        if len(sign_hex) == 510:
+            sign_hex = '0' + sign_hex
         return  (bytes(saltstr, "UTF-8")
                 +bytes(required_hex, "UTF-8")
                 +bytes(self.authdata, "UTF-8")
-                +bytes('%X' % self.localcert.sign(bytes(saltstr,"UTF-8"), None)[0], "UTF-8")
+                +bytes(sign_hex, "UTF-8")
                 +self.remotepub.encrypt(bytes(self.str, "UTF-8"), None)[0]) #TODO: Replay attack?
 
     def issufficient(self):
