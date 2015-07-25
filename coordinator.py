@@ -68,7 +68,9 @@ class coordinate(object):
     
     def offerconn(self):
         if self.available <=0:
-            return None
+            sleep(0.5)
+            if self.available <= 0:
+                return None
         self.available -=1
         offer = self.recvs [0]
         self.recvs = self.recvs[1:]

@@ -2,6 +2,12 @@
 __pycache__/
 *.py[cod]
 
+#Test files
+server
+server.pub
+client
+client.pub
+
 # C extensions
 *.so
 
