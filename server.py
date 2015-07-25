@@ -78,15 +78,18 @@ class serverreceiver(asyncore.dispatcher):
         return (len(self.to_remote_buffer) > 0)
 
     def handle_write(self):
-        if len(self.to_remote_buffer)<=4096:
-            sent = len(self.to_remote_buffer)
-            self.send(self.cipherinstance.encrypt(self.to_remote_buffer) + bytes(SPLITCHAR, "UTF-8"))
+        if self.cipherinstance is not None:
+            if len(self.to_remote_buffer)<=4096:
+                sent = len(self.to_remote_buffer)
+                self.send(self.cipherinstance.encrypt(self.to_remote_buffer) + bytes(SPLITCHAR, "UTF-8"))
+            else:
+                self.send(self.cipherinstance.encrypt(self.to_remote_buffer[:4096]) + bytes(SPLITCHAR, "UTF-8"))
+                sent = 4096
+            self.cipherinstance = self.cipher
+            print('%04i to server' % sent)
+            self.to_remote_buffer = self.to_remote_buffer[sent:]
         else:
-            self.send(self.cipherinstance.encrypt(self.to_remote_buffer[:4096]) + bytes(SPLITCHAR, "UTF-8"))
-            sent = 4096
-        self.cipherinstance = self.cipher
-        print('%04i to server' % sent)
-        self.to_remote_buffer = self.to_remote_buffer[sent:]
+            self.handle_read()
 
     def handle_close(self):
         self.ctl.closeconn()
