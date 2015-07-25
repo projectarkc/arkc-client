@@ -44,21 +44,22 @@ class coordinate(object):
         print("Available socket %d" % self.available)
 
     def reqconn(self):
-        while True:
+        while self.available + 2 < self.required or self.nonstable:
             self.check.wait()
             requestdata = self.generatereq()      
             self.udpsock.sendto(requestdata, self.addr)
-            if self.available + 2 < self.required or self.nonstable:
-                sleep(0.03) 
-            else:
-                sleep(0.1)
+            sleep(0.01)
             
     def generatereq(self):
         salt = list(string.ascii_letters)
         random.shuffle(salt)
         salt = salt[:16]
         saltstr = ''.join(salt)
+        required_hex = "%X" % self.required
+        if len(required_hex) == 1:
+            required_hex = '0' + required_hex
         return  (bytes(saltstr, "UTF-8")
+                +bytes(required_hex, "UTF-8")
                 +bytes(self.authdata, "UTF-8")
                 +bytes('%X' % self.localcert.sign(bytes(saltstr,"UTF-8"), None)[0], "UTF-8")
                 +self.remotepub.encrypt(bytes(self.str, "UTF-8"), None)[0]) #TODO: Replay attack?
