@@ -13,7 +13,6 @@ class coordinate(object):
         self.localcert = localcert
         self.authdata = localpub
         self.required = required
-        self.nonstable = True
         
         self.recvs = []
         #TODO: make the following string more random
@@ -31,9 +30,8 @@ class coordinate(object):
         self.available += 1
         self.count += 1
         self.recvs.append(recv)
-        if self.issufficient():
+        if self.available + 2 >= self.required:
             self.check.clear()
-            self.nonstable = False
         print("Available socket %d" % self.available)
             
     def closeconn(self):
@@ -44,9 +42,11 @@ class coordinate(object):
         print("Available socket %d" % self.available)
 
     def reqconn(self):
-        while self.available + 2 < self.required or self.nonstable:
+        while True:
             self.check.wait()
-            requestdata = self.generatereq()      
+            requestdata = self.generatereq()
+            print(len(requestdata))
+            print(requestdata)      
             self.udpsock.sendto(requestdata, self.addr)
             sleep(0.01)
             
@@ -55,7 +55,7 @@ class coordinate(object):
         random.shuffle(salt)
         salt = salt[:16]
         saltstr = ''.join(salt)
-        required_hex = "%X" % self.required
+        required_hex = "%X" % min((self.required - self.available + self.count), 255)
         if len(required_hex) == 1:
             required_hex = '0' + required_hex
         return  (bytes(saltstr, "UTF-8")
