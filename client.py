@@ -26,6 +26,8 @@ class clientreceiver(asyncore.dispatcher):
         if self.sreceiver == None:
             print("No available socket from server. Closing this socket.")
             self.close()
+        else:
+            self.idchar = self.sreceiver.add_clientreceiver(self)
         self.from_remote_buffer = b''
         self.to_remote_buffer = b''
 
@@ -35,10 +37,10 @@ class clientreceiver(asyncore.dispatcher):
     def handle_read(self):
         read = self.recv(4096)
         print('%04i from client' % len(read))
-        self.sreceiver.to_remote_buffer += read
+        self.sreceiver.to_remote_buffers[self.idchar] += read
 
     def writable(self):
-        return (len(self.sreceiver.from_remote_buffer) > 0 or (not self.sreceiver.connected))
+        return (len(self.sreceiver.from_remote_buffers[self.idchar]) > 0 or (not self.sreceiver.connected))
 
     def handle_write(self):
         if not self.sreceiver.connected:
@@ -46,9 +48,8 @@ class clientreceiver(asyncore.dispatcher):
             return
         sent = self.send(self.sreceiver.from_remote_buffer)
         print('%04i to client' % sent)
-        self.sreceiver.from_remote_buffer = self.sreceiver.from_remote_buffer[
-            sent:]
+        self.sreceiver.from_remote_buffers[self.idchar] = self.sreceiver.from_remote_buffers[self.idchar][sent:]
 
     def handle_close(self):
-        self.sreceiver.close()
+        self.sreceiver.remove_clientreceiver(self)
         self.close()

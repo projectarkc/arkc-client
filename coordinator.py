@@ -68,15 +68,26 @@ class coordinate(object):
     def issufficient(self):
         return self.available >= self.required
     
+#    def offerconn(self):
+#        if self.available <=0:
+#            sleep(0.5)
+#            if self.available <= 0:
+#                return None
+#        self.available -=1
+#        offer = self.recvs [0]
+#        self.recvs = self.recvs[1:]
+#        if not self.issufficient():
+#            self.check.set()
+#        print("Available socket %d" % self.available)
+#        return offer
+
     def offerconn(self):
         if self.available <=0:
             sleep(0.5)
             if self.available <= 0:
                 return None
-        self.available -=1
-        offer = self.recvs [0]
-        self.recvs = self.recvs[1:]
-        if not self.issufficient():
-            self.check.set()
-        print("Available socket %d" % self.available)
-        return offer
+        return self.pickconn()
+
+    def pickconn(self):
+        assert self.required == 1
+        return self.recvs(0)
