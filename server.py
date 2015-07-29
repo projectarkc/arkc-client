@@ -54,10 +54,10 @@ class serverreceiver(asyncore.dispatcher):
             bytessplit = self.from_remote_buffer_raw.split(bytes(SPLITCHAR, "UTF-8"))
             #TODO: Use Async
             for Index in range(len(bytessplit)):
-                if Index < len(bytessplit) -1:
+                if Index < len(bytessplit) - 1:
                     decryptedtext = self.cipherinstance.decrypt(bytessplit[Index])
                     self.cipherinstance = self.cipher
-                    cli_id = ''.join(decryptedtext[:2])
+                    cli_id = decryptedtext[:2].decode("UTF-8")
                     if decryptedtext != CLOSECHAR:
                         self.from_remote_buffers[cli_id] += decryptedtext[2:]
                         read_count += len(decryptedtext) - 2
