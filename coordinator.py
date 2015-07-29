@@ -90,4 +90,4 @@ class coordinate(object):
 
     def pickconn(self):
         assert self.required == 1
-        return self.recvs(0)
+        return self.recvs[0]

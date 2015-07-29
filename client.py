@@ -28,8 +28,8 @@ class clientreceiver(asyncore.dispatcher):
             self.close()
         else:
             self.idchar = self.sreceiver.add_clientreceiver(self)
-        self.from_remote_buffer = b''
-        self.to_remote_buffer = b''
+        #self.from_remote_buffer = b''
+        #self.to_remote_buffer = b''
 
     def handle_connect(self):
         pass
