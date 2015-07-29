@@ -89,5 +89,6 @@ class coordinate(object):
         return self.pickconn()
 
     def pickconn(self):
-        assert self.required == 1
+        for serverconn in self.recvs:
+            pass
         return self.recvs[0]

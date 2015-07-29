@@ -11,6 +11,8 @@ from Crypto.Cipher import AES
 SPLITCHAR = chr(30) * 5
 CLOSECHAR = chr(4) *5
 
+MAX_HANDLE = 100
+
 class servercontrol(asyncore.dispatcher):
 
     def __init__(self, serverip, serverport, ctl, backlog=5):
@@ -40,6 +42,7 @@ class serverreceiver(asyncore.dispatcher):
         self.to_remote_buffers = {}
         self.cipher = None
         self.cipherinstance = None
+        self.full = False
         self.ctl.newconn(self)
 
     def handle_connect(self):
@@ -102,19 +105,16 @@ class serverreceiver(asyncore.dispatcher):
         self.close()
     
     def add_clientreceiver(self, clientreceiver):
+        if self.full:
+            return None
         cli_id = None
-        looptime = 0
         while (cli_id is None) or (cli_id in self.clientreceivers):
             a = list(string.ascii_letters)
             random.shuffle(a)
             cli_id = ''.join(a[:2])
-            if looptime > 100:
-                print("100 times failed generating connection ID")
-                quit()
-                #should label the connection as fully used and break
-            else:
-                looptime += 1
         self.clientreceivers[cli_id] = clientreceiver
+        if len(self.clientreceivers) >= MAX_HANDLE:
+            self.full = True
         self.to_remote_buffers[cli_id] = b''
         self.from_remote_buffers[cli_id] = b''
         return cli_id
@@ -137,6 +137,8 @@ class serverreceiver(asyncore.dispatcher):
         del self.from_remote_buffers[cli_id]
         self.id_write(cli_id, CLOSECHAR)
         del self.to_remote_buffers[cli_id]
+        if len(self.clientreceivers) < MAX_HANDLE:
+            self.full = False
     
     def closeclientreceivers(self):
         for cli_id in self.clientreceivers:
