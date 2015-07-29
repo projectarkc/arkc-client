@@ -57,11 +57,12 @@ class serverreceiver(asyncore.dispatcher):
                 if Index < len(bytessplit) -1:
                     decryptedtext = self.cipherinstance.decrypt(bytessplit[Index])
                     self.cipherinstance = self.cipher
+                    cli_id = ''.join(decryptedtext[:2])
                     if decryptedtext != CLOSECHAR:
-                        self.from_remote_buffers[decryptedtext[:2]] += decryptedtext[-2:]
-                        read_count += len(decryptedtext[-2:])
+                        self.from_remote_buffers[cli_id] += decryptedtext[2:]
+                        read_count += len(decryptedtext) - 2
                     else:
-                        self.clientreceivers[id].close()
+                        self.clientreceivers[cli_id].close()
                 else:
                     self.from_remote_buffer_raw = bytessplit[Index]
             print('%04i from server' % read_count)
@@ -121,12 +122,12 @@ class serverreceiver(asyncore.dispatcher):
     def id_write(self, cli_id, lastcontents = None):
         if len(self.to_remote_buffers[cli_id])<=4096:
             sent = len(self.to_remote_buffers[cli_id])
-            self.send(self.cipherinstance.encrypt(cli_id + self.to_remote_buffers[cli_id]) + bytes(SPLITCHAR, "UTF-8"))
+            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + self.to_remote_buffers[cli_id]) + bytes(SPLITCHAR, "UTF-8"))
         else:
-            self.send(self.cipherinstance.encrypt(cli_id + self.to_remote_buffers[cli_id][:4096]) + bytes(SPLITCHAR, "UTF-8"))
+            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + self.to_remote_buffers[cli_id][:4096]) + bytes(SPLITCHAR, "UTF-8"))
             sent = 4096
         if lastcontents is not None:
-            self.send(self.cipherinstance.encrypt(cli_id + lastcontents + bytes(SPLITCHAR, "UTF-8")))
+            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + lastcontents + bytes(SPLITCHAR, "UTF-8")))
         self.cipherinstance = self.cipher
         print('%04i to server' % sent)
         self.to_remote_buffers[cli_id] = self.to_remote_buffers[cli_id][sent:]
