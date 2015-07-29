@@ -37,9 +37,7 @@ class serverreceiver(asyncore.dispatcher):
         self.ctl = ctl
         self.clientreceivers = {}
         asyncore.dispatcher.__init__(self, conn)
-        self.from_remote_buffers = {}
         self.from_remote_buffer_raw = b''
-        self.to_remote_buffers = {}
         self.cipher = None
         self.cipherinstance = None
         self.full = False
@@ -60,9 +58,9 @@ class serverreceiver(asyncore.dispatcher):
                 if Index < len(bytessplit) -1:
                     decryptedtext = self.cipherinstance.decrypt(bytessplit[Index])
                     self.cipherinstance = self.cipher
-                    cli_id = ''.join(decryptedtext[:2])
+                    cli_id = decryptedtext[:2].decode("UTF-8")
                     if decryptedtext != CLOSECHAR:
-                        self.from_remote_buffers[cli_id] += decryptedtext[2:]
+                        self.clientreceivers[cli_id].from_remote_buffer += decryptedtext[2:]
                         read_count += len(decryptedtext) - 2
                     else:
                         self.clientreceivers[cli_id].close()
@@ -90,7 +88,12 @@ class serverreceiver(asyncore.dispatcher):
                 self.close()
     
     def writable(self):
-        return self.checkwrite()
+        able = False
+        for cli_id in self.to_remote_buffers:
+            if len(self.clientreceivers[cli_id].to_remote_buffer) > 0:
+                able = True
+                break
+        return able
 
     def handle_write(self):
         if self.cipherinstance is not None:
@@ -101,7 +104,7 @@ class serverreceiver(asyncore.dispatcher):
 
     def handle_close(self):
         self.ctl.closeconn()
-        self.closeclientreceivers()
+        self.reallocateclientreceivers()
         self.close()
     
     def add_clientreceiver(self, clientreceiver):
@@ -115,40 +118,30 @@ class serverreceiver(asyncore.dispatcher):
         self.clientreceivers[cli_id] = clientreceiver
         if len(self.clientreceivers) >= MAX_HANDLE:
             self.full = True
-        self.to_remote_buffers[cli_id] = b''
-        self.from_remote_buffers[cli_id] = b''
+        self.clientreceivers[cli_id].to_remote_buffer = b''
+        self.clientreceivers[cli_id].from_remote_buffer = b''
         return cli_id
         
     def id_write(self, cli_id, lastcontents = None):
-        if len(self.to_remote_buffers[cli_id])<=4096:
-            sent = len(self.to_remote_buffers[cli_id])
-            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + self.to_remote_buffers[cli_id]) + bytes(SPLITCHAR, "UTF-8"))
+        if len(self.clientreceivers[cli_id].to_remote_buffer)<=4096:
+            sent = len(self.clientreceivers[cli_id].to_remote_buffer)
+            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + self.clientreceivers[cli_id].to_remote_buffer) + bytes(SPLITCHAR, "UTF-8"))
         else:
-            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + self.to_remote_buffers[cli_id][:4096]) + bytes(SPLITCHAR, "UTF-8"))
+            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + self.clientreceivers[cli_id].to_remote_buffer[:4096]) + bytes(SPLITCHAR, "UTF-8"))
             sent = 4096
         if lastcontents is not None:
             self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + lastcontents + bytes(SPLITCHAR, "UTF-8")))
         self.cipherinstance = self.cipher
         print('%04i to server' % sent)
-        self.to_remote_buffers[cli_id] = self.to_remote_buffers[cli_id][sent:]
+        self.clientreceivers[cli_id].to_remote_buffer = self.clientreceivers[cli_id].to_remote_buffer[sent:]
         
     def remove_clientreceiver(self, cli_id):
         del self.clientreceivers[cli_id]
-        del self.from_remote_buffers[cli_id]
         self.id_write(cli_id, CLOSECHAR)
-        del self.to_remote_buffers[cli_id]
         if len(self.clientreceivers) < MAX_HANDLE:
             self.full = False
     
-    def closeclientreceivers(self):
+    def reallocateclientreceivers(self): #TODO: reallocate
         for cli_id in self.clientreceivers:
-            self.clientreceivers[cli_id].close()
-    
-    def checkwrite(self):
-        writeable = False
-        for cli_id in self.to_remote_buffers:
-            if len(self.to_remote_buffers[cli_id]) > 0:
-                writeable = True
-                break
-        return writeable
+            self.clientreceivers[cli_id].close()  
         

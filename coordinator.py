@@ -88,7 +88,14 @@ class coordinate(object):
                 return None
         return self.pickconn()
 
-    def pickconn(self):
+    def pickconn(self):  #Ugly Selection with low optimization
         for serverconn in self.recvs:
-            pass
-        return self.recvs[0]
+            if not serverconn.full:
+                minimum = serverconn
+                break
+        if minimum is None:
+            return None
+        for serverconn in self.recvs:
+            if len(serverconn.clientreceivers) < len(minimum.clientreceivers) and not serverconn.full:
+                minimum = serverconn
+        return minimum
