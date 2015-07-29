@@ -103,7 +103,7 @@ class serverreceiver(asyncore.dispatcher):
     def add_clientreceiver(self, clientreceiver):
         cli_id = None
         looptime = 0
-        while (cli_id is None) or (self.clientreceivers.has_key(cli_id)):
+        while (cli_id is None) or (cli_id in self.clientreceivers):
             a = list(string.ascii_letters)
             random.shuffle(a)
             cli_id = ''.join(a[:2])
