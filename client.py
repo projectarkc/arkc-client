@@ -28,6 +28,8 @@ class clientreceiver(asyncore.dispatcher):
             self.close()
         else:
             self.idchar = self.sreceiver.add_clientreceiver(self)
+            if self.idchar is None:
+                self.close()
         #replace the buffer in server_receiver
         self.from_remote_buffer = b''
         self.to_remote_buffer = b''

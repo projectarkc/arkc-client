@@ -5,7 +5,6 @@ import string
 
 from Crypto.Cipher import AES
 
-
 #Need to switch to asyncio
 
 SPLITCHAR = chr(30) * 5
@@ -107,19 +106,20 @@ class serverreceiver(asyncore.dispatcher):
         self.reallocateclientreceivers()
         self.close()
     
-    def add_clientreceiver(self, clientreceiver):
+    def add_clientreceiver(self, clientreceiver, cli_id = None):
         if self.full:
             return None
-        cli_id = None
-        while (cli_id is None) or (cli_id in self.clientreceivers):
-            a = list(string.ascii_letters)
-            random.shuffle(a)
-            cli_id = ''.join(a[:2])
+        if cli_id is None:
+            while (cli_id is None) or (cli_id in self.clientreceivers):
+                a = list(string.ascii_letters)
+                random.shuffle(a)
+                cli_id = ''.join(a[:2])
+        else:
+            if cli_id in self.clientreceivers:
+                return None
         self.clientreceivers[cli_id] = clientreceiver
         if len(self.clientreceivers) >= MAX_HANDLE:
             self.full = True
-        self.clientreceivers[cli_id].to_remote_buffer = b''
-        self.clientreceivers[cli_id].from_remote_buffer = b''
         return cli_id
         
     def id_write(self, cli_id, lastcontents = None):
@@ -143,5 +143,10 @@ class serverreceiver(asyncore.dispatcher):
     
     def reallocateclientreceivers(self): #TODO: reallocate
         for cli_id in self.clientreceivers:
-            self.clientreceivers[cli_id].close()  
+            dest = self.ctl.pickconn()
+            if dest is not None:
+                if dest.add_clientreceiver(self.clientreceivers[cli_id].close(), cli_id) is None:
+                    self.clientreceivers[cli_id].close() 
+            else:
+                self.clientreceivers[cli_id].close
         
