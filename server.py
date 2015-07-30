@@ -61,6 +61,7 @@ class serverreceiver(asyncore.dispatcher):
                         cli_id = decryptedtext[:2].decode("UTF-8")
                     except Exception as err:
                         print("decode error")
+                        cli_id = None
                     if cli_id in self.clientreceivers:
                         if decryptedtext[2:] != CLOSECHAR:
                             self.clientreceivers[cli_id].from_remote_buffer += decryptedtext[2:]
@@ -133,7 +134,7 @@ class serverreceiver(asyncore.dispatcher):
         else:
             self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + self.clientreceivers[cli_id].to_remote_buffer[:4096]) + bytes(SPLITCHAR, "UTF-8"))
             sent = 4096
-        if lastcontents:
+        if lastcontents is not None:
             self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + bytes(lastcontents, "UTF-8") + bytes(SPLITCHAR, "UTF-8")))
             sent += len(lastcontents)
         self.cipherinstance = self.cipher
@@ -145,7 +146,6 @@ class serverreceiver(asyncore.dispatcher):
         del self.clientreceivers[cli_id]
         if len(self.clientreceivers) < MAX_HANDLE:
             self.full = False
-
     
     def reallocateclientreceivers(self): #TODO: reallocate
         for cli_id in self.clientreceivers:
