@@ -88,7 +88,7 @@ class serverreceiver(asyncore.dispatcher):
     
     def writable(self):
         able = False
-        for cli_id in self.to_remote_buffers:
+        for cli_id in self.clientreceivers:
             if len(self.clientreceivers[cli_id].to_remote_buffer) > 0:
                 able = True
                 break
@@ -96,7 +96,7 @@ class serverreceiver(asyncore.dispatcher):
 
     def handle_write(self):
         if self.cipherinstance is not None:
-            for cli_id in self.to_remote_buffers:
+            for cli_id in self.clientreceivers:
                 self.id_write(cli_id)
         else:
             self.handle_read()
