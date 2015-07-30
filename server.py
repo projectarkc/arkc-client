@@ -58,7 +58,7 @@ class serverreceiver(asyncore.dispatcher):
                     decryptedtext = self.cipherinstance.decrypt(bytessplit[Index])
                     self.cipherinstance = self.cipher
                     try:
-                        cli_id = decryptedtext[:2].decode("UTF-8")
+                        cli_id = decryptedtext[:2].decode("ASCII")
                     except Exception as err:
                         print("decode error")
                         cli_id = None
