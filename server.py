@@ -5,11 +5,12 @@ import string
 
 from Crypto.Cipher import AES
 
-
 #Need to switch to asyncio
 
 SPLITCHAR = chr(30) * 5
 CLOSECHAR = chr(4) *5
+
+MAX_HANDLE = 100
 
 class servercontrol(asyncore.dispatcher):
 
@@ -35,11 +36,10 @@ class serverreceiver(asyncore.dispatcher):
         self.ctl = ctl
         self.clientreceivers = {}
         asyncore.dispatcher.__init__(self, conn)
-        self.from_remote_buffers = {}
         self.from_remote_buffer_raw = b''
-        self.to_remote_buffers = {}
         self.cipher = None
         self.cipherinstance = None
+        self.full = False
         self.ctl.newconn(self)
 
     def handle_connect(self):
@@ -59,7 +59,7 @@ class serverreceiver(asyncore.dispatcher):
                     self.cipherinstance = self.cipher
                     cli_id = decryptedtext[:2].decode("UTF-8")
                     if decryptedtext[2:] != CLOSECHAR:
-                        self.from_remote_buffers[cli_id] += decryptedtext[2:]
+                        self.clientreceivers[cli_id].from_remote_buffer += decryptedtext[2:]
                         read_count += len(decryptedtext) - 2
                     else:
                         self.clientreceivers[cli_id].close()
@@ -87,7 +87,12 @@ class serverreceiver(asyncore.dispatcher):
                 self.close()
     
     def writable(self):
-        return self.checkwrite()
+        able = False
+        for cli_id in self.to_remote_buffers:
+            if len(self.clientreceivers[cli_id].to_remote_buffer) > 0:
+                able = True
+                break
+        return able
 
     def handle_write(self):
         if self.cipherinstance is not None:
@@ -98,55 +103,51 @@ class serverreceiver(asyncore.dispatcher):
 
     def handle_close(self):
         self.ctl.closeconn()
-        self.closeclientreceivers()
+        self.reallocateclientreceivers()
         self.close()
     
-    def add_clientreceiver(self, clientreceiver):
-        cli_id = None
-        looptime = 0
-        while (cli_id is None) or (cli_id in self.clientreceivers):
-            a = list(string.ascii_letters)
-            random.shuffle(a)
-            cli_id = ''.join(a[:2])
-            if looptime > 100:
-                print("100 times failed generating connection ID")
-                quit()
-                #should label the connection as fully used and break
-            else:
-                looptime += 1
+    def add_clientreceiver(self, clientreceiver, cli_id = None):
+        if self.full:
+            return None
+        if cli_id is None:
+            while (cli_id is None) or (cli_id in self.clientreceivers):
+                a = list(string.ascii_letters)
+                random.shuffle(a)
+                cli_id = ''.join(a[:2])
+        else:
+            if cli_id in self.clientreceivers:
+                return None
         self.clientreceivers[cli_id] = clientreceiver
-        self.to_remote_buffers[cli_id] = b''
-        self.from_remote_buffers[cli_id] = b''
+        if len(self.clientreceivers) >= MAX_HANDLE:
+            self.full = True
         return cli_id
         
     def id_write(self, cli_id, lastcontents = None):
-        if len(self.to_remote_buffers[cli_id])<=4096:
-            sent = len(self.to_remote_buffers[cli_id])
-            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + self.to_remote_buffers[cli_id]) + bytes(SPLITCHAR, "UTF-8"))
+        if len(self.clientreceivers[cli_id].to_remote_buffer)<=4096:
+            sent = len(self.clientreceivers[cli_id].to_remote_buffer)
+            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + self.clientreceivers[cli_id].to_remote_buffer) + bytes(SPLITCHAR, "UTF-8"))
         else:
-            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + self.to_remote_buffers[cli_id][:4096]) + bytes(SPLITCHAR, "UTF-8"))
+            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + self.clientreceivers[cli_id].to_remote_buffer[:4096]) + bytes(SPLITCHAR, "UTF-8"))
             sent = 4096
         if lastcontents:
-            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + lastcontents + bytes(SPLITCHAR, "UTF-8")))
+            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + bytes(lastcontents, "UTF-8") + bytes(SPLITCHAR, "UTF-8")))
         self.cipherinstance = self.cipher
         print('%04i to server' % sent)
-        self.to_remote_buffers[cli_id] = self.to_remote_buffers[cli_id][sent:]
+        self.clientreceivers[cli_id].to_remote_buffer = self.clientreceivers[cli_id].to_remote_buffer[sent:]
         
     def remove_clientreceiver(self, cli_id):
         del self.clientreceivers[cli_id]
-        del self.from_remote_buffers[cli_id]
-        self.id_write(cli_id, bytes(CLOSECHAR, "UTF-8"))
-        del self.to_remote_buffers[cli_id]
+        self.id_write(cli_id, CLOSECHAR)
+        if len(self.clientreceivers) < MAX_HANDLE:
+            self.full = False
+
     
-    def closeclientreceivers(self):
+    def reallocateclientreceivers(self): #TODO: reallocate
         for cli_id in self.clientreceivers:
-            self.clientreceivers[cli_id].close()
-    
-    def checkwrite(self):
-        writeable = False
-        for cli_id in self.to_remote_buffers:
-            if len(self.to_remote_buffers[cli_id]) > 0:
-                writeable = True
-                break
-        return writeable
+            dest = self.ctl.pickconn()
+            if dest is not None:
+                if dest.add_clientreceiver(self.clientreceivers[cli_id].close(), cli_id) is None:
+                    self.clientreceivers[cli_id].close() 
+            else:
+                self.clientreceivers[cli_id].close
         
