@@ -65,9 +65,9 @@ class serverreceiver(asyncore.dispatcher):
                     if cli_id in self.clientreceivers:
                         if decryptedtext[2:] != CLOSECHAR:
                             self.clientreceivers[cli_id].from_remote_buffer += decryptedtext[2:]
-                            read_count += len(decryptedtext) - 2
                         else:
                             self.clientreceivers[cli_id].close()
+                        read_count += len(decryptedtext) - 2
                 else:
                     self.from_remote_buffer_raw = bytessplit[Index]
             print('%04i from server' % read_count)
