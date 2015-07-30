@@ -136,8 +136,8 @@ class serverreceiver(asyncore.dispatcher):
         self.clientreceivers[cli_id].to_remote_buffer = self.clientreceivers[cli_id].to_remote_buffer[sent:]
         
     def remove_clientreceiver(self, cli_id):
-        del self.clientreceivers[cli_id]
         self.id_write(cli_id, CLOSECHAR)
+        del self.clientreceivers[cli_id]
         if len(self.clientreceivers) < MAX_HANDLE:
             self.full = False
 
