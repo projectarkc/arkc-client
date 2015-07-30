@@ -126,7 +126,7 @@ class serverreceiver(asyncore.dispatcher):
         else:
             self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + self.to_remote_buffers[cli_id][:4096]) + bytes(SPLITCHAR, "UTF-8"))
             sent = 4096
-        if lastcontents is not None:
+        if lastcontents:
             self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + lastcontents + bytes(SPLITCHAR, "UTF-8")))
         self.cipherinstance = self.cipher
         print('%04i to server' % sent)
@@ -135,7 +135,7 @@ class serverreceiver(asyncore.dispatcher):
     def remove_clientreceiver(self, cli_id):
         del self.clientreceivers[cli_id]
         del self.from_remote_buffers[cli_id]
-        self.id_write(cli_id, CLOSECHAR)
+        self.id_write(cli_id, bytes(CLOSECHAR, "UTF-8"))
         del self.to_remote_buffers[cli_id]
     
     def closeclientreceivers(self):
