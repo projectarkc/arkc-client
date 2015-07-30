@@ -59,10 +59,7 @@ class serverreceiver(asyncore.dispatcher):
                     self.cipherinstance = self.cipher
                     cli_id = decryptedtext[:2].decode("UTF-8")
                     if decryptedtext[2:] != CLOSECHAR:
-                        if cli_id not in self.from_remote_buffers:
-                            self.from_remote_buffers[cli_id] = decryptedtext[2:]
-                        else:
-                            self.from_remote_buffers[cli_id] += decryptedtext[2:]
+                        self.from_remote_buffers[cli_id] += decryptedtext[2:]
                         read_count += len(decryptedtext) - 2
                     else:
                         self.clientreceivers[cli_id].close()
