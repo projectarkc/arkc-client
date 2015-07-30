@@ -57,12 +57,16 @@ class serverreceiver(asyncore.dispatcher):
                 if Index < len(bytessplit) - 1:
                     decryptedtext = self.cipherinstance.decrypt(bytessplit[Index])
                     self.cipherinstance = self.cipher
-                    cli_id = decryptedtext[:2].decode("UTF-8")
-                    if decryptedtext[2:] != CLOSECHAR:
-                        self.clientreceivers[cli_id].from_remote_buffer += decryptedtext[2:]
-                        read_count += len(decryptedtext) - 2
-                    else:
-                        self.clientreceivers[cli_id].close()
+                    try:
+                        cli_id = decryptedtext[:2].decode("UTF-8")
+                    except Exception as err:
+                        print("decode error")
+                    if cli_id in self.clientreceivers:
+                        if decryptedtext[2:] != CLOSECHAR:
+                            self.clientreceivers[cli_id].from_remote_buffer += decryptedtext[2:]
+                            read_count += len(decryptedtext) - 2
+                        else:
+                            self.clientreceivers[cli_id].close()
                 else:
                     self.from_remote_buffer_raw = bytessplit[Index]
             print('%04i from server' % read_count)
@@ -131,6 +135,7 @@ class serverreceiver(asyncore.dispatcher):
             sent = 4096
         if lastcontents:
             self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + bytes(lastcontents, "UTF-8") + bytes(SPLITCHAR, "UTF-8")))
+            sent += len(lastcontents)
         self.cipherinstance = self.cipher
         print('%04i to server' % sent)
         self.clientreceivers[cli_id].to_remote_buffer = self.clientreceivers[cli_id].to_remote_buffer[sent:]
