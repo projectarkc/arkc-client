@@ -49,7 +49,7 @@ class clientreceiver(asyncore.dispatcher):
         if not self.sreceiver.connected:
             self.close()
             return
-        sent = self.send(self.sreceiver.from_remote_buffers[self.idchar])
+        sent = self.send(self.from_remote_buffer)
         print('%04i to client' % sent)
         self.from_remote_buffer = self.from_remote_buffer[sent:]
 
