@@ -63,7 +63,7 @@ class serverreceiver(asyncore.dispatcher):
                         print("decode error")
                         cli_id = None
                     if cli_id in self.clientreceivers:
-                        if decryptedtext[2:] != CLOSECHAR:
+                        if decryptedtext[2:] != bytes(CLOSECHAR, "ASCII"):
                             self.clientreceivers[cli_id].from_remote_buffer += decryptedtext[2:]
                         else:
                             self.clientreceivers[cli_id].close()
