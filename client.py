@@ -1,9 +1,11 @@
 import socket
 import asyncore
 
-#Need to switch to asyncio
+# Need to switch to asyncio
 
 class clientcontrol(asyncore.dispatcher):
+    
+    """ a standard client service dispatcher """
 
     def __init__(self, scontrol, clientip, clientport, backlog=5):
         self.scontrol = scontrol
@@ -30,7 +32,7 @@ class clientreceiver(asyncore.dispatcher):
             self.idchar = self.sreceiver.add_clientreceiver(self)
             if self.idchar is None:
                 self.close()
-        #replace the buffer in server_receiver
+        # replace the buffer in server_receiver
         self.from_remote_buffer = b''
         self.to_remote_buffer = b''
 

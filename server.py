@@ -5,10 +5,10 @@ import string
 
 from common import AESCipher
 
-#Need to switch to asyncio
+# Need to switch to asyncio
 
 SPLITCHAR = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
-CLOSECHAR = chr(4) *5
+CLOSECHAR = chr(4) * 5
 
 MAX_HANDLE = 100
 
@@ -45,13 +45,14 @@ class serverreceiver(asyncore.dispatcher):
         pass
 
     def handle_read(self):
+        # Handle received data
         if self.cipher == None:
             self.begin_auth()
         else:
             read_count = 0
             self.from_remote_buffer_raw += self.recv(8192)
             bytessplit = self.from_remote_buffer_raw.split(bytes(SPLITCHAR, "UTF-8"))
-            #TODO: Use Async
+            # TODO: Use Async
             for Index in range(len(bytessplit)):
                 if Index < len(bytessplit) - 1:
                     decryptedtext = self.cipher.decrypt(bytessplit[Index])
@@ -71,6 +72,7 @@ class serverreceiver(asyncore.dispatcher):
             print('%04i from server' % read_count)
 
     def begin_auth(self):
+        # Deal with the beginning authentication
         read = b''
         try:
                 read += self.recv(768)
@@ -89,14 +91,13 @@ class serverreceiver(asyncore.dispatcher):
                 self.close()
     
     def writable(self):
-        able = False
         for cli_id in self.clientreceivers:
             if len(self.clientreceivers[cli_id].to_remote_buffer) > 0:
-                able = True
-                break
-        return able
+                return True
+        return False
 
     def handle_write(self):
+        # Called when writable
         if self.cipher is not None:
             for cli_id in self.clientreceivers:
                 if self.clientreceivers[cli_id].to_remote_buffer:
@@ -109,7 +110,8 @@ class serverreceiver(asyncore.dispatcher):
         self.reallocateclientreceivers()
         self.close()
     
-    def add_clientreceiver(self, clientreceiver, cli_id = None):
+    def add_clientreceiver(self, clientreceiver, cli_id=None):
+        # Called to add a client receiver
         if self.full:
             return None
         if cli_id is None:
@@ -125,8 +127,9 @@ class serverreceiver(asyncore.dispatcher):
             self.full = True
         return cli_id
         
-    def id_write(self, cli_id, lastcontents = None):
-        if len(self.clientreceivers[cli_id].to_remote_buffer)<=4096:
+    def id_write(self, cli_id, lastcontents=None):
+        # Write to a certain cli_id. Lastcontents is used for CLOSECHAR
+        if len(self.clientreceivers[cli_id].to_remote_buffer) <= 4096:
             sent = len(self.clientreceivers[cli_id].to_remote_buffer)
             self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + self.clientreceivers[cli_id].to_remote_buffer) + bytes(SPLITCHAR, "UTF-8"))
         else:
@@ -139,18 +142,21 @@ class serverreceiver(asyncore.dispatcher):
         self.clientreceivers[cli_id].to_remote_buffer = self.clientreceivers[cli_id].to_remote_buffer[sent:]
         
     def remove_clientreceiver(self, cli_id):
+        # Called when a client conn is closed
         self.id_write(cli_id, CLOSECHAR)
         del self.clientreceivers[cli_id]
         if len(self.clientreceivers) < MAX_HANDLE:
             self.full = False
     
     def reallocateclientreceivers(self):
+        # Called when server conn is closing, try to make sure that everything goes smoothly
         self.full = True
         for cli_id in self.clientreceivers:
             dest = self.ctl.pickconn()
             if dest is not None:
                 if dest.add_clientreceiver(self.clientreceivers[cli_id].close(), cli_id) is None:
                     self.clientreceivers[cli_id].close() 
+                else: self.clientreceivers[cli_id].sreceiver = dest
             else:
                 self.clientreceivers[cli_id].close
         
