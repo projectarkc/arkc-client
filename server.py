@@ -5,6 +5,26 @@ import string
 
 from Crypto.Cipher import AES
 
+
+class AESCipher:
+    """A reusable wrapper of PyCrypto's AES cipher, i.e. resets every time."""
+
+    def __init__(self, password, iv):
+        self.password = password
+        self.iv = iv
+        self.cipher = AES.new(self.password, AES.MODE_CFB, self.iv)
+
+    def encrypt(self, data):
+        enc = self.cipher.encrypt(data)
+        self.cipher = AES.new(self.password, AES.MODE_CFB, self.iv)
+        return enc
+
+    def decrypt(self, data):
+        dec = self.cipher.decrypt(data)
+        self.cipher = AES.new(self.password, AES.MODE_CFB, self.iv)
+        return dec
+
+
 #Need to switch to asyncio
 
 SPLITCHAR = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
@@ -38,7 +58,6 @@ class serverreceiver(asyncore.dispatcher):
         asyncore.dispatcher.__init__(self, conn)
         self.from_remote_buffer_raw = b''
         self.cipher = None
-        self.cipherinstance = None
         self.full = False
         self.ctl.newconn(self)
 
@@ -55,8 +74,7 @@ class serverreceiver(asyncore.dispatcher):
             #TODO: Use Async
             for Index in range(len(bytessplit)):
                 if Index < len(bytessplit) - 1:
-                    decryptedtext = self.cipherinstance.decrypt(bytessplit[Index])
-                    self.cipherinstance = self.cipher
+                    decryptedtext = self.cipher.decrypt(bytessplit[Index])
                     try:
                         cli_id = decryptedtext[:2].decode("ASCII")
                     except Exception as err:
@@ -84,8 +102,7 @@ class serverreceiver(asyncore.dispatcher):
                         self.ctl.closeconn()
                         self.close()
                     else:
-                        self.cipher = AES.new(self.ctl.localcert.decrypt(read[-256:]), AES.MODE_CFB, bytes(self.ctl.str, "UTF-8"))
-                        self.cipherinstance = self.cipher
+                        self.cipher = AESCipher(self.ctl.localcert.decrypt(read[-256:]), bytes(self.ctl.str, "UTF-8"))
         except Exception as err:
                 print("Authentication failed, socket closing")
                 self.ctl.closeconn()
@@ -100,7 +117,7 @@ class serverreceiver(asyncore.dispatcher):
         return able
 
     def handle_write(self):
-        if self.cipherinstance is not None:
+        if self.cipher is not None:
             for cli_id in self.clientreceivers:
                 if self.clientreceivers[cli_id].to_remote_buffer:
                     self.id_write(cli_id)
@@ -131,15 +148,13 @@ class serverreceiver(asyncore.dispatcher):
     def id_write(self, cli_id, lastcontents = None):
         if len(self.clientreceivers[cli_id].to_remote_buffer)<=4096:
             sent = len(self.clientreceivers[cli_id].to_remote_buffer)
-            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + self.clientreceivers[cli_id].to_remote_buffer) + bytes(SPLITCHAR, "UTF-8"))
+            self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + self.clientreceivers[cli_id].to_remote_buffer) + bytes(SPLITCHAR, "UTF-8"))
         else:
-            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + self.clientreceivers[cli_id].to_remote_buffer[:4096]) + bytes(SPLITCHAR, "UTF-8"))
+            self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + self.clientreceivers[cli_id].to_remote_buffer[:4096]) + bytes(SPLITCHAR, "UTF-8"))
             sent = 4096
-        self.cipherinstance = self.cipher
         if lastcontents is not None:
-            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + bytes(lastcontents, "UTF-8")) + bytes(SPLITCHAR, "UTF-8"))
+            self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + bytes(lastcontents, "UTF-8")) + bytes(SPLITCHAR, "UTF-8"))
             sent += len(lastcontents)
-        self.cipherinstance = self.cipher
         print('%04i to server' % sent)
         self.clientreceivers[cli_id].to_remote_buffer = self.clientreceivers[cli_id].to_remote_buffer[sent:]
         
