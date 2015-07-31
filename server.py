@@ -7,7 +7,7 @@ from Crypto.Cipher import AES
 
 #Need to switch to asyncio
 
-SPLITCHAR = chr(30) * 5
+SPLITCHAR = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
 CLOSECHAR = chr(4) *5
 
 MAX_HANDLE = 100
