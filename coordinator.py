@@ -93,6 +93,7 @@ class coordinate(object):
 
     def pickconn(self):  # Ugly Selection with low optimization
         #Decide which conn is the best to give out
+        minimum = None
         for serverconn in self.recvs:
             if not serverconn.full:
                 minimum = serverconn

@@ -38,7 +38,7 @@ class serverreceiver(asyncore.dispatcher):
         asyncore.dispatcher.__init__(self, conn)
         self.from_remote_buffer_raw = b''
         self.cipher = None
-        self.full = False
+        self.full = True
         self.ctl.newconn(self)
 
     def handle_connect(self):
@@ -85,15 +85,21 @@ class serverreceiver(asyncore.dispatcher):
                         self.close()
                     else:
                         self.cipher = AESCipher(self.ctl.localcert.decrypt(read[-256:]), bytes(self.ctl.str, "UTF-8"))
+                        self.full = False
         except Exception as err:
                 print("Authentication failed, socket closing")
                 self.ctl.closeconn()
                 self.close()
     
     def writable(self):
-        for cli_id in self.clientreceivers:
-            if len(self.clientreceivers[cli_id].to_remote_buffer) > 0:
-                return True
+        try:
+            for cli_id in self.clientreceivers:
+                if len(self.clientreceivers[cli_id].to_remote_buffer) > 0:
+                    return True
+        except Exception as err:
+            print(err)
+            print(self.clientreceivers[cli_id])
+            print(self.clientreceivers)
         return False
 
     def handle_write(self):
@@ -143,7 +149,8 @@ class serverreceiver(asyncore.dispatcher):
         
     def remove_clientreceiver(self, cli_id):
         # Called when a client conn is closed
-        self.id_write(cli_id, CLOSECHAR)
+        if self.cipher is not None:
+            self.id_write(cli_id, CLOSECHAR)
         del self.clientreceivers[cli_id]
         if len(self.clientreceivers) < MAX_HANDLE:
             self.full = False
@@ -154,9 +161,11 @@ class serverreceiver(asyncore.dispatcher):
         for cli_id in self.clientreceivers:
             dest = self.ctl.pickconn()
             if dest is not None:
-                if dest.add_clientreceiver(self.clientreceivers[cli_id].close(), cli_id) is None:
+                if dest.add_clientreceiver(self.clientreceivers[cli_id], cli_id) is None:
+                    self.clientreceivers[cli_id].sreceiver = None
                     self.clientreceivers[cli_id].close() 
                 else: self.clientreceivers[cli_id].sreceiver = dest
             else:
+                self.clientreceivers[cli_id].sreceiver = None
                 self.clientreceivers[cli_id].close
         
