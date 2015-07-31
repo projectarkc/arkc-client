@@ -51,7 +51,7 @@ class coordinate(object):
             self.check.wait() #Start the request when the client needs connections
             requestdata = self.generatereq()    
             self.udpsock.sendto(requestdata, self.addr)
-            sleep(0.01)
+            sleep(0.1)
             
     def generatereq(self):
         #Generate strings for authentication
