@@ -102,7 +102,8 @@ class serverreceiver(asyncore.dispatcher):
     def handle_write(self):
         if self.cipherinstance is not None:
             for cli_id in self.clientreceivers:
-                self.id_write(cli_id)
+                if self.clientreceivers[cli_id].to_remote_buffer:
+                    self.id_write(cli_id)
         else:
             self.handle_read()
 
@@ -134,8 +135,9 @@ class serverreceiver(asyncore.dispatcher):
         else:
             self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + self.clientreceivers[cli_id].to_remote_buffer[:4096]) + bytes(SPLITCHAR, "UTF-8"))
             sent = 4096
+        self.cipherinstance = self.cipher
         if lastcontents is not None:
-            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + bytes(lastcontents, "UTF-8") + bytes(SPLITCHAR, "UTF-8")))
+            self.send(self.cipherinstance.encrypt(bytes(cli_id, "UTF-8") + bytes(lastcontents, "UTF-8")) + bytes(SPLITCHAR, "UTF-8"))
             sent += len(lastcontents)
         self.cipherinstance = self.cipher
         print('%04i to server' % sent)
