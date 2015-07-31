@@ -3,27 +3,7 @@ import asyncore
 import random
 import string
 
-from Crypto.Cipher import AES
-
-
-class AESCipher:
-    """A reusable wrapper of PyCrypto's AES cipher, i.e. resets every time."""
-
-    def __init__(self, password, iv):
-        self.password = password
-        self.iv = iv
-        self.cipher = AES.new(self.password, AES.MODE_CFB, self.iv)
-
-    def encrypt(self, data):
-        enc = self.cipher.encrypt(data)
-        self.cipher = AES.new(self.password, AES.MODE_CFB, self.iv)
-        return enc
-
-    def decrypt(self, data):
-        dec = self.cipher.decrypt(data)
-        self.cipher = AES.new(self.password, AES.MODE_CFB, self.iv)
-        return dec
-
+from common import AESCipher
 
 #Need to switch to asyncio
 
@@ -164,7 +144,8 @@ class serverreceiver(asyncore.dispatcher):
         if len(self.clientreceivers) < MAX_HANDLE:
             self.full = False
     
-    def reallocateclientreceivers(self): #TODO: reallocate
+    def reallocateclientreceivers(self):
+        self.full = True
         for cli_id in self.clientreceivers:
             dest = self.ctl.pickconn()
             if dest is not None:
