@@ -17,8 +17,7 @@ class coordinate(object):
         self.required = required
         
         self.recvs = []  # For serverreceivers
-        # TODO: make the following string more random
-        self.str = ''.join(map(lambda xx:(hex(ord(xx))[2:]),os.urandom(16)))
+        self.str = ''.join(os.urandom(16))
         self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.addr = (ctlip, ctlport_remote)
         self.check = threading.Event()
@@ -62,7 +61,7 @@ class coordinate(object):
             server_pub(main_pw)
             Total length is 16 + 2 + 4 + 40 + 512 + 256 = 830 bytes
         """
-        salt = ''.join(map(lambda xx:(hex(ord(xx))[2:]),os.urandom(16)))
+        salt = ''.join(os.urandom(16))
         saltstr = ''.join(salt)
         required_hex = "%X" % min((self.required - self.available + self.count), 255)
         sign_hex = '%X' % self.localcert.sign(bytes(saltstr, "UTF-8"), None)[0]
