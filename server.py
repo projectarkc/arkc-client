@@ -39,7 +39,7 @@ class serverreceiver(asyncore.dispatcher):
         self.from_remote_buffer_raw = b''
         self.cipher = None
         self.full = True
-        self.ctl.newconn(self)
+        self.no_data_count = 0
 
     def handle_connect(self):
         pass
@@ -81,14 +81,18 @@ class serverreceiver(asyncore.dispatcher):
                     blank = read[:512]
                     if not self.ctl.remotepub.verify(bytes(self.ctl.str, "UTF-8"), (int(blank, 16), None)):
                         print("Authentication failed, socket closing")
-                        self.ctl.closeconn()
                         self.close()
                     else:
                         self.cipher = AESCipher(self.ctl.localcert.decrypt(read[-256:]), bytes(self.ctl.str, "UTF-8"))
                         self.full = False
+                        self.ctl.newconn(self)
+                else:
+                    if len(read) == 0:
+                        self.no_data_count += 1
+                    if self.no_data_count >= 10:
+                        self.close()
         except Exception as err:
                 print("Authentication failed, socket closing")
-                self.ctl.closeconn()
                 self.close()
     
     def writable(self):
