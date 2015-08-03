@@ -80,11 +80,7 @@ if __name__ == '__main__':
     
     # Start the main event loop
     try:
-        clientcontrol(
-            servercontrol(
-                options.remote_host,
-                options.remote_port,
-                coordinate(
+        ctl = coordinate(
                     options.remote_control_host,
                     options.remote_control_port,
                     localcert,
@@ -93,7 +89,13 @@ if __name__ == '__main__':
                     options.number,
                     options.remote_port
                     )
-                ),
+        sctl = servercontrol(
+                options.remote_host,
+                options.remote_port,
+                ctl
+                )
+        cctl = clientcontrol(
+            ctl,
             options.local_host,
             options.local_port
             )

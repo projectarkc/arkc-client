@@ -2,7 +2,11 @@ import socket
 import threading
 import logging
 import os
+import random
+import string
 from time import sleep
+
+CLOSECHAR = chr(4) * 5
 
 class coordinate(object):
 
@@ -15,6 +19,8 @@ class coordinate(object):
         self.localcert = localcert
         self.authdata = localpub
         self.required = required
+        self.clientreceivers = {}
+        self.ready = None
         
         self.recvs = []  # For serverreceivers
         self.str = ''.join(os.urandom(16))
@@ -30,6 +36,7 @@ class coordinate(object):
         self.available += 1
         self.count += 1
         self.recvs.append(recv)
+        self.ready = recv
         if self.available + 2 >= self.required:
             self.check.clear()
         logging.info("Available socket %d" % self.available)
@@ -80,31 +87,24 @@ class coordinate(object):
 
     def issufficient(self):
         return self.available >= self.required
-
-    def offerconn(self):
-        # Called to request connections in a standard model
-        if self.available <= 0:
-            sleep(0.5)
-            if self.available <= 0:
-                return None
-        return self.pickconn()
-
-    def pickconn(self):  # Ugly Selection with low optimization
-        # Decide which conn is the best to give out
-        minimum = None
-        for serverconn in self.recvs:
-            if not serverconn.full:
-                minimum = serverconn
-                break
-        if minimum is None:
-            return None
-        for serverconn in self.recvs:
-            if len(serverconn.clientreceivers) < len(minimum.clientreceivers) and not serverconn.full:
-                minimum = serverconn
-        return minimum
     
-    def checkavailable(self, ctl_id):
+    def refreshconn(self):
         for serverconn in self.recvs:
-            if ctl_id in serverconn.clientreceivers:
-                return False
-        return True
+            if len(serverconn.to_remote_buffer) <= self.ready.to_remote_buffer:
+                self.ready = serverconn
+    
+    def register(self, clirecv):
+        cli_id = None
+        if self.available == 0:
+            return None
+        while (cli_id is None) or not (cli_id in self.clientreceivers):
+            a = list(string.ascii_letters)
+            random.shuffle(a)
+            cli_id = ''.join(a[:2])
+        self.clientreceivers[cli_id] = clirecv
+        return cli_id
+    
+    def remove(self, cli_id):
+        if self.available >0:
+            self.ready.id_write(cli_id, CLOSECHAR)
+        del self.clientreceivers[cli_id]
