@@ -108,3 +108,9 @@ class coordinate(object):
             if len(serverconn.clientreceivers) < len(minimum.clientreceivers) and not serverconn.full:
                 minimum = serverconn
         return minimum
+    
+    def checkavailable(self, ctl_id):
+        for serverconn in self.recvs:
+            if ctl_id in serverconn.clientreceivers:
+                return False
+        return True

@@ -125,7 +125,7 @@ class serverreceiver(asyncore.dispatcher):
         if self.full:
             return None
         if cli_id is None:
-            while (cli_id is None) or (cli_id in self.clientreceivers):
+            while (cli_id is None) or not (self.ctl.checkavailable(cli_id)):
                 a = list(string.ascii_letters)
                 random.shuffle(a)
                 cli_id = ''.join(a[:2])
