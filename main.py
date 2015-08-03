@@ -90,7 +90,8 @@ if __name__ == '__main__':
                     localcert,
                     remotecert,
                     localpub,
-                    options.number
+                    options.number,
+                    options.remote_port
                     )
                 ),
             options.local_host,
