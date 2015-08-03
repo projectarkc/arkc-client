@@ -2,6 +2,7 @@ import socket
 import asyncore
 import random
 import string
+import logging
 
 from common import AESCipher
 
@@ -24,7 +25,7 @@ class servercontrol(asyncore.dispatcher):
 
     def handle_accept(self):
         conn, addr = self.accept()
-        print('Serv_recv_Accept from %s' % str(addr))
+        logging.info('Serv_recv_Accept from %s' % str(addr))
         serverreceiver(conn, self.ctl)
         
     def getrecv(self):
@@ -59,7 +60,7 @@ class serverreceiver(asyncore.dispatcher):
                     try:
                         cli_id = decryptedtext[:2].decode("ASCII")
                     except Exception as err:
-                        print("decode error")
+                        logging.warning("decode error")
                         cli_id = None
                     if cli_id in self.clientreceivers:
                         if decryptedtext[2:] != bytes(CLOSECHAR, "ASCII"):
@@ -69,7 +70,7 @@ class serverreceiver(asyncore.dispatcher):
                         read_count += len(decryptedtext) - 2
                 else:
                     self.from_remote_buffer_raw = bytessplit[Index]
-            print('%04i from server' % read_count)
+            logging.info('%04i from server' % read_count)
 
     def begin_auth(self):
         # Deal with the beginning authentication
@@ -80,7 +81,7 @@ class serverreceiver(asyncore.dispatcher):
                     read = read[:768]
                     blank = read[:512]
                     if not self.ctl.remotepub.verify(bytes(self.ctl.str, "UTF-8"), (int(blank, 16), None)):
-                        print("Authentication failed, socket closing")
+                        logging.warning("Authentication failed, socket closing")
                         self.close()
                     else:
                         self.cipher = AESCipher(self.ctl.localcert.decrypt(read[-256:]), bytes(self.ctl.str, "UTF-8"))
@@ -92,18 +93,17 @@ class serverreceiver(asyncore.dispatcher):
                     if self.no_data_count >= 10:
                         self.close()
         except Exception as err:
-                print("Authentication failed, socket closing")
+                logging.warning("Authentication failed, socket closing")
                 self.close()
     
     def writable(self):
-        try:
-            for cli_id in self.clientreceivers:
+        for cli_id in self.clientreceivers:
+            if self.clientreceivers[cli_id] is None:
+                logging.warning("Client receiver %s NoneType error" % cli_id)
+                del self.clientreceivers[cli_id]
+            else:
                 if len(self.clientreceivers[cli_id].to_remote_buffer) > 0:
                     return True
-        except Exception as err:
-            print(err)
-            print(self.clientreceivers[cli_id])
-            print(self.clientreceivers)
         return False
 
     def handle_write(self):
@@ -148,7 +148,7 @@ class serverreceiver(asyncore.dispatcher):
         if lastcontents is not None:
             self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + bytes(lastcontents, "UTF-8")) + bytes(SPLITCHAR, "UTF-8"))
             sent += len(lastcontents)
-        print('%04i to server' % sent)
+        logging.info('%04i to server' % sent)
         self.clientreceivers[cli_id].to_remote_buffer = self.clientreceivers[cli_id].to_remote_buffer[sent:]
         
     def remove_clientreceiver(self, cli_id):

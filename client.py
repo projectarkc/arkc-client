@@ -1,4 +1,5 @@
 import socket
+import logging
 import asyncore
 
 # Need to switch to asyncio
@@ -17,7 +18,7 @@ class clientcontrol(asyncore.dispatcher):
 
     def handle_accept(self):
         conn, addr = self.accept()
-        print('Client_recv_Accept from %s' % str(addr))
+        logging.info('Client_recv_Accept from %s' % str(addr))
         clientreceiver(conn, self.scontrol)
 
 class clientreceiver(asyncore.dispatcher):
@@ -26,7 +27,7 @@ class clientreceiver(asyncore.dispatcher):
         asyncore.dispatcher.__init__(self, conn)
         self.sreceiver = scontrol.getrecv()
         if self.sreceiver == None:
-            print("No available socket from server. Closing this socket.")
+            logging.warning("No available socket from server. Closing socket")
             self.close()
         else:
             self.idchar = self.sreceiver.add_clientreceiver(self)
@@ -41,7 +42,7 @@ class clientreceiver(asyncore.dispatcher):
 
     def handle_read(self):
         read = self.recv(4096)
-        print('%04i from client' % len(read))
+        logging.info('%04i from client' % len(read))
         self.to_remote_buffer += read
 
     def writable(self):
@@ -52,7 +53,7 @@ class clientreceiver(asyncore.dispatcher):
             self.close()
             return
         sent = self.send(self.from_remote_buffer)
-        print('%04i to client' % sent)
+        logging.info('%04i to client' % sent)
         self.from_remote_buffer = self.from_remote_buffer[sent:]
 
     def handle_close(self):

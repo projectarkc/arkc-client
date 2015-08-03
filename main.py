@@ -5,6 +5,7 @@
 
 import asyncore
 import argparse
+import logging
 
 from common import certloader
 from coordinator import coordinate
@@ -28,6 +29,7 @@ if __name__ == '__main__':
     try:
         # TODO: Help strings
         # Load arguments
+        parser.add_argument("-v", action="store_true", help="show detailed logs")
         parser.add_argument('-lh', '--local-host', dest="local_host", default=DEFAULT_LOCAL_HOST)
         parser.add_argument('-lp', '--local-port', dest="local_port", type=int, default=DEFAULT_LOCAL_PORT)
         parser.add_argument('-rh', '--remote-host', dest="remote_host", default=DEFAULT_REMOTE_HOST)
@@ -69,6 +71,9 @@ if __name__ == '__main__':
             print ("Fatal error while calculating SHA1 digest.")
             print (err)
             quit()
+            
+        if options.v:
+            logging.basicConfig(level=logging.INFO)
             
     except Exception as e:
         print (e)

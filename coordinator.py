@@ -2,6 +2,7 @@ import socket
 import threading
 import random
 import string
+import logging
 from time import sleep
 
 class coordinate(object):
@@ -35,7 +36,7 @@ class coordinate(object):
         self.recvs.append(recv)
         if self.available + 2 >= self.required:
             self.check.clear()
-        print("Available socket %d" % self.available)
+        logging.info("Available socket %d" % self.available)
             
     def closeconn(self):
         #Called when a connection is closed
@@ -43,7 +44,7 @@ class coordinate(object):
         self.available -= 1
         if not self.issufficient():
             self.check.set()
-        print("Available socket %d" % self.available)
+        logging.info("Available socket %d" % self.available)
 
     def reqconn(self):
         #Sending UDP requests
