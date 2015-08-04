@@ -19,6 +19,7 @@ class coordinate(object):
         self.localcert = localcert
         self.authdata = localpub
         self.required = required
+        self.remote_port = remote_port
         self.clientreceivers = {}
         self.ready = None
         
