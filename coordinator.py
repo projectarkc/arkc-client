@@ -77,12 +77,12 @@ class coordinate(object):
         if len(sign_hex) == 510:
             sign_hex = '0' + sign_hex
         remote_port_hex = '0' * (4 - len(remote_port_hex)) + remote_port_hex
-        return  salt
-                + bytes(required_hex, "UTF-8")
-                + bytes(remote_port_hex, "UTF-8")
-                + bytes(self.authdata, "UTF-8")
-                + bytes(sign_hex, "UTF-8")
-                + self.remotepub.encrypt(bytes(self.str, "UTF-8"), None)[0])  # TODO: Replay attack?
+        return  salt + \
+                bytes(required_hex, "UTF-8") + \
+                bytes(remote_port_hex, "UTF-8") + \
+                bytes(self.authdata, "UTF-8") + \
+                bytes(sign_hex, "UTF-8") + \
+                self.remotepub.encrypt(bytes(self.str, "UTF-8"), None)[0]  # TODO: Replay attack?
 
     def issufficient(self):
         return self.available >= self.required
