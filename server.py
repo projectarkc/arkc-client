@@ -77,11 +77,11 @@ class serverreceiver(asyncore.dispatcher):
                 if len(read) >= 768:
                     read = read[:768]
                     blank = read[:512]
-                    if not self.ctl.remotepub.verify(bytes(self.ctl.str, "UTF-8"), (int(blank, 16), None)):
+                    if not self.ctl.remotepub.verify(self.ctl.str, (int(blank, 16), None)):
                         logging.warning("Authentication failed, socket closing")
                         self.close()
                     else:
-                        self.cipher = AESCipher(self.ctl.localcert.decrypt(read[-256:]), bytes(self.ctl.str, "UTF-8"))
+                        self.cipher = AESCipher(self.ctl.localcert.decrypt(read[-256:]), self.ctl.str)
                         self.full = False
                         self.ctl.newconn(self)
                 else:
