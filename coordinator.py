@@ -69,16 +69,15 @@ class coordinate(object):
             Total length is 16 + 2 + 4 + 40 + 512 + 256 = 830 bytes
         """
         salt = os.urandom(16)
-        saltstr = ''.join(salt)
         required_hex = "%X" % min((self.required - self.available + self.count), 255)
-        sign_hex = '%X' % self.localcert.sign(bytes(saltstr, "UTF-8"), None)[0]
+        sign_hex = '%X' % self.localcert.sign(salt, None)[0]
         remote_port_hex = '%X' % self.remote_port
         if len(required_hex) == 1:
             required_hex = '0' + required_hex
         if len(sign_hex) == 510:
             sign_hex = '0' + sign_hex
         remote_port_hex = '0' * (4 - len(remote_port_hex)) + remote_port_hex
-        return  (bytes(saltstr, "UTF-8")
+        return  salt
                 + bytes(required_hex, "UTF-8")
                 + bytes(remote_port_hex, "UTF-8")
                 + bytes(self.authdata, "UTF-8")
