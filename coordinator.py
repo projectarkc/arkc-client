@@ -83,7 +83,7 @@ class coordinate(object):
                 bytes(remote_port_hex, "UTF-8") + \
                 bytes(self.authdata, "UTF-8") + \
                 bytes(sign_hex, "UTF-8") + \
-                self.remotepub.encrypt(bytes(self.str, "UTF-8"), None)[0]  # TODO: Replay attack?
+                self.remotepub.encrypt(self.str, None)[0]  # TODO: Replay attack?
 
     def issufficient(self):
         return self.available >= self.required
