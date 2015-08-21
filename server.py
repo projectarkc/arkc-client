@@ -37,7 +37,9 @@ class serverreceiver(asyncore.dispatcher):
         self.from_remote_buffer_raw = b''
         self.cipher = None
         self.preferred = False
+        self.closing = False
         self.no_data_count = 0
+        self.begin_auth()
 
     def handle_connect(self):
         pass
@@ -121,6 +123,7 @@ class serverreceiver(asyncore.dispatcher):
             self.handle_read()
 
     def handle_close(self):
+        self.closing = True
         self.ctl.closeconn()
         self.close()        
         

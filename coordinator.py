@@ -49,6 +49,13 @@ class coordinate(object):
         # Called when a connection is closed
         self.count -= 1
         self.available -= 1
+        if self.ready.closing:
+            if self.count > 0:
+                self.ready = self.recvs[0]
+                self.recvs[0].preferred = True
+                self.refreshconn()
+            else:
+                self.ready = None
         if not self.issufficient():
             self.check.set()
         logging.info("Available socket %d" % self.available)
@@ -92,7 +99,6 @@ class coordinate(object):
         return self.available >= self.required
     
     def refreshconn(self):
-        
         for serverconn in self.recvs:
             if len(serverconn.to_remote_buffer) <= self.ready.to_remote_buffer:
                 self.ready.preferred = False
