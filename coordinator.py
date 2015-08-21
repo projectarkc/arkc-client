@@ -37,7 +37,10 @@ class coordinate(object):
         self.available += 1
         self.count += 1
         self.recvs.append(recv)
-        self.ready = recv
+        if self.ready is None:
+            self.ready = recv
+            recv.preferred = True
+        self.refreshconn()
         if self.available + 2 >= self.required:
             self.check.clear()
         logging.info("Available socket %d" % self.available)
@@ -89,9 +92,12 @@ class coordinate(object):
         return self.available >= self.required
     
     def refreshconn(self):
+        
         for serverconn in self.recvs:
             if len(serverconn.to_remote_buffer) <= self.ready.to_remote_buffer:
+                self.ready.preferred = False
                 self.ready = serverconn
+                serverconn.preferred = True
     
     def register(self, clirecv):
         cli_id = None
