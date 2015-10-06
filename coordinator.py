@@ -112,7 +112,7 @@ class coordinate(object):
         cli_id = None
         if self.available == 0:
             return None
-        while (cli_id is None) or not (cli_id in self.clientreceivers):
+        while (cli_id is None) or (cli_id in self.clientreceivers):
             a = list(string.ascii_letters)
             random.shuffle(a)
             cli_id = ''.join(a[:2])

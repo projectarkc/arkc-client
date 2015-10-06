@@ -4,6 +4,7 @@ import logging
 import time
 
 from common import AESCipher
+from _io import BlockingIOError
 
 # Need to switch to asyncio
 
@@ -95,10 +96,11 @@ class serverreceiver(asyncore.dispatcher):
                     self.no_data_count += 1
                     #if self.no_data_count >= 10:
                     #    self.close()
-        except Exception as err:
+        except BlockingIOError as err:
             pass
-                #logging.warning("Authentication failed, due to error, socket closing")
-                #self.close()
+        except Exception as err:
+            logging.warning("Authentication failed, due to error, socket closing")
+            self.close()
             
     def writable(self):
         if self.preferred:
