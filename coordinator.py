@@ -30,6 +30,7 @@ class coordinate(object):
         self.check = threading.Event()
         self.check.set()
         req = threading.Thread(target=self.reqconn)
+        req.setDaemon(True)
         req.start()
 
     def newconn(self, recv):
@@ -49,13 +50,14 @@ class coordinate(object):
         # Called when a connection is closed
         self.count -= 1
         self.available -= 1
-        if self.ready.closing:
-            if self.count > 0:
-                self.ready = self.recvs[0]
-                self.recvs[0].preferred = True
-                self.refreshconn()
-            else:
-                self.ready = None
+        if self.ready is not None:
+            if self.ready.closing:
+                if self.count > 0:
+                    self.ready = self.recvs[0]
+                    self.recvs[0].preferred = True
+                    self.refreshconn()
+                else:
+                    self.ready = None
         if not self.issufficient():
             self.check.set()
         logging.info("Available socket %d" % self.available)
@@ -64,7 +66,8 @@ class coordinate(object):
         # Sending UDP requests
         while True:
             self.check.wait()  # Start the request when the client needs connections
-            requestdata = self.generatereq()    
+            requestdata = self.generatereq()
+            #print(len(requestdata))    
             self.udpsock.sendto(requestdata, self.addr)
             sleep(0.1)
             
@@ -100,7 +103,7 @@ class coordinate(object):
     
     def refreshconn(self):
         for serverconn in self.recvs:
-            if len(serverconn.to_remote_buffer) <= self.ready.to_remote_buffer:
+            if len(serverconn.from_remote_buffer_raw) <= len(self.ready.from_remote_buffer_raw): ##TODO: Wrong way to sort!
                 self.ready.preferred = False
                 self.ready = serverconn
                 serverconn.preferred = True

@@ -1,6 +1,7 @@
 import socket
 import asyncore
 import logging
+import time
 
 from common import AESCipher
 
@@ -39,6 +40,7 @@ class serverreceiver(asyncore.dispatcher):
         self.preferred = False
         self.closing = False
         self.no_data_count = 0
+        self.read = b''
         self.begin_auth()
 
     def handle_connect(self):
@@ -73,36 +75,39 @@ class serverreceiver(asyncore.dispatcher):
 
     def begin_auth(self):
         # Deal with the beginning authentication
-        read = b''
+        time.sleep(0.05)
+        self.read = b''
         try:
-                read += self.recv(768)
-                if len(read) >= 768:
-                    read = read[:768]
-                    blank = read[:512]
-                    if not self.ctl.remotepub.verify(self.ctl.str, (int(blank, 16), None)):
-                        logging.warning("Authentication failed, socket closing")
-                        self.close()
-                    else:
-                        self.cipher = AESCipher(self.ctl.localcert.decrypt(read[-256:]), self.ctl.str)
-                        self.full = False
-                        self.ctl.newconn(self)
+            self.read += self.recv(768)
+            if len(self.read) >= 768:
+                self.read = self.read[:768]
+                blank = self.read[:512]
+                if not self.ctl.remotepub.verify(self.ctl.str, (int(blank, 16), None)):
+                    logging.warning("Authentication failed, socket closing")
+                    self.close()
                 else:
-                    if len(read) == 0:
-                        self.no_data_count += 1
-                    if self.no_data_count >= 10:
-                        self.close()
+                    self.cipher = AESCipher(self.ctl.localcert.decrypt(self.read[-256:]), self.ctl.str)
+                    self.full = False
+                    self.ctl.newconn(self)
+                    logging.info("Authentication succeed, connection established")
+            else:
+                if len(self.read) == 0:
+                    self.no_data_count += 1
+                    #if self.no_data_count >= 10:
+                    #    self.close()
         except Exception as err:
-                logging.warning("Authentication failed, socket closing")
-                self.close()
-    
+            pass
+                #logging.warning("Authentication failed, due to error, socket closing")
+                #self.close()
+            
     def writable(self):
         if self.preferred:
-            for cli_id in self.clientreceivers:
-                if self.clientreceivers[cli_id] is None:
+            for cli_id in self.ctl.clientreceivers:
+                if self.ctl.clientreceivers[cli_id] is None:
                     logging.warning("Client receiver %s NoneType error" % cli_id)
-                    del self.clientreceivers[cli_id]
+                    del self.ctl.clientreceivers[cli_id]
                 else:
-                    if len(self.clientreceivers[cli_id].to_remote_buffer) > 0:
+                    if len(self.ctl.clientreceivers[cli_id].to_remote_buffer) > 0:
                         return True
         else:
             return False
