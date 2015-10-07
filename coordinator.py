@@ -13,8 +13,6 @@ class coordinate(object):
     '''Used to request connections and deal with part of authentication'''
     
     def __init__(self, ctlip, ctlport_remote, localcert, remotecert, localpub, required, remote_port):
-        self.count = 0
-        self.available = 0
         self.remotepub = remotecert
         self.localcert = localcert
         self.authdata = localpub
@@ -35,32 +33,29 @@ class coordinate(object):
 
     def newconn(self, recv):
         # Called when receive new connections
-        self.available += 1
-        self.count += 1
         self.recvs.append(recv)
         if self.ready is None:
             self.ready = recv
             recv.preferred = True
         self.refreshconn()
-        if self.available + 2 >= self.required:
+        if len(self.recvs) + 2 >= self.required:
             self.check.clear()
-        logging.info("Available socket %d" % self.available)
+        logging.info("Running socket %d" % len(self.recvs))
             
-    def closeconn(self):
+    def closeconn(self, conn):
         # Called when a connection is closed
-        self.count -= 1
-        self.available -= 1
         if self.ready is not None:
             if self.ready.closing:
-                if self.count > 0:
+                if len(self.recvs) > 0:
                     self.ready = self.recvs[0]
                     self.recvs[0].preferred = True
                     self.refreshconn()
                 else:
                     self.ready = None
-        if not self.issufficient():
+        self.recvs.remove(conn)
+        if len(self.recvs) < self.required:
             self.check.set()
-        logging.info("Available socket %d" % self.available)
+        logging.info("Running socket %d" % len(self.recvs))
 
     def reqconn(self):
         # Sending UDP requests
@@ -83,7 +78,7 @@ class coordinate(object):
             Total length is 16 + 2 + 4 + 40 + 512 + 256 = 830 bytes
         """
         salt = os.urandom(16)
-        required_hex = "%X" % min((self.required - self.available + self.count), 255)
+        required_hex = "%X" % min((self.required), 255)
         sign_hex = '%X' % self.localcert.sign(salt, None)[0]
         remote_port_hex = '%X' % self.remote_port
         if len(required_hex) == 1:
@@ -99,17 +94,17 @@ class coordinate(object):
                 self.remotepub.encrypt(self.str, None)[0]  # TODO: Replay attack?
 
     def issufficient(self):
-        return self.available >= self.required
+        return len(self.recvs) >= self.required
     
     def refreshconn(self):
-        next_conn = choice(self.recvs)
+        next_conn = random.choice(self.recvs)
         self.ready.preferred = False
         self.ready = next_conn
         next_conn.preferred = True
     
     def register(self, clirecv):
         cli_id = None
-        if self.available == 0:
+        if len(self.recvs) == 0:
             return None
         while (cli_id is None) or (cli_id in self.clientreceivers):
             a = list(string.ascii_letters)
@@ -119,6 +114,6 @@ class coordinate(object):
         return cli_id
     
     def remove(self, cli_id):
-        if self.available >0:
+        if len(self.recvs) >0:
             self.ready.id_write(cli_id, CLOSECHAR)
         del self.clientreceivers[cli_id]

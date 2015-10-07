@@ -130,7 +130,7 @@ class serverreceiver(asyncore.dispatcher):
 
     def handle_close(self):
         self.closing = True
-        self.ctl.closeconn()
+        self.ctl.closeconn(self)
         self.close()        
         
     def id_write(self, cli_id, lastcontents=None):
