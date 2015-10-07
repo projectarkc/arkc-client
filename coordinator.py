@@ -102,11 +102,10 @@ class coordinate(object):
         return self.available >= self.required
     
     def refreshconn(self):
-        for serverconn in self.recvs:
-            if len(serverconn.from_remote_buffer_raw) <= len(self.ready.from_remote_buffer_raw): ##TODO: Wrong way to sort!
-                self.ready.preferred = False
-                self.ready = serverconn
-                serverconn.preferred = True
+        next_conn = choice(self.recvs)
+        self.ready.preferred = False
+        self.ready = next_conn
+        next_conn.preferred = True
     
     def register(self, clirecv):
         cli_id = None
