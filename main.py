@@ -22,7 +22,7 @@ DEFAULT_REMOTE_PORT = 8000
 DEFAULT_LOCAL_CONTROL_PORT = 8002
 DEFAULT_REMOTE_CONTROL_PORT = 9000
 
-DEFAULT_REQUIRED = 1  # TODO: Edit after using multi-connections              
+DEFAULT_REQUIRED = 3  # TODO: Edit after using multi-connections              
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="ArkC Client")

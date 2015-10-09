@@ -96,6 +96,7 @@ class coordinate(object):
     def issufficient(self):
         return len(self.recvs) >= self.required
     
+    #TODO: Optimize and make it smoother
     def refreshconn(self):
         next_conn = random.choice(self.recvs)
         self.ready.preferred = False
