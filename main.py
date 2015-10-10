@@ -23,29 +23,19 @@ DEFAULT_REMOTE_PORT = 8000
 #DEFAULT_LOCAL_CONTROL_PORT = 8002
 DEFAULT_REMOTE_CONTROL_PORT = 9000
 
-DEFAULT_REQUIRED = 3  # TODO: Edit after using multi-connections              
+DEFAULT_REQUIRED = 4                
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="ArkC Client")
     try:
-        # TODO: Help strings
         # Load arguments
         parser.add_argument("-v", action="store_true", help="show detailed logs")
-        #parser.add_argument('-lh', '--local-host', dest="local_host", default=DEFAULT_LOCAL_HOST)
-        #parser.add_argument('-lp', '--local-port', dest="local_port", type=int, default=DEFAULT_LOCAL_PORT)
-        #parser.add_argument('-rh', '--remote-host', dest="remote_host", default=DEFAULT_REMOTE_HOST)
-        #parser.add_argument('-rp', '--remote-port', dest="remote_port", type=int, default=DEFAULT_REMOTE_PORT)
-        #parser.add_argument('-rch', '--remote-control-host', dest="remote_control_host", help="You must specify a remote control host to activate.", required=True)
-        #parser.add_argument('-rcp', '--remote-control-port', dest="remote_control_port", type=int, default=DEFAULT_REMOTE_CONTROL_PORT)
-        #parser.add_argument('-rc', '--remote-cert', dest="remote_cert", help="Remote host public key (must be specified)", required=True)
-        #parser.add_argument('-lc', '--local-cert', dest="local_cert", help="Local host key (must be specified)", required=True)
-        #parser.add_argument('--local-cert-public', dest="local_cert_pub", help="Local host public key for SHA1 (must be specified)", required=True)
-        #parser.add_argument('-n', '--number', dest="number", type=int, default=DEFAULT_REQUIRED)
         parser.add_argument('-c', '--config', dest = "config", help="You must specify a configuration files. By default ./config.json is used.", default = 'config.json')
         options = parser.parse_args()
         
         data = {}
                 
+        #Load json configuration file
         try:
             data_file = open(options.config)    
             data = json.load(data_file)
@@ -54,6 +44,7 @@ if __name__ == '__main__':
             logging.error("Fatal error while loading configuration file.\n" + err)
             quit()
         
+        #Apply default values
         if "local_host" not in data:
             data["local_host"] = DEFAULT_LOCAL_HOST
             
