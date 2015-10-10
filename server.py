@@ -2,6 +2,7 @@ import socket
 import asyncore
 import logging
 import time
+import struct
 
 from common import AESCipher
 from _io import BlockingIOError
@@ -40,7 +41,9 @@ class serverreceiver(asyncore.dispatcher):
         self.cipher = None
         self.preferred = False
         self.closing = False
-        self.splitchar = SPLITCHAR #chr(23) + str(self.ctl.str[-4:])
+        #self.splitchar = SPLITCHAR #
+        self.splitchar = chr(27)+chr(28)+"%X" % struct.unpack('B', self.ctl.str[-2:-1])[0] + "%X" % struct.unpack('B', self.ctl.str[-3:-2])[0]+chr(31)
+        print (self.splitchar)
         self.no_data_count = 0
         self.read = b''
         self.begin_auth()
