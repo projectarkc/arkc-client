@@ -58,10 +58,10 @@ class clientreceiver(asyncore.dispatcher):
         
     def next_to_remote_buffer(self):
         self.to_remote_buffer_index += 1
-        if self.to_remote_buffer_index == 999:
+        if self.to_remote_buffer_index == 1000:
             self.to_remote_buffer_index = 100
             
     def next_from_remote_buffer(self):
         self.from_remote_buffer_index += 1
-        if self.from_remote_buffer_index == 999:
+        if self.from_remote_buffer_index == 1000:
             self.from_remote_buffer_index = 100
