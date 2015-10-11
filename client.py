@@ -29,8 +29,10 @@ class clientreceiver(asyncore.dispatcher):
         self.idchar = self.control.register(self)
         if self.idchar is None:
             self.close()
-        self.from_remote_buffer = b''
+        self.from_remote_buffer = {}
+        self.from_remote_buffer_index = 100
         self.to_remote_buffer = b''
+        self.to_remote_buffer_index = 100
 
     def handle_connect(self):
         pass
@@ -41,13 +43,25 @@ class clientreceiver(asyncore.dispatcher):
         self.to_remote_buffer += read
 
     def writable(self):
-        return len(self.from_remote_buffer) > 0
+        return self.from_remote_buffer_index in self.from_remote_buffer
 
     def handle_write(self):
-        sent = self.send(self.from_remote_buffer)
+        sent = b''
+        while self.writable():
+            sent = sent + self.send(self.from_remote_buffer.pop(self.from_remote_buffer_index))
+            self.next_from_remote_buffer()
         logging.info('%04i to client' % sent)
-        self.from_remote_buffer = self.from_remote_buffer[sent:]
 
     def handle_close(self):
         self.control.remove(self.idchar)
         self.close()
+        
+    def next_to_remote_buffer(self):
+        self.to_remote_buffer_index += 1
+        if self.to_remote_buffer_index == 999:
+            self.to_remote_buffer_index = 100
+            
+    def next_from_remote_buffer(self):
+        self.from_remote_buffer_index += 1
+        if self.from_remote_buffer_index == 999:
+            self.from_remote_buffer_index = 100

@@ -70,7 +70,7 @@ if __name__ == '__main__':
             remotecert = certloader(remote_cert_file).importKey()
             remote_cert_file.close()
         except KeyError as e:
-            logging.error(e + "is not found in the config file. Quitting.")
+            logging.error(e.tostring() + "is not found in the config file. Quitting.")
             quit()
         except Exception as err:
             print ("Fatal error while loading remote host certificate.")
@@ -84,7 +84,7 @@ if __name__ == '__main__':
             if not localcert.has_private():
                 print("Fatal error, no private key included in local certificate.")
         except KeyError as e:
-            logging.error(e + "is not found in the config file. Quitting.")
+            logging.error(e.tostring() + "is not found in the config file. Quitting.")
             quit()
         except Exception as err:
             print ("Fatal error while loading local certificate.")
@@ -96,7 +96,7 @@ if __name__ == '__main__':
             localpub = certloader(local_pub_file).getSHA1()
             local_pub_file.close()
         except KeyError as e:
-            logging.error(e + "is not found in the config file. Quitting.")
+            logging.error(e.tostring() + "is not found in the config file. Quitting.")
             quit()
         except Exception as err:
             print ("Fatal error while calculating SHA1 digest.")
@@ -107,7 +107,8 @@ if __name__ == '__main__':
             logging.basicConfig(level=logging.INFO)
             
     except Exception as e:
-        print ("An error occurred: \n" + e)
+        print ("An error occurred: \n")
+        print(e)
     
     # Start the main event loop
     try:
@@ -132,9 +133,10 @@ if __name__ == '__main__':
             )
     
     except KeyError as e:
-        logging.error(e + "is not found in the config file. Quitting.")
+        logging.error(e.tostring() + "is not found in the config file. Quitting.")
         quit()
     
     except Exception as e:
-        print ("An error occurred: \n" + e)
+        print ("An error occurred: \n")
+        print(e)
     asyncore.loop()
