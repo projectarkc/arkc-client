@@ -5,9 +5,10 @@ import os
 import random
 import string
 import binascii
-from dnslib.dns import DNSRecord, DNSHeader, DNSQuestion, QTYPE
-from dnslib.digparser import DigParser
+import pyotp
+import md5
 from time import sleep
+from main import localcert_sha1
 
 CLOSECHAR = chr(4) * 5
 
@@ -15,9 +16,10 @@ class coordinate(object):
 
     '''Used to request connections and deal with part of authentication'''
     
-    def __init__(self, ctl_domain, localcert, remotecert, localpub, required, remote_port):
+    def __init__(self, ctl_domain, localcert, localcert_sha1, remotecert, localpub, required, remote_port):
         self.remotepub = remotecert
         self.localcert = localcert
+        self.localcert_sha1 = localcert_sha1
         self.authdata = localpub
         self.required = required
         self.remote_port = remote_port
@@ -84,26 +86,27 @@ class coordinate(object):
         """
             The return encrypted message should be
             (required_connection_number (HEX, 2 bytes) +
-            used_remote_listening_port (HEX, 4 bytes) ,
-            client_sign(time) , ## TODO: need a good algorithm to generate a short string with id check function
+            used_remote_listening_port (HEX, 4 bytes) +
+            sha1(cert_pub) ,
+            pyotp.HOTP(time) , ## TODO: client identity must be checked
             main_pw
-            Total length is 16 + 2 + 4 + 40 = 62, ?, 16
+            Total length is 2 + 4 + 40 = 46, 16, 16
         """
-        salt = os.urandom(16)
+        hotp = pyotp.HOTP(self.localcert_sha1)
+        #salt = os.urandom(16)
         required_hex = "%X" % min((self.required), 255)
-        sign_hex = '%X' % self.localcert.sign(salt, None)[0]
+        #sign_hex = '%X' % self.localcert.sign(salt, None)[0]
         remote_port_hex = '%X' % self.remote_port
         if len(required_hex) == 1:
             required_hex = '0' + required_hex
-        if len(sign_hex) == 510:
-            sign_hex = '0' + sign_hex
+        #if len(sign_hex) == 510:
+        #    sign_hex = '0' + sign_hex
         remote_port_hex = '0' * (4 - len(remote_port_hex)) + remote_port_hex
-        return  binascii.hexlify(salt).decode("ASCII") + \
-                required_hex + \
+        return  [required_hex + \
                 remote_port_hex + \
-                self.authdata + \
-                sign_hex + \
-                binascii.hexlify(self.remotepub.encrypt(self.str, None)[0]).decode("ASCII")  # TODO: Replay attack?
+                self.authdata,
+                hotp,
+                binascii.hexlify(self.str).decode("ASCII")]  # TODO: Replay attack?
 
     def issufficient(self):
         return len(self.recvs) >= self.required

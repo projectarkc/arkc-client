@@ -81,6 +81,7 @@ if __name__ == '__main__':
         try:
             local_cert_file = open(data["local_cert"], "r")
             localcert = certloader(local_cert_file).importKey()
+            localcert_sha1 = certloader(local_cert_file).getSHA1()
             local_cert_file.close()
             if not localcert.has_private():
                 print("Fatal error, no private key included in local certificate.")
@@ -116,6 +117,7 @@ if __name__ == '__main__':
         ctl = coordinate(
                     data["control_domain"],
                     localcert,
+                    localcert_sha1,
                     remotecert,
                     localpub,
                     data["number"],
