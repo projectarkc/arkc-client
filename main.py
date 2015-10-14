@@ -21,7 +21,7 @@ DEFAULT_REMOTE_HOST = "0.0.0.0"
 DEFAULT_LOCAL_PORT = 8001
 DEFAULT_REMOTE_PORT = 8000
 #DEFAULT_LOCAL_CONTROL_PORT = 8002
-DEFAULT_REMOTE_CONTROL_PORT = 9000
+#DEFAULT_REMOTE_CONTROL_PORT = 9000
 
 DEFAULT_REQUIRED = 4                
 
@@ -55,8 +55,11 @@ if __name__ == '__main__':
         if "local_port" not in data:
             data["local_port"] = DEFAULT_LOCAL_PORT
             
-        if "remote_control_port"not in data:
-            data["remote_control_port"] = DEFAULT_REMOTE_CONTROL_PORT
+        if "remote_host"not in data:
+            data["remote_host"] = DEFAULT_REMOTE_HOST
+            
+        if "remote_port"not in data:
+            data["remote_port"] = DEFAULT_REMOTE_PORT
             
         if "number"not in data:
             data["number"] = DEFAULT_REQUIRED
@@ -130,7 +133,8 @@ if __name__ == '__main__':
             )
     
     except KeyError as e:
-        logging.error(e.tostring() + "is not found in the config file. Quitting.")
+        print(e)
+        #logging.error(e + "is not found in the config file. Quitting.")
         quit()
     
     except Exception as e:

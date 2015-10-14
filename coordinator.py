@@ -4,7 +4,8 @@ import logging
 import os
 import random
 import string
-from dnslib.dns import DNSRecord,DNSHeader,DNSQuestion,QTYPE
+import binascii
+from dnslib.dns import DNSRecord, DNSHeader, DNSQuestion, QTYPE
 from dnslib.digparser import DigParser
 from time import sleep
 
@@ -26,7 +27,7 @@ class coordinate(object):
                 
         self.recvs = []  # For serverreceivers
         self.str = os.urandom(16)
-        #self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.check = threading.Event()
         self.check.set()
         req = threading.Thread(target=self.reqconn)
@@ -59,7 +60,7 @@ class coordinate(object):
             self.check.set()
         logging.info("Running socket %d" % len(self.recvs))
 
-    #def reqconn(self):
+    # def reqconn(self):
     #    # Sending UDP requests
     #    while True:
     #        self.check.wait()  # Start the request when the client needs connections
@@ -73,21 +74,20 @@ class coordinate(object):
         while True:
             self.check.wait()  # Start the request when the client needs connections
             requestdata = self.generatereq()
-            #print(len(requestdata))    
-            socket.gethostbyname(requestdata + '.' + self.ctl_domain)
+            # print(len(requestdata))    
+            socket.gethostbyname(str(requestdata) + '.' + self.ctl_domain)
             
             sleep(0.1)
             
     def generatereq(self):
         # Generate strings for authentication
         """
-            The encrypted message should be
-            salt +
-            required_connection_number (HEX, 2 bytes) +
-            used_remote_listening_port (HEX, 4 bytes) +
-            client_sign(salt) +
-            server_pub(main_pw)
-            Total length is 16 + 2 + 4 + 40 + 512 + 256 = 830 bytes
+            The return encrypted message should be
+            (required_connection_number (HEX, 2 bytes) +
+            used_remote_listening_port (HEX, 4 bytes) ,
+            client_sign(time) , ## TODO: need a good algorithm to generate a short string with id check function
+            main_pw
+            Total length is 16 + 2 + 4 + 40 = 62, ?, 16
         """
         salt = os.urandom(16)
         required_hex = "%X" % min((self.required), 255)
@@ -98,17 +98,17 @@ class coordinate(object):
         if len(sign_hex) == 510:
             sign_hex = '0' + sign_hex
         remote_port_hex = '0' * (4 - len(remote_port_hex)) + remote_port_hex
-        return  salt + \
-                bytes(required_hex, "UTF-8") + \
-                bytes(remote_port_hex, "UTF-8") + \
-                bytes(self.authdata, "UTF-8") + \
-                bytes(sign_hex, "UTF-8") + \
-                self.remotepub.encrypt(self.str, None)[0]  # TODO: Replay attack?
+        return  binascii.hexlify(salt).decode("ASCII") + \
+                required_hex + \
+                remote_port_hex + \
+                self.authdata + \
+                sign_hex + \
+                binascii.hexlify(self.remotepub.encrypt(self.str, None)[0]).decode("ASCII")  # TODO: Replay attack?
 
     def issufficient(self):
         return len(self.recvs) >= self.required
     
-    #TODO: Optimize and make it smoother
+    # TODO: Optimize and make it smoother
     def refreshconn(self):
         next_conn = random.choice(self.recvs)
         self.ready.preferred = False
@@ -127,6 +127,6 @@ class coordinate(object):
         return cli_id
     
     def remove(self, cli_id):
-        if len(self.recvs) >0:
+        if len(self.recvs) > 0:
             self.ready.id_write(cli_id, CLOSECHAR)
         del self.clientreceivers[cli_id]
