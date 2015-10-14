@@ -4,6 +4,8 @@ import logging
 import os
 import random
 import string
+from dnslib.dns import DNSRecord,DNSHeader,DNSQuestion,QTYPE
+from dnslib.digparser import DigParser
 from time import sleep
 
 CLOSECHAR = chr(4) * 5
@@ -12,19 +14,19 @@ class coordinate(object):
 
     '''Used to request connections and deal with part of authentication'''
     
-    def __init__(self, ctlip, ctlport_remote, localcert, remotecert, localpub, required, remote_port):
+    def __init__(self, ctl_domain, localcert, remotecert, localpub, required, remote_port):
         self.remotepub = remotecert
         self.localcert = localcert
         self.authdata = localpub
         self.required = required
         self.remote_port = remote_port
+        self.ctl_domain = ctl_domain
         self.clientreceivers = {}
         self.ready = None
-        
+                
         self.recvs = []  # For serverreceivers
         self.str = os.urandom(16)
-        self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.addr = (ctlip, ctlport_remote)
+        #self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.check = threading.Event()
         self.check.set()
         req = threading.Thread(target=self.reqconn)
@@ -57,13 +59,23 @@ class coordinate(object):
             self.check.set()
         logging.info("Running socket %d" % len(self.recvs))
 
+    #def reqconn(self):
+    #    # Sending UDP requests
+    #    while True:
+    #        self.check.wait()  # Start the request when the client needs connections
+    #        requestdata = self.generatereq()
+    #        #print(len(requestdata))    
+    #        self.udpsock.sendto(requestdata, self.addr)
+    #        sleep(0.1)
+            
     def reqconn(self):
         # Sending UDP requests
         while True:
             self.check.wait()  # Start the request when the client needs connections
             requestdata = self.generatereq()
             #print(len(requestdata))    
-            self.udpsock.sendto(requestdata, self.addr)
+            socket.gethostbyname(requestdata + '.' + self.ctl_domain)
+            
             sleep(0.1)
             
     def generatereq(self):

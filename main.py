@@ -44,18 +44,16 @@ if __name__ == '__main__':
             logging.error("Fatal error while loading configuration file.\n" + err)
             quit()
         
+        if "control_domain" not in data:
+            logging.error("missing control domain")
+            quit()
+        
         #Apply default values
         if "local_host" not in data:
             data["local_host"] = DEFAULT_LOCAL_HOST
             
         if "local_port" not in data:
             data["local_port"] = DEFAULT_LOCAL_PORT
-        
-        if "remote_host"not in data:
-            data["remote_host"] = DEFAULT_REMOTE_HOST
-            
-        if "remote_port"not in data:
-            data["remote_port"] = DEFAULT_REMOTE_PORT
             
         if "remote_control_port"not in data:
             data["remote_control_port"] = DEFAULT_REMOTE_CONTROL_PORT
@@ -113,8 +111,7 @@ if __name__ == '__main__':
     # Start the main event loop
     try:
         ctl = coordinate(
-                    data["remote_control_host"],
-                    data["remote_control_port"],
+                    data["control_domain"],
                     localcert,
                     remotecert,
                     localpub,
