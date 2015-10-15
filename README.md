@@ -19,12 +19,20 @@ NAT configuration may be necessary to make the client receives requests from the
 
 Run 
 
-	python3 main.py [-h] [-lh LOCAL_HOST] [-lp LOCAL_PORT] [-rh REMOTE_HOST (Listening on)]
-               [-rp REMOTE_PORT] -rch REMOTE_CONTROL_HOST
-               [-rcp REMOTE_CONTROL_PORT] -rc REMOTE_CERT -lc LOCAL_CERT
-               --local-cert-public LOCAL_CERT_PUB [-n NUMBER (connections kept ready)]
+	python3 main.py [-h] [-v] -c <Path of the config Json file, default = config.json>
 
 In this version, any private certificate should be in the form of PEM without encryption, while any public certificate should be in the form of ssh-rsa. Note that ssh-rsa files should not include extra blank lines because they are used for hash.
+
+For the configuration file, you can find an example here:
+
+{
+	"control_domain":"example.com",
+	"local_cert":"client.pem",
+	"remote_cert":"server.pub",
+	"local_cert_pub":"client.pub"
+}
+
+More details shall be added at a stable release.
 
 ##License
 
@@ -32,9 +40,16 @@ Copyright 2015 ArkC contributers
 
 The ArkC-client and ArkC-server utilities are licensed under GNU GPLv2. You should obtain a copy of the license with the software.
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-License for the specific language governing permissions and limitations
-under the License.
+ArkC is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 2 of the License, or
+(at your option) any later version.
+
+ArkC is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with ArkC.  If not, see <http://www.gnu.org/licenses/>.
 

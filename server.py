@@ -10,7 +10,7 @@ from _io import BlockingIOError
 
 # Need to switch to asyncio
 
-SPLITCHAR = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
+#SPLITCHAR = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
 CLOSECHAR = chr(4) * 5
 
 MAX_HANDLE = 100
