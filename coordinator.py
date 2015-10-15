@@ -6,9 +6,9 @@ import random
 import string
 import binascii
 import pyotp
-import md5
 from time import sleep
-from main import localcert_sha1
+
+from common import get_ip
 
 CLOSECHAR = chr(4) * 5
 
@@ -61,18 +61,9 @@ class coordinate(object):
         if len(self.recvs) < self.required:
             self.check.set()
         logging.info("Running socket %d" % len(self.recvs))
-
-    # def reqconn(self):
-    #    # Sending UDP requests
-    #    while True:
-    #        self.check.wait()  # Start the request when the client needs connections
-    #        requestdata = self.generatereq()
-    #        #print(len(requestdata))    
-    #        self.udpsock.sendto(requestdata, self.addr)
-    #        sleep(0.1)
             
     def reqconn(self):
-        # Sending UDP requests
+        # Sending DNS queries
         while True:
             self.check.wait()  # Start the request when the client needs connections
             requestdata = self.generatereq()
@@ -88,25 +79,25 @@ class coordinate(object):
             (required_connection_number (HEX, 2 bytes) +
             used_remote_listening_port (HEX, 4 bytes) +
             sha1(cert_pub) ,
-            pyotp.HOTP(time) , ## TODO: client identity must be checked
-            main_pw
-            Total length is 2 + 4 + 40 = 46, 16, 16
+            pyotp.HOTP(pri_sha1) , ## TODO: client identity must be checked
+            main_pw,
+            ip_in_number_form,
+            salt
+            Total length is 2 + 4 + 40 = 46, 16, 16, ?, 16
         """
         hotp = pyotp.HOTP(self.localcert_sha1)
-        #salt = os.urandom(16)
         required_hex = "%X" % min((self.required), 255)
-        #sign_hex = '%X' % self.localcert.sign(salt, None)[0]
         remote_port_hex = '%X' % self.remote_port
         if len(required_hex) == 1:
             required_hex = '0' + required_hex
-        #if len(sign_hex) == 510:
-        #    sign_hex = '0' + sign_hex
         remote_port_hex = '0' * (4 - len(remote_port_hex)) + remote_port_hex
         return  [required_hex + \
                 remote_port_hex + \
-                self.authdata,
-                hotp,
-                binascii.hexlify(self.str).decode("ASCII")]  # TODO: Replay attack?
+                self.authdata + '.' + \
+                hotp + '.' + \
+                binascii.hexlify(self.str).decode("ASCII") + '.' + \
+                get_ip() + '.' + \
+                binascii.hexlify(os.urandom(16).decode("ASCII"))]
 
     def issufficient(self):
         return len(self.recvs) >= self.required

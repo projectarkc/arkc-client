@@ -126,7 +126,9 @@ if __name__ == '__main__':
         sctl = servercontrol(
                 data["remote_host"],
                 data["remote_port"],
-                ctl
+                ctl,
+                localcert,
+                localcert_sha1
                 )
         cctl = clientcontrol(
             ctl,
