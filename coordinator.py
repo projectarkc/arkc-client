@@ -79,25 +79,28 @@ class coordinate(object):
             (required_connection_number (HEX, 2 bytes) +
             used_remote_listening_port (HEX, 4 bytes) +
             sha1(cert_pub) ,
-            pyotp.HOTP(pri_sha1) , ## TODO: client identity must be checked
-            main_pw,
+            pyotp.HOTP(pri_sha1 + ip_in_number_form + salt) , ## TODO: client identity must be checked
+            main_pw,##must send in encrypted form to avoid MITM
             ip_in_number_form,
             salt
             Total length is 2 + 4 + 40 = 46, 16, 16, ?, 16
         """
-        hotp = pyotp.HOTP(self.localcert_sha1)
+        
         required_hex = "%X" % min((self.required), 255)
         remote_port_hex = '%X' % self.remote_port
         if len(required_hex) == 1:
             required_hex = '0' + required_hex
         remote_port_hex = '0' * (4 - len(remote_port_hex)) + remote_port_hex
+        myip = get_ip()
+        salt = binascii.hexlify(os.urandom(16).decode("ASCII"))
+        hotp = pyotp.HOTP(self.localcert_sha1 + myip + salt)
         return  [required_hex + \
                 remote_port_hex + \
                 self.authdata + '.' + \
                 hotp + '.' + \
                 binascii.hexlify(self.str).decode("ASCII") + '.' + \
-                get_ip() + '.' + \
-                binascii.hexlify(os.urandom(16).decode("ASCII"))]
+                myip + '.' + \
+                salt]
 
     def issufficient(self):
         return len(self.recvs) >= self.required

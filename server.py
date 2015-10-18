@@ -92,11 +92,11 @@ class serverreceiver(asyncore.dispatcher):
                     logging.warning("Authentication failed, socket closing")
                     self.close()
                 else:
-                    self.send(self.ctl.localcert.encrypt(pyotp.HOTP(self.ctl.localcert_sha1)) + self.splitchar)
+                    #self.send(self.ctl.localcert.encrypt(pyotp.HOTP(self.ctl.localcert_sha1)) + self.splitchar)
                     self.cipher = AESCipher(self.ctl.localcert.decrypt(self.read[-256:]), self.ctl.str)
                     self.full = False
                     self.ctl.newconn(self)
-                    logging.info("Authentication succeed, connection established, client auth string sent")
+                    logging.info("Authentication succeed, connection established")#, client auth string sent")
             else:
                 if len(self.read) == 0:
                     self.no_data_count += 1
