@@ -23,6 +23,30 @@ Run
 
 In this version, any private certificate should be in the form of PEM without encryption, while any public certificate should be in the form of ssh-rsa. Note that ssh-rsa files should not include extra blank lines because they are used for hash.
 
+For the configuration file, you can find an example here:
+
+{
+    "control_domain":"example.com",
+    "local_cert":"client.pem",
+    "remote_cert":"server.pub",
+    "local_cert_pub":"client.pub"
+}
+
+For a full list of settings:
+
+| Index name            | Value Type & Description | Required / Default|
+| ----------------------|:------------------------:| -----------------:|
+| remote_control_host   | str, UDP dest. host      | REQUIRED          |
+| remote_control_port   | integer, UDP dest. port  | 9000              |
+| local_host            | str, proxy listening addr| "127.0.0.1"       |
+| local_port            | integer, proxy port      | 8001              |
+| remote_host           | str, listening host      | "0.0.0.0"         |
+| remote_port           | integer, listening port  | 8000              |
+| number                | integer, how many conn.  | 3                 |
+| local_cert            | str, path of client pri  | REQUIRED          |
+| local_cert_pub        | str, path of client pub  | REQUIRED          |
+| remote_cert           | str, path of server pub  | REQUIRED          |
+
 ##License
 
 Copyright 2015 ArkC contributers
