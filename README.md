@@ -19,10 +19,7 @@ NAT configuration may be necessary to make the client receives requests from the
 
 Run 
 
-	python3 main.py [-h] [-lh LOCAL_HOST] [-lp LOCAL_PORT] [-rh REMOTE_HOST (Listening on)]
-               [-rp REMOTE_PORT] -rch REMOTE_CONTROL_HOST
-               [-rcp REMOTE_CONTROL_PORT] -rc REMOTE_CERT -lc LOCAL_CERT
-               --local-cert-public LOCAL_CERT_PUB [-n NUMBER (connections kept ready)]
+	python3 main.py [-h] [-v] -c <Path of the config Json file, default = config.json>
 
 In this version, any private certificate should be in the form of PEM without encryption, while any public certificate should be in the form of ssh-rsa. Note that ssh-rsa files should not include extra blank lines because they are used for hash.
 
