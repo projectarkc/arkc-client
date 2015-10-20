@@ -25,12 +25,12 @@ In this version, any private certificate should be in the form of PEM without en
 
 For the configuration file, you can find an example here:
 
-{
-    "control_domain":"example.com",
-    "local_cert":"client.pem",
-    "remote_cert":"server.pub",
-    "local_cert_pub":"client.pub"
-}
+>>{
+>>    "control_domain":"example.com",
+>>    "local_cert":"client.pem",
+>>    "remote_cert":"server.pub",
+>>    "local_cert_pub":"client.pub"
+>>}
 
 For a full list of settings:
 
