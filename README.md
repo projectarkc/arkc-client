@@ -27,7 +27,7 @@ For the configuration file, you can find an example here:
 
 ```
 {
-    "control_domain":"example.com",
+    "remote_control_host":"example.com",
     "local_cert":"client.pem",
     "remote_cert":"server.pub",
     "local_cert_pub":"client.pub"
