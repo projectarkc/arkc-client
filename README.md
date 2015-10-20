@@ -10,8 +10,10 @@ Running ArkC-Client requires Python 3 and PyCrypto.
 
 For Debian or Ubuntu users:
     
-    sudo apt-get install python3 python3-pip python3-dev
-    sudo pip3 install pycrypto
+```
+sudo apt-get install python3 python3-pip python3-dev
+sudo pip3 install -r requirements.txt
+```
 
 NAT configuration may be necessary to make the client receives requests from the server, so that a connection may start.
 
@@ -19,7 +21,9 @@ NAT configuration may be necessary to make the client receives requests from the
 
 Run 
 
-	python3 main.py [-h] [-v] -c <Path of the config Json file, default = config.json>
+```
+python3 main.py [-h] [-v] -c <Path of the config Json file, default = config.json>
+```
 
 In this version, any private certificate should be in the form of PEM without encryption, while any public certificate should be in the form of ssh-rsa. Note that ssh-rsa files should not include extra blank lines because they are used for hash.
 
