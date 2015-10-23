@@ -6,6 +6,7 @@ import struct
 
 from common import AESCipher
 from _io import BlockingIOError
+from piston_mini_client.failhandlers import SocketError
 
 # Need to switch to asyncio
 
@@ -101,8 +102,12 @@ class serverreceiver(asyncore.dispatcher):
                     #    self.close()
         except BlockingIOError as err:
             pass
+        
+        except SocketError as err:
+            logging.info("empty recv error")
+        
         except Exception as err:
-            logging.warning("Authentication failed, due to error, socket closing")
+            logging.error("Authentication failed, due to error, socket closing")
             self.close()
             
     def writable(self):
