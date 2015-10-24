@@ -6,7 +6,6 @@ import struct
 
 from common import AESCipher
 from _io import BlockingIOError
-from piston_mini_client.failhandlers import SocketError
 
 # Need to switch to asyncio
 
@@ -103,7 +102,7 @@ class serverreceiver(asyncore.dispatcher):
         except BlockingIOError as err:
             pass
         
-        except SocketError as err:
+        except socket.error as err:
             logging.info("empty recv error")
         
         except Exception as err:
