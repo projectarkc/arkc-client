@@ -12,12 +12,13 @@ class coordinate(object):
 
     '''Used to request connections and deal with part of authentication'''
     
-    def __init__(self, ctlip, ctlport_remote, localcert, remotecert, localpub, required, remote_port):
+    def __init__(self, ctlip, ctlport_remote, localcert, remotecert, localpub, required, remote_port, swapcount=5):
         self.remotepub = remotecert
         self.localcert = localcert
         self.authdata = localpub
         self.required = required
         self.remote_port = remote_port
+        self.swapcount = swapcount
         self.clientreceivers = {}
         self.ready = None
         
@@ -61,8 +62,7 @@ class coordinate(object):
         # Sending UDP requests
         while True:
             self.check.wait()  # Start the request when the client needs connections
-            requestdata = self.generatereq()
-            #print(len(requestdata))    
+            requestdata = self.generatereq()  
             self.udpsock.sendto(requestdata, self.addr)
             sleep(0.1)
             
@@ -91,12 +91,11 @@ class coordinate(object):
                 bytes(remote_port_hex, "UTF-8") + \
                 bytes(self.authdata, "UTF-8") + \
                 bytes(sign_hex, "UTF-8") + \
-                self.remotepub.encrypt(self.str, None)[0]  # TODO: Replay attack?
+                self.remotepub.encrypt(self.str, None)[0]
 
     def issufficient(self):
         return len(self.recvs) >= self.required
     
-    #TODO: Optimize and make it smoother
     def refreshconn(self):
         next_conn = random.choice(self.recvs)
         self.ready.preferred = False
@@ -115,6 +114,6 @@ class coordinate(object):
         return cli_id
     
     def remove(self, cli_id):
-        if len(self.recvs) >0:
+        if len(self.recvs) > 0:
             self.ready.id_write(cli_id, CLOSECHAR)
         del self.clientreceivers[cli_id]

@@ -9,7 +9,6 @@ from _io import BlockingIOError
 
 # Need to switch to asyncio
 
-SPLITCHAR = chr(27) + chr(28) + chr(29) + chr(30) + chr(31)
 CLOSECHAR = chr(4) * 5
 
 MAX_HANDLE = 100
@@ -41,7 +40,6 @@ class serverreceiver(asyncore.dispatcher):
         self.cipher = None
         self.preferred = False
         self.closing = False
-        #self.splitchar = SPLITCHAR #
         self.splitchar = chr(27)+chr(28)+"%X" % struct.unpack('B', self.ctl.str[-2:-1])[0] + "%X" % struct.unpack('B', self.ctl.str[-3:-2])[0]+chr(31)
         self.no_data_count = 0
         self.read = b''
@@ -101,8 +99,6 @@ class serverreceiver(asyncore.dispatcher):
             else:
                 if len(self.read) == 0:
                     self.no_data_count += 1
-                    #if self.no_data_count >= 10:
-                    #    self.close()
         except BlockingIOError as err:
             pass
         
@@ -134,7 +130,7 @@ class serverreceiver(asyncore.dispatcher):
                     if self.ctl.clientreceivers[cli_id].to_remote_buffer:
                         self.id_write(cli_id)
                         writed += 1
-                    if writed >= 5:
+                    if writed >= self.ctl.swapcount:
                         break
             self.ctl.refreshconn()
         else:

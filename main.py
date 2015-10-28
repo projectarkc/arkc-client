@@ -20,7 +20,6 @@ DEFAULT_REMOTE_HOST = "0.0.0.0"
 
 DEFAULT_LOCAL_PORT = 8001
 DEFAULT_REMOTE_PORT = 8000
-#DEFAULT_LOCAL_CONTROL_PORT = 8002
 DEFAULT_REMOTE_CONTROL_PORT = 9000
 
 DEFAULT_REQUIRED = 4                
@@ -31,6 +30,7 @@ if __name__ == '__main__':
         # Load arguments
         parser.add_argument("-v", action="store_true", help="show detailed logs")
         parser.add_argument('-c', '--config', dest = "config", help="You must specify a configuration files. By default ./config.json is used.", default = 'config.json')
+        parser.add_argument('-fs', '--frequent-swap', action="store_true", help="Use frequent connection swapping")
         options = parser.parse_args()
         
         data = {}
@@ -106,6 +106,11 @@ if __name__ == '__main__':
         if options.v:
             logging.basicConfig(level=logging.INFO)
             
+        if options.fs:
+            swapfq = 3
+        else:
+            swapfq = 8
+            
     except Exception as e:
         print ("An error occurred: \n")
         print(e)
@@ -119,7 +124,8 @@ if __name__ == '__main__':
                     remotecert,
                     localpub,
                     data["number"],
-                    data["remote_port"]
+                    data["remote_port"],
+                    swapfq
                     )
         sctl = servercontrol(
                 data["remote_host"],
