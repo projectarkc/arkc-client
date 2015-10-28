@@ -67,12 +67,16 @@ class serverreceiver(asyncore.dispatcher):
                     except Exception as err:
                         logging.warning("decode error")
                         cli_id = None
-                    if cli_id in self.ctl.clientreceivers:
-                        if decryptedtext[5:] != bytes(CLOSECHAR, "ASCII"):
-                            self.ctl.clientreceivers[cli_id].from_remote_buffer[seq] = decryptedtext[5:]
-                        else:
-                            self.ctl.clientreceivers[cli_id].close()
-                        read_count += len(decryptedtext) - 5
+                    if cli_id == "00" and decryptedtext[5:] == bytes(CLOSECHAR, "ASCII"):
+                        self.closing = True
+                        self.ctl.closeconn(self)
+                    else:
+                        if cli_id in self.ctl.clientreceivers:
+                            if decryptedtext[5:] != bytes(CLOSECHAR, "ASCII"):
+                                self.ctl.clientreceivers[cli_id].from_remote_buffer[seq] = decryptedtext[5:]
+                            else:
+                                self.ctl.clientreceivers[cli_id].close()
+                            read_count += len(decryptedtext) - 5
                 else:
                     self.from_remote_buffer_raw = bytessplit[Index]
             logging.info('%04i from server' % read_count)
