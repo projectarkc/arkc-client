@@ -18,7 +18,7 @@ class servercontrol(asyncore.dispatcher):
     def __init__(self, serverip, serverport, ctl, backlog=5):
         self.ctl = ctl
         asyncore.dispatcher.__init__(self)
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.create_socket(socket.AF_INET, socket.SOCK_STREAM) ##TODO: support IPv6
         self.set_reuse_addr()
         self.bind((serverip, serverport))
         self.listen(backlog)
@@ -143,16 +143,23 @@ class serverreceiver(asyncore.dispatcher):
         
     def id_write(self, cli_id, lastcontents=None):
         # Write to a certain cli_id. Lastcontents is used for CLOSECHAR
-        if len(self.ctl.clientreceivers[cli_id].to_remote_buffer) <= 4096:
-            sent = len(self.ctl.clientreceivers[cli_id].to_remote_buffer)
-            self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") +bytes('%i' % self.ctl.clientreceivers[cli_id].to_remote_buffer_index, "UTF-8") + self.ctl.clientreceivers[cli_id].to_remote_buffer) + bytes(self.splitchar, "UTF-8"))
-        else:
-            self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + bytes('%i' % self.ctl.clientreceivers[cli_id].to_remote_buffer_index, "UTF-8")+self.ctl.clientreceivers[cli_id].to_remote_buffer[:4096]) + bytes(self.splitchar, "UTF-8"))
-            sent = 4096
-        self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
+        sent = 0
+        try:    
+            if len(self.ctl.clientreceivers[cli_id].to_remote_buffer) <= 4096:
+                sent = len(self.ctl.clientreceivers[cli_id].to_remote_buffer)
+                self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") +bytes('%i' % self.ctl.clientreceivers[cli_id].to_remote_buffer_index, "UTF-8") + self.ctl.clientreceivers[cli_id].to_remote_buffer) + bytes(self.splitchar, "UTF-8"))
+            else:
+                self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + bytes('%i' % self.ctl.clientreceivers[cli_id].to_remote_buffer_index, "UTF-8")+self.ctl.clientreceivers[cli_id].to_remote_buffer[:4096]) + bytes(self.splitchar, "UTF-8"))
+                sent = 4096
+            self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
+        except KeyError as err:
+            pass
         if lastcontents is not None:
             self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + bytes('%i' % self.ctl.clientreceivers[cli_id].to_remote_buffer_index, "UTF-8") + bytes(lastcontents, "UTF-8")) + bytes(self.splitchar, "UTF-8"))
             sent += len(lastcontents)
-            self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
+            #self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
         logging.info('%04i to server' % sent)
-        self.ctl.clientreceivers[cli_id].to_remote_buffer = self.ctl.clientreceivers[cli_id].to_remote_buffer[sent:]
+        try:
+            self.ctl.clientreceivers[cli_id].to_remote_buffer = self.ctl.clientreceivers[cli_id].to_remote_buffer[sent:]
+        except KeyError as err:
+            pass

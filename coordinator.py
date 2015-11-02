@@ -116,4 +116,4 @@ class coordinate(object):
     def remove(self, cli_id):
         if len(self.recvs) > 0:
             self.ready.id_write(cli_id, CLOSECHAR)
-        del self.clientreceivers[cli_id]
+        self.clientreceivers.pop(cli_id)
