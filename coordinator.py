@@ -53,7 +53,10 @@ class coordinate(object):
                     self.refreshconn()
                 else:
                     self.ready = None
-        self.recvs.remove(conn)
+        try:
+            self.recvs.remove(conn)
+        except ValueError as err:
+            pass
         if len(self.recvs) < self.required:
             self.check.set()
         logging.info("Running socket %d" % len(self.recvs))
