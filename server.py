@@ -44,7 +44,6 @@ class serverreceiver(asyncore.dispatcher):
         self.closing = False
         # self.splitchar = SPLITCHAR #
         self.splitchar = chr(27) + chr(28) + "%X" % struct.unpack('B', self.ctl.str[-2:-1])[0] + "%X" % struct.unpack('B', self.ctl.str[-3:-2])[0] + chr(31)
-        print (self.splitchar)
         self.no_data_count = 0
         self.read = b''
         self.begin_auth()

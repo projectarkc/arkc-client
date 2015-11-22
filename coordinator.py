@@ -29,7 +29,7 @@ class coordinate(object):
         self.ctl_domain = ctl_domain
         self.clientreceivers = {}
         self.ready = None
-                
+        
         self.recvs = []  # For serverreceivers
         self.str = os.urandom(16)
         # self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -72,7 +72,7 @@ class coordinate(object):
             self.check.wait()  # Start the request when the client needs connections
             requestdata = self.generatereq()
             # print(len(requestdata))    
-            subprocess.call(['nslookup', requestdata, "127.0.0.1"],stderr = subprocess.PIPE, stdout = subprocess.PIPE) #TODO: To edit to a public one? 
+            subprocess.call(['nslookup', requestdata + "." + self.ctl_domain, "127.0.0.1"],stderr = subprocess.PIPE, stdout = subprocess.PIPE) #TODO: To edit to a public one? 
             sleep(0.1)
             
         
@@ -83,7 +83,7 @@ class coordinate(object):
             (required_connection_number (HEX, 2 bytes) +
             used_remote_listening_port (HEX, 4 bytes) +
             sha1(cert_pub) ,
-            pyotp.HOTP(pri_sha1 + ip_in_number_form + salt) , ## TODO: client identity must be checked
+            pyotp.TOTP(pri_sha1 + ip_in_number_form + salt) , ## TODO: client identity must be checked
             main_pw,##must send in encrypted form to avoid MITM
             ip_in_number_form,
             salt
@@ -98,7 +98,8 @@ class coordinate(object):
         myip = get_ip()
         salt = binascii.hexlify(os.urandom(16)).decode("ASCII")
         #hotp = pyotp.TOTP(self.localcert_sha1 + str(myip) + salt).now()
-        h = hashlib.sha1()
+        h = hashlib.sha256()
+        print((self.localcert_sha1 + str(myip) + salt).encode('utf-8'))
         h.update((self.localcert_sha1 + str(myip) + salt).encode('utf-8'))
         hotp = pyotp.TOTP(h.hexdigest()).now()
         return  (required_hex + \
