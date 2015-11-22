@@ -53,6 +53,10 @@ For a full list of settings:
 | local_cert_pub        | str, path of client pub  | REQUIRED          |
 | remote_cert           | str, path of server pub  | REQUIRED          |
 
+##Acknowledgements
+
+The client-end software adapted part of the pyotp library created by Mark Percival <m@mdp.im>. His code is reused under Python Port copyright, license attached.
+
 ##License
 
 Copyright 2015 ArkC contributers
