@@ -3,13 +3,12 @@ import asyncore
 import logging
 import time
 import struct
+import pyotp
 
 from common import AESCipher
 from _io import BlockingIOError
 
 # Need to switch to asyncio
-
-CLOSECHAR = chr(4) * 5
 
 MAX_HANDLE = 100
 
@@ -92,10 +91,11 @@ class serverreceiver(asyncore.dispatcher):
                     logging.warning("Authentication failed, socket closing")
                     self.close()
                 else:
+                    #self.send(self.ctl.localcert.encrypt(pyotp.HOTP(self.ctl.localcert_sha1)) + self.splitchar)
                     self.cipher = AESCipher(self.ctl.localcert.decrypt(self.read[-256:]), self.ctl.str)
                     self.full = False
                     self.ctl.newconn(self)
-                    logging.info("Authentication succeed, connection established")
+                    logging.info("Authentication succeed, connection established")#, client auth string sent")
             else:
                 if len(self.read) == 0:
                     self.no_data_count += 1

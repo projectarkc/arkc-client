@@ -4,7 +4,14 @@ import logging
 import os
 import random
 import string
+import binascii
+import pyotp
+import subprocess 
+import hashlib
+
 from time import sleep
+
+from common import get_ip
 
 CLOSECHAR = chr(4) * 5
 
@@ -12,20 +19,21 @@ class coordinate(object):
 
     '''Used to request connections and deal with part of authentication'''
     
-    def __init__(self, ctlip, ctlport_remote, localcert, remotecert, localpub, required, remote_port, swapcount=5):
+    def __init__(self, ctl_domain, localcert, localcert_sha1, remotecert, localpub, required, remote_port, swapcount=5):
         self.remotepub = remotecert
         self.localcert = localcert
+        self.localcert_sha1 = localcert_sha1
         self.authdata = localpub
         self.required = required
         self.remote_port = remote_port
         self.swapcount = swapcount
+        self.ctl_domain = ctl_domain
         self.clientreceivers = {}
         self.ready = None
         
         self.recvs = []  # For serverreceivers
         self.str = os.urandom(16)
-        self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.addr = (ctlip, ctlport_remote)
+        # self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.check = threading.Event()
         self.check.set()
         req = threading.Thread(target=self.reqconn)
@@ -60,41 +68,49 @@ class coordinate(object):
         if len(self.recvs) < self.required:
             self.check.set()
         logging.info("Running socket %d" % len(self.recvs))
-
+            
     def reqconn(self):
-        # Sending UDP requests
+        # Sending DNS queries
+        
         while True:
             self.check.wait()  # Start the request when the client needs connections
             requestdata = self.generatereq()  
-            self.udpsock.sendto(requestdata, self.addr)
+            subprocess.call(['nslookup', requestdata + "." + self.ctl_domain, "127.0.0.1"],stderr = subprocess.PIPE, stdout = subprocess.PIPE) #TODO: To edit to a public one? 
             sleep(0.1)
             
+        
     def generatereq(self):
         # Generate strings for authentication
         """
-            The encrypted message should be
-            salt +
-            required_connection_number (HEX, 2 bytes) +
+            The return encrypted message should be
+            (required_connection_number (HEX, 2 bytes) +
             used_remote_listening_port (HEX, 4 bytes) +
-            client_sign(salt) +
-            server_pub(main_pw)
-            Total length is 16 + 2 + 4 + 40 + 512 + 256 = 830 bytes
+            sha1(cert_pub) ,
+            pyotp.TOTP(pri_sha1 + ip_in_number_form + salt) , ## TODO: client identity must be checked
+            main_pw,##must send in encrypted form to avoid MITM
+            ip_in_number_form,
+            salt
+            Total length is 2 + 4 + 40 = 46, 16, 16, ?, 16
         """
-        salt = os.urandom(16)
+        
         required_hex = "%X" % min((self.required), 255)
-        sign_hex = '%X' % self.localcert.sign(salt, None)[0]
         remote_port_hex = '%X' % self.remote_port
         if len(required_hex) == 1:
             required_hex = '0' + required_hex
-        if len(sign_hex) == 510:
-            sign_hex = '0' + sign_hex
         remote_port_hex = '0' * (4 - len(remote_port_hex)) + remote_port_hex
-        return  salt + \
-                bytes(required_hex, "UTF-8") + \
-                bytes(remote_port_hex, "UTF-8") + \
-                bytes(self.authdata, "UTF-8") + \
-                bytes(sign_hex, "UTF-8") + \
-                self.remotepub.encrypt(self.str, None)[0]
+        myip = get_ip()
+        salt = binascii.hexlify(os.urandom(16)).decode("ASCII")
+        h = hashlib.sha256()
+        print((self.localcert_sha1 + str(myip) + salt).encode('utf-8'))
+        h.update((self.localcert_sha1 + str(myip) + salt).encode('utf-8'))
+        hotp = pyotp.TOTP(h.hexdigest()).now()
+        return  (required_hex + \
+                remote_port_hex + \
+                self.authdata + '.' + \
+                str(hotp) + '.' + \
+                binascii.hexlify(self.str).decode("ASCII") + '.' + \
+                str(myip) + '.' + \
+                salt)
 
     def issufficient(self):
         return len(self.recvs) >= self.required

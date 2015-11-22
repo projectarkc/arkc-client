@@ -1,5 +1,9 @@
 from Crypto.Cipher import AES
 
+from requests import get
+import socket
+import struct
+
 from hashlib import sha1
 
 try:
@@ -57,3 +61,21 @@ class certloader:
             print ("Cannot get SHA1 of the certificate.")
             print (err)
             quit()
+            
+def get_ip():
+    try:
+        ip = get('https://api.ipify.org').text
+        return struct.unpack("!L", socket.inet_aton(ip))[0]
+    except Exception as err:
+        print("Error occurred in getting address. Using default 127.0.0.1 in testing environment.")
+        print(err)
+        return struct.unpack("!L", socket.inet_aton("127.0.0.1"))[0]
+        #quit()
+        
+def get_ip_str():
+    try:
+        ip = get('https://api.ipify.org').text
+        return socket.inet_ntoa(struct.unpack("!L", socket.inet_aton(ip))[0])
+    except Exception as err:
+        print(err)
+        quit()

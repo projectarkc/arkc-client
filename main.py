@@ -20,7 +20,6 @@ DEFAULT_REMOTE_HOST = "0.0.0.0"
 
 DEFAULT_LOCAL_PORT = 8001
 DEFAULT_REMOTE_PORT = 8000
-DEFAULT_REMOTE_CONTROL_PORT = 9000
 
 DEFAULT_REQUIRED = 4                
 
@@ -44,21 +43,22 @@ if __name__ == '__main__':
             logging.error("Fatal error while loading configuration file.\n" + err)
             quit()
         
+        if "control_domain" not in data:
+            logging.error("missing control domain")
+            quit()
+        
         #Apply default values
         if "local_host" not in data:
             data["local_host"] = DEFAULT_LOCAL_HOST
             
         if "local_port" not in data:
             data["local_port"] = DEFAULT_LOCAL_PORT
-        
+            
         if "remote_host"not in data:
             data["remote_host"] = DEFAULT_REMOTE_HOST
             
         if "remote_port"not in data:
             data["remote_port"] = DEFAULT_REMOTE_PORT
-            
-        if "remote_control_port"not in data:
-            data["remote_control_port"] = DEFAULT_REMOTE_CONTROL_PORT
             
         if "number"not in data:
             data["number"] = DEFAULT_REQUIRED
@@ -80,6 +80,7 @@ if __name__ == '__main__':
         try:
             local_cert_file = open(data["local_cert"], "r")
             localcert = certloader(local_cert_file).importKey()
+            localcert_sha1 = certloader(local_cert_file).getSHA1()
             local_cert_file.close()
             if not localcert.has_private():
                 print("Fatal error, no private key included in local certificate.")
@@ -115,12 +116,13 @@ if __name__ == '__main__':
         print ("An error occurred: \n")
         print(e)
     
+    print(localcert_sha1)
     # Start the main event loop
     try:
         ctl = coordinate(
-                    data["remote_control_host"],
-                    data["remote_control_port"],
+                    data["control_domain"],
                     localcert,
+                    localcert_sha1,
                     remotecert,
                     localpub,
                     data["number"],
@@ -131,6 +133,8 @@ if __name__ == '__main__':
                 data["remote_host"],
                 data["remote_port"],
                 ctl
+                #localcert,
+                #localcert_sha1
                 )
         cctl = clientcontrol(
             ctl,
@@ -139,10 +143,11 @@ if __name__ == '__main__':
             )
     
     except KeyError as e:
-        logging.error(e.tostring() + "is not found in the config file. Quitting.")
+        print(e)
+        #logging.error(e + "is not found in the config file. Quitting.")
         quit()
     
-    except Exception as e:
-        print ("An error occurred: \n")
-        print(e)
+    #except Exception as e:
+    #    print ("An error occurred: \n")
+    #    print(e)
     asyncore.loop()
