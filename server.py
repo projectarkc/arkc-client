@@ -11,6 +11,7 @@ from _io import BlockingIOError
 # Need to switch to asyncio
 
 MAX_HANDLE = 100
+CLOSECHAR = chr(4) * 5
 
 class servercontrol(asyncore.dispatcher):
 

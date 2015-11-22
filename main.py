@@ -116,7 +116,6 @@ if __name__ == '__main__':
         print ("An error occurred: \n")
         print(e)
     
-    print(localcert_sha1)
     # Start the main event loop
     try:
         ctl = coordinate(

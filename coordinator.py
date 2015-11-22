@@ -101,7 +101,6 @@ class coordinate(object):
         myip = get_ip()
         salt = binascii.hexlify(os.urandom(16)).decode("ASCII")
         h = hashlib.sha256()
-        print((self.localcert_sha1 + str(myip) + salt).encode('utf-8'))
         h.update((self.localcert_sha1 + str(myip) + salt).encode('utf-8'))
         hotp = pyotp.TOTP(h.hexdigest()).now()
         return  (required_hex + \
