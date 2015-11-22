@@ -69,3 +69,11 @@ def get_ip():
     except Exception as err:
         print(err)
         quit()
+        
+def get_ip_str():
+    try:
+        ip = get('https://api.ipify.org').text
+        return socket.inet_ntoa(struct.unpack("!L", socket.inet_aton(ip))[0])
+    except Exception as err:
+        print(err)
+        quit()

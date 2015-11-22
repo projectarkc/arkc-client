@@ -6,6 +6,9 @@ import random
 import string
 import binascii
 import pyotp
+import subprocess 
+import hashlib
+
 from time import sleep
 
 from common import get_ip
@@ -64,14 +67,15 @@ class coordinate(object):
             
     def reqconn(self):
         # Sending DNS queries
+        
         while True:
             self.check.wait()  # Start the request when the client needs connections
             requestdata = self.generatereq()
             # print(len(requestdata))    
-            socket.gethostbyname(str(requestdata) + '.' + self.ctl_domain)
-            
+            subprocess.call(['nslookup', requestdata, "127.0.0.1"],stderr = subprocess.PIPE, stdout = subprocess.PIPE) #TODO: To edit to a public one? 
             sleep(0.1)
             
+        
     def generatereq(self):
         # Generate strings for authentication
         """
@@ -92,15 +96,18 @@ class coordinate(object):
             required_hex = '0' + required_hex
         remote_port_hex = '0' * (4 - len(remote_port_hex)) + remote_port_hex
         myip = get_ip()
-        salt = binascii.hexlify(os.urandom(16).decode("ASCII"))
-        hotp = pyotp.HOTP(self.localcert_sha1 + myip + salt)
-        return  [required_hex + \
+        salt = binascii.hexlify(os.urandom(16)).decode("ASCII")
+        #hotp = pyotp.TOTP(self.localcert_sha1 + str(myip) + salt).now()
+        h = hashlib.sha1()
+        h.update((self.localcert_sha1 + str(myip) + salt).encode('utf-8'))
+        hotp = pyotp.TOTP(h.hexdigest()).now()
+        return  (required_hex + \
                 remote_port_hex + \
                 self.authdata + '.' + \
-                hotp + '.' + \
+                str(hotp) + '.' + \
                 binascii.hexlify(self.str).decode("ASCII") + '.' + \
-                myip + '.' + \
-                salt]
+                str(myip) + '.' + \
+                salt)
 
     def issufficient(self):
         return len(self.recvs) >= self.required

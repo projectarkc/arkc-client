@@ -126,9 +126,9 @@ if __name__ == '__main__':
         sctl = servercontrol(
                 data["remote_host"],
                 data["remote_port"],
-                ctl,
-                localcert,
-                localcert_sha1
+                ctl
+                #localcert,
+                #localcert_sha1
                 )
         cctl = clientcontrol(
             ctl,
@@ -141,7 +141,7 @@ if __name__ == '__main__':
         #logging.error(e + "is not found in the config file. Quitting.")
         quit()
     
-    except Exception as e:
-        print ("An error occurred: \n")
-        print(e)
+    #except Exception as e:
+    #    print ("An error occurred: \n")
+    #    print(e)
     asyncore.loop()
