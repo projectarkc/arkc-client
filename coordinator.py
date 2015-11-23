@@ -32,7 +32,7 @@ class coordinate(object):
         self.ready = None
         
         self.recvs = []  # For serverreceivers
-        self.str = os.urandom(16)
+        self.str = (''.join(random.choice(string.ascii_letters) for i in range(16))).encode('ASCII') ##TODO:stronger random required
         # self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.check = threading.Event()
         self.check.set()

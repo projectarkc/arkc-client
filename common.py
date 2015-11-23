@@ -64,8 +64,8 @@ class certloader:
             
 def get_ip():
     try:
-        #ip = get('https://api.ipify.org').text
-        ip = "127.0.0.1"
+        ip = get('https://api.ipify.org').text
+        #ip = "127.0.0.1"
         return struct.unpack("!L", socket.inet_aton(ip))[0]
     except Exception as err:
         print("Error occurred in getting address. Using default 127.0.0.1 in testing environment.")
