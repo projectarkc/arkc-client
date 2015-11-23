@@ -141,10 +141,10 @@ if __name__ == '__main__':
     
     except KeyError as e:
         print(e)
-        #logging.error(e + "is not found in the config file. Quitting.")
+        logging.error("Bad config file. Quitting.")
         quit()
     
-    #except Exception as e:
-    #    print ("An error occurred: \n")
-    #    print(e)
+    except Exception as e:
+        print ("An error occurred: \n")
+        print(e)
     asyncore.loop()

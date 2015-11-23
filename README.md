@@ -34,7 +34,8 @@ For the configuration file, you can find an example here:
     "remote_control_host":"example.com",
     "local_cert":"client.pem",
     "remote_cert":"server.pub",
-    "local_cert_pub":"client.pub"
+    "local_cert_pub":"client.pub",
+    "control_domain":"testing.arkc.org"
 }
 ```
 
@@ -42,8 +43,6 @@ For a full list of settings:
 
 | Index name            | Value Type & Description | Required / Default|
 | ----------------------|:------------------------:| -----------------:|
-| remote_control_host   | str, UDP dest. host      | REQUIRED          |
-| remote_control_port   | integer, UDP dest. port  | 9000              |
 | local_host            | str, proxy listening addr| "127.0.0.1"       |
 | local_port            | integer, proxy port      | 8001              |
 | remote_host           | str, listening host      | "0.0.0.0"         |
@@ -52,6 +51,7 @@ For a full list of settings:
 | local_cert            | str, path of client pri  | REQUIRED          |
 | local_cert_pub        | str, path of client pub  | REQUIRED          |
 | remote_cert           | str, path of server pub  | REQUIRED          |
+| control_domain	| str, standard domain     | REQUIRED 	       |
 
 ##Acknowledgements
 
