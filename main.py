@@ -27,14 +27,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="ArkC Client")
     try:
         # Load arguments
-        parser.add_argument("-v", dest = "v", action="store_true", help="show detailed logs")
-        parser.add_argument('-c', '--config', dest = "config", help="You must specify a configuration files. By default ./config.json is used.", default = 'config.json')
-        parser.add_argument('-fs', '--frequent-swap', dest= "fs", action="store_true", help="Use frequent connection swapping") ##TODO: support this function
+        parser.add_argument("-v", dest="v", action="store_true", help="show detailed logs")
+        parser.add_argument('-c', '--config', dest="config", help="You must specify a configuration files. By default ./config.json is used.", default='config.json')
+        parser.add_argument('-fs', '--frequent-swap', dest="fs", action="store_true", help="Use frequent connection swapping")  # #TODO: support this function
         options = parser.parse_args()
         
         data = {}
                 
-        #Load json configuration file
+        # Load json configuration file
         try:
             data_file = open(options.config)    
             data = json.load(data_file)
@@ -47,7 +47,7 @@ if __name__ == '__main__':
             logging.error("missing control domain")
             quit()
         
-        #Apply default values
+        # Apply default values
         if "local_host" not in data:
             data["local_host"] = DEFAULT_LOCAL_HOST
             

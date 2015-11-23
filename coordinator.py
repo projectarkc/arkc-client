@@ -1,17 +1,16 @@
-import socket
 import threading
 import logging
 import os
 import random
 import string
 import binascii
-import pyotp
 import subprocess 
 import hashlib
 
 from time import sleep
 
 from common import get_ip
+import pyotp
 
 CLOSECHAR = chr(4) * 5
 DNSSERVERADDR = "114.114.114.114"
@@ -34,7 +33,7 @@ class coordinate(object):
         self.ready = None
         
         self.recvs = []  # For serverreceivers
-        self.str = (''.join(random.choice(string.ascii_letters) for i in range(16))).encode('ASCII') ##TODO:stronger random required
+        self.str = (''.join(random.choice(string.ascii_letters) for i in range(16))).encode('ASCII')  # #TODO:stronger random required
         self.check = threading.Event()
         self.check.set()
         req = threading.Thread(target=self.reqconn)
@@ -76,7 +75,7 @@ class coordinate(object):
         while True:
             self.check.wait()  # Start the request when the client needs connections
             requestdata = self.generatereq()  
-            subprocess.call(['nslookup', requestdata + "." + self.ctl_domain, DNSSERVERADDR],stderr = subprocess.PIPE, stdout = subprocess.PIPE) #TODO: To edit to a public one? 
+            subprocess.call(['nslookup', requestdata + "." + self.ctl_domain, DNSSERVERADDR], stderr=subprocess.PIPE, stdout=subprocess.PIPE)  # TODO: To edit to a public one? 
             sleep(0.1)
             
         

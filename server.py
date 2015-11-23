@@ -3,7 +3,6 @@ import asyncore
 import logging
 import time
 import struct
-import pyotp
 
 from common import AESCipher
 from _io import BlockingIOError
@@ -18,7 +17,7 @@ class servercontrol(asyncore.dispatcher):
     def __init__(self, serverip, serverport, ctl, backlog=5):
         self.ctl = ctl
         asyncore.dispatcher.__init__(self)
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM) ##TODO: support IPv6
+        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)  # #TODO: support IPv6
         self.set_reuse_addr()
         self.bind((serverip, serverport))
         self.listen(backlog)
@@ -40,7 +39,7 @@ class serverreceiver(asyncore.dispatcher):
         self.cipher = None
         self.preferred = False
         self.closing = False
-        self.splitchar = chr(27)+chr(28)+"%X" % struct.unpack('B', self.ctl.str[-2:-1])[0] + "%X" % struct.unpack('B', self.ctl.str[-3:-2])[0]+chr(31)
+        self.splitchar = chr(27) + chr(28) + "%X" % struct.unpack('B', self.ctl.str[-2:-1])[0] + "%X" % struct.unpack('B', self.ctl.str[-3:-2])[0] + chr(31)
         self.no_data_count = 0
         self.read = b''
         self.begin_auth()
@@ -92,11 +91,11 @@ class serverreceiver(asyncore.dispatcher):
                     logging.warning("Authentication failed, socket closing")
                     self.close()
                 else:
-                    #self.send(self.ctl.localcert.encrypt(pyotp.HOTP(self.ctl.localcert_sha1)) + self.splitchar)
+                    # self.send(self.ctl.localcert.encrypt(pyotp.HOTP(self.ctl.localcert_sha1)) + self.splitchar)
                     self.cipher = AESCipher(self.ctl.localcert.decrypt(self.read[-256:]), self.ctl.str)
                     self.full = False
                     self.ctl.newconn(self)
-                    logging.info("Authentication succeed, connection established")#, client auth string sent")
+                    logging.info("Authentication succeed, connection established")  # , client auth string sent")
             else:
                 if len(self.read) == 0:
                     self.no_data_count += 1
@@ -148,9 +147,9 @@ class serverreceiver(asyncore.dispatcher):
         try:    
             if len(self.ctl.clientreceivers[cli_id].to_remote_buffer) <= 4096:
                 sent = len(self.ctl.clientreceivers[cli_id].to_remote_buffer)
-                self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") +bytes('%i' % self.ctl.clientreceivers[cli_id].to_remote_buffer_index, "UTF-8") + self.ctl.clientreceivers[cli_id].to_remote_buffer) + bytes(self.splitchar, "UTF-8"))
+                self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + bytes('%i' % self.ctl.clientreceivers[cli_id].to_remote_buffer_index, "UTF-8") + self.ctl.clientreceivers[cli_id].to_remote_buffer) + bytes(self.splitchar, "UTF-8"))
             else:
-                self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + bytes('%i' % self.ctl.clientreceivers[cli_id].to_remote_buffer_index, "UTF-8")+self.ctl.clientreceivers[cli_id].to_remote_buffer[:4096]) + bytes(self.splitchar, "UTF-8"))
+                self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + bytes('%i' % self.ctl.clientreceivers[cli_id].to_remote_buffer_index, "UTF-8") + self.ctl.clientreceivers[cli_id].to_remote_buffer[:4096]) + bytes(self.splitchar, "UTF-8"))
                 sent = 4096
             self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
         except KeyError as err:
@@ -158,7 +157,7 @@ class serverreceiver(asyncore.dispatcher):
         if lastcontents is not None:
             self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + bytes('%i' % self.ctl.clientreceivers[cli_id].to_remote_buffer_index, "UTF-8") + bytes(lastcontents, "UTF-8")) + bytes(self.splitchar, "UTF-8"))
             sent += len(lastcontents)
-            #self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
+            # self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
         logging.info('%04i to server' % sent)
         try:
             self.ctl.clientreceivers[cli_id].to_remote_buffer = self.ctl.clientreceivers[cli_id].to_remote_buffer[sent:]

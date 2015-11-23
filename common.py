@@ -1,9 +1,7 @@
 from Crypto.Cipher import AES
-
 from requests import get
 import socket
 import struct
-
 from hashlib import sha1
 
 try:
@@ -11,7 +9,7 @@ try:
 except Exception as e:
     print("Library Crypto (pycrypto) is not installed. Fatal error.")
     quit()
-#TODO:Need to switch to PKCS for better security
+# TODO:Need to switch to PKCS for better security
 
 class AESCipher:
     """A reusable wrapper of PyCrypto's AES cipher, i.e. resets every time."""
@@ -39,8 +37,8 @@ class certloader:
     def __init__(self, certfile):
         self.certfile = certfile
     
-    #TODO: need to support more formats
-    #Return RSA key files
+    # TODO: need to support more formats
+    # Return RSA key files
     def importKey(self):
         try:
             data = self.certfile.read()
@@ -50,28 +48,28 @@ class certloader:
             print (err)
             quit()
             
-    #Note: This SHA1 is different from the SHA1 of the Der version
-    #Return HEX version of SHA1        
+    # Note: This SHA1 is different from the SHA1 of the Der version
+    # Return HEX version of SHA1        
     def getSHA1(self):
         try:
             data = self.certfile.read()
-            #TODO: should use compatible SHA1 value
+            # TODO: should use compatible SHA1 value
             return sha1(data.encode("UTF-8")).hexdigest()
         except Exception as err:
             print ("Cannot get SHA1 of the certificate.")
             print (err)
             quit()
             
-def get_ip(): ##TODO: Allow pre-set IPs / Use local network interfaces ip
+def get_ip():  # #TODO: Allow pre-set IPs / Use local network interfaces ip
     try:
         ip = get('https://api.ipify.org').text
-        #ip = "127.0.0.1"
+        # ip = "127.0.0.1"
         return struct.unpack("!L", socket.inet_aton(ip))[0]
     except Exception as err:
         print("Error occurred in getting address. Using default 127.0.0.1 in testing environment.")
         print(err)
         return struct.unpack("!L", socket.inet_aton("127.0.0.1"))[0]
-        #quit()
+        # quit()
         
 def get_ip_str():
     try:

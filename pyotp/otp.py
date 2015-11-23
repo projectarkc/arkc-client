@@ -35,9 +35,9 @@ class OTP(object):
 
         hmac_hash = bytearray(hmac_hash)
         offset = hmac_hash[-1] & 0xf
-        code = ((hmac_hash[offset] & 0x7f) << 24 |
-                (hmac_hash[offset + 1] & 0xff) << 16 |
-                (hmac_hash[offset + 2] & 0xff) << 8 |
+        code = ((hmac_hash[offset] & 0x7f) << 24 | 
+                (hmac_hash[offset + 1] & 0xff) << 16 | 
+                (hmac_hash[offset + 2] & 0xff) << 8 | 
                 (hmac_hash[offset + 3] & 0xff))
         str_code = str(code % 10 ** self.digits)
         while len(str_code) < self.digits:
@@ -49,7 +49,7 @@ class OTP(object):
         missing_padding = len(self.secret) % 8
         if missing_padding != 0:
             self.secret = self.secret + '=' * (8 - missing_padding)
-        return base64.b64decode(self.secret)#, casefold=True)
+        return base64.b64decode(self.secret)  # , casefold=True)
 
     @staticmethod
     def int_to_bytestring(i, padding=8):
