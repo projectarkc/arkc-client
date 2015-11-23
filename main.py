@@ -132,8 +132,6 @@ if __name__ == '__main__':
                 data["remote_host"],
                 data["remote_port"],
                 ctl
-                #localcert,
-                #localcert_sha1
                 )
         cctl = clientcontrol(
             ctl,

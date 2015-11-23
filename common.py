@@ -62,7 +62,7 @@ class certloader:
             print (err)
             quit()
             
-def get_ip():
+def get_ip(): ##TODO: Allow pre-set IPs / Use local network interfaces ip
     try:
         ip = get('https://api.ipify.org').text
         #ip = "127.0.0.1"
@@ -76,7 +76,8 @@ def get_ip():
 def get_ip_str():
     try:
         ip = get('https://api.ipify.org').text
-        return socket.inet_ntoa(struct.unpack("!L", socket.inet_aton(ip))[0])
+        return ip
     except Exception as err:
+        print("Error occurred in getting address. Using default 127.0.0.1 in testing environment.")
         print(err)
-        quit()
+        return "127.0.0.1"

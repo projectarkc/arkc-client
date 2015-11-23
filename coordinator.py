@@ -14,6 +14,7 @@ from time import sleep
 from common import get_ip
 
 CLOSECHAR = chr(4) * 5
+DNSSERVERADDR = "114.114.114.114"
 
 class coordinate(object):
 
@@ -28,12 +29,12 @@ class coordinate(object):
         self.remote_port = remote_port
         self.swapcount = swapcount
         self.ctl_domain = ctl_domain
+        self.ip = get_ip()
         self.clientreceivers = {}
         self.ready = None
         
         self.recvs = []  # For serverreceivers
         self.str = (''.join(random.choice(string.ascii_letters) for i in range(16))).encode('ASCII') ##TODO:stronger random required
-        # self.udpsock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.check = threading.Event()
         self.check.set()
         req = threading.Thread(target=self.reqconn)
@@ -75,7 +76,7 @@ class coordinate(object):
         while True:
             self.check.wait()  # Start the request when the client needs connections
             requestdata = self.generatereq()  
-            subprocess.call(['nslookup', requestdata + "." + self.ctl_domain, "127.0.0.1"],stderr = subprocess.PIPE, stdout = subprocess.PIPE) #TODO: To edit to a public one? 
+            subprocess.call(['nslookup', requestdata + "." + self.ctl_domain, DNSSERVERADDR],stderr = subprocess.PIPE, stdout = subprocess.PIPE) #TODO: To edit to a public one? 
             sleep(0.1)
             
         
@@ -98,7 +99,7 @@ class coordinate(object):
         if len(required_hex) == 1:
             required_hex = '0' + required_hex
         remote_port_hex = '0' * (4 - len(remote_port_hex)) + remote_port_hex
-        myip = get_ip()
+        myip = self.ip
         salt = binascii.hexlify(os.urandom(16)).decode("ASCII")
         h = hashlib.sha256()
         h.update((self.localcert_sha1 + str(myip) + salt).encode('utf-8'))
