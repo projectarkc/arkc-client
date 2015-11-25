@@ -4,8 +4,8 @@ import os
 import random
 import string
 import binascii
-import subprocess 
 import hashlib
+import dns.resolver
 
 from time import sleep
 
@@ -18,7 +18,7 @@ DNSSERVERADDR = "114.114.114.114"
 class coordinate(object):
 
     '''Used to request connections and deal with part of authentication'''
-    
+
     def __init__(self, ctl_domain, localcert, localcert_sha1, remotecert, localpub, required, remote_port, swapcount=5):
         self.remotepub = remotecert
         self.localcert = localcert
@@ -31,7 +31,7 @@ class coordinate(object):
         self.ip = get_ip()
         self.clientreceivers = {}
         self.ready = None
-        
+
         self.recvs = []  # For serverreceivers
         self.str = (''.join(random.choice(string.ascii_letters) for i in range(16))).encode('ASCII')  # #TODO:stronger random required
         self.check = threading.Event()
@@ -50,7 +50,7 @@ class coordinate(object):
         if len(self.recvs) + 2 >= self.required:
             self.check.clear()
         logging.info("Running socket %d" % len(self.recvs))
-            
+
     def closeconn(self, conn):
         # Called when a connection is closed
         if self.ready is not None:
@@ -68,17 +68,18 @@ class coordinate(object):
         if len(self.recvs) < self.required:
             self.check.set()
         logging.info("Running socket %d" % len(self.recvs))
-            
+
     def reqconn(self):
         # Sending DNS queries
-        
+        my_resolver = dns.resolver.Resolver()
+        my_resolver.nameservers = [DNSSERVERADDR]
         while True:
             self.check.wait()  # Start the request when the client needs connections
-            requestdata = self.generatereq()  
-            subprocess.call(['nslookup', requestdata + "." + self.ctl_domain, DNSSERVERADDR], stderr=subprocess.PIPE, stdout=subprocess.PIPE)  # TODO: To edit to a public one? 
+            requestdata = self.generatereq()
+            my_resolver.query(requestdata + "." + self.ctl_domain)
             sleep(0.1)
-            
-        
+
+
     def generatereq(self):
         # Generate strings for authentication
         """
@@ -92,7 +93,7 @@ class coordinate(object):
             salt
             Total length is 2 + 4 + 40 = 46, 16, 16, ?, 16
         """
-        
+
         required_hex = "%X" % min((self.required), 255)
         remote_port_hex = '%X' % self.remote_port
         if len(required_hex) == 1:
@@ -113,13 +114,13 @@ class coordinate(object):
 
     def issufficient(self):
         return len(self.recvs) >= self.required
-    
+
     def refreshconn(self):
         next_conn = random.choice(self.recvs)
         self.ready.preferred = False
         self.ready = next_conn
         next_conn.preferred = True
-    
+
     def register(self, clirecv):
         cli_id = None
         if len(self.recvs) == 0:
@@ -130,7 +131,7 @@ class coordinate(object):
             cli_id = ''.join(a[:2])
         self.clientreceivers[cli_id] = clirecv
         return cli_id
-    
+
     def remove(self, cli_id):
         if len(self.recvs) > 0:
             self.ready.id_write(cli_id, CLOSECHAR)
