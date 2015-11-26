@@ -55,7 +55,8 @@ For a full list of settings:
 
 ##Build on Windows
 ```
-pyinstaller main.py --hidden-import=Crypto
+pip install pyinstaller
+pyinstaller [--onefile] main.py
 ```
 
 ##Acknowledgements
