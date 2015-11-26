@@ -1,2 +1,3 @@
 pycrypto
-dnspython
+dnspython3
+requests
