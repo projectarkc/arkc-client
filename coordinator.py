@@ -103,6 +103,12 @@ class coordinate(object):
                 self.resolvers[self.resolv_cursor].query(
                     requestdata + "." + self.ctl_domain)
                 sleep(0.1)
+
+            # TODO: handle NXDOMAIN and Timeout correctly
+            # expedient solution to Timeout
+            except dns.resolver.Timeout:
+                pass
+
             except dns.resolver.NXDOMAIN:
                 # This is the expected bahavior
                 logging.info("DNS response received")
