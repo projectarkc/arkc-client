@@ -17,11 +17,10 @@ from client import clientcontrol
 
 DEFAULT_LOCAL_HOST = "127.0.0.1"
 DEFAULT_REMOTE_HOST = "0.0.0.0"
-
 DEFAULT_LOCAL_PORT = 8001
 DEFAULT_REMOTE_PORT = 8000
-
 DEFAULT_REQUIRED = 3
+DEFAULT_DNS_SERVERS = None
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="ArkC Client")
@@ -54,14 +53,17 @@ if __name__ == '__main__':
         if "local_port" not in data:
             data["local_port"] = DEFAULT_LOCAL_PORT
 
-        if "remote_host"not in data:
+        if "remote_host" not in data:
             data["remote_host"] = DEFAULT_REMOTE_HOST
 
-        if "remote_port"not in data:
+        if "remote_port" not in data:
             data["remote_port"] = DEFAULT_REMOTE_PORT
 
-        if "number"not in data:
+        if "number" not in data:
             data["number"] = DEFAULT_REQUIRED
+
+        if "dns_servers" not in data:
+            data["dns_servers"] = DEFAULT_DNS_SERVERS
 
 
         # Load certificates
@@ -126,6 +128,7 @@ if __name__ == '__main__':
                     localpub,
                     data["number"],
                     data["remote_port"],
+                    data["dns_servers"],
                     swapfq
                     )
         sctl = servercontrol(

@@ -13,19 +13,21 @@ from common import get_ip
 import pyotp
 
 CLOSECHAR = chr(4) * 5
-DNSSERVERADDR = "114.114.114.114"
+
 
 class coordinate(object):
 
-    '''Used to request connections and deal with part of authentication'''
+    '''Request connections and deal with part of authentication'''
 
-    def __init__(self, ctl_domain, localcert, localcert_sha1, remotecert, localpub, required, remote_port, swapcount=5):
+    def __init__(self, ctl_domain, localcert, localcert_sha1, remotecert,
+                 localpub, required, remote_port, dns_servers, swapcount=5):
         self.remotepub = remotecert
         self.localcert = localcert
         self.localcert_sha1 = localcert_sha1
         self.authdata = localpub
         self.required = required
         self.remote_port = remote_port
+        self.dns_init(dns_servers)
         self.swapcount = swapcount
         self.ctl_domain = ctl_domain
         self.ip = get_ip()
@@ -39,6 +41,28 @@ class coordinate(object):
         req = threading.Thread(target=self.reqconn)
         req.setDaemon(True)
         req.start()
+
+    def dns_init(self, dns_servers):
+        """Initialize a list of dns resolvers.
+
+        Each resolver contains either all of the system nameservers,
+        or ONE of the user-defined nameserver.
+        (Since user nameservers may have different ports, multiple resolvers are
+         needed)
+        """
+        self.dns_servers = dns_servers
+        self.resolvers = []
+        if not dns_servers:
+            self.resolvers.append(dns.resolver.Resolver())
+        else:
+            for server, port in dns_servers:
+                user_resolver = dns.resolver.Resolver()
+                user_resolver.nameservers = [server]
+                user_resolver.port = port
+                self.resolvers.append(user_resolver)
+
+        # Index of the resolver currently in use, move forward on failure
+        self.resolv_cursor = 0
 
     def newconn(self, recv):
         # Called when receive new connections
@@ -71,13 +95,24 @@ class coordinate(object):
 
     def reqconn(self):
         # Sending DNS queries
-        my_resolver = dns.resolver.Resolver()
-        my_resolver.nameservers = [DNSSERVERADDR]
         while True:
             self.check.wait()  # Start the request when the client needs connections
             requestdata = self.generatereq()
-            my_resolver.query(requestdata + "." + self.ctl_domain)
-            sleep(0.1)
+            try:
+                self.resolvers[self.resolv_cursor].query(
+                    requestdata + "." + self.ctl_domain)
+                sleep(0.1)
+            except dns.resolver.NXDOMAIN:
+                # This is the expected bahavior
+                logging.info("DNS response received")
+            except dns.resolver.YXDOMAIN:
+                logging.error("The name is too long after DNAME substitution.")
+            except:
+                logging.error("DNS resolver fails. Trying next...")
+                self.resolv_cursor += 1
+                if (self.resolv_cursor == len(self.resolvers)):
+                    logging.warning("All DNS resolvers tried, Starting over...")
+                    self.resolv_cursor = 0
 
 
     def generatereq(self):

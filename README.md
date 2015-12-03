@@ -35,7 +35,11 @@ For the configuration file, you can find an example here:
     "local_cert":"client.pem",
     "remote_cert":"server.pub",
     "local_cert_pub":"client.pub",
-    "control_domain":"testing.arkc.org"
+    "control_domain":"testing.arkc.org",
+    "dns_servers": [
+            ["8.8.8.8", 53],
+            ["127.0.0.1", 9000]
+        ]
 }
 ```
 
@@ -52,6 +56,7 @@ For a full list of settings:
 | local_cert_pub        | str, path of client pub  | REQUIRED          |
 | remote_cert           | str, path of server pub  | REQUIRED          |
 | control_domain	| str, standard domain     | REQUIRED 	       |
+| dns_server            | list, servers to send dns query to | [] (use system resolver)|
 
 ##Build on Windows
 ```
