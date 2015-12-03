@@ -20,7 +20,8 @@ class coordinate(object):
     '''Request connections and deal with part of authentication'''
 
     def __init__(self, ctl_domain, localcert, localcert_sha1, remotecert,
-                 localpub, required, remote_port, dns_servers, swapcount=5):
+                 localpub, required, remote_port, dns_servers, debug_ip,
+                 swapcount=5):
         self.remotepub = remotecert
         self.localcert = localcert
         self.localcert_sha1 = localcert_sha1
@@ -30,7 +31,7 @@ class coordinate(object):
         self.dns_init(dns_servers)
         self.swapcount = swapcount
         self.ctl_domain = ctl_domain
-        self.ip = get_ip()
+        self.ip = get_ip(debug_ip)
         self.clientreceivers = {}
         self.ready = None
 

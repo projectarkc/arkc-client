@@ -65,6 +65,9 @@ if __name__ == '__main__':
         if "dns_servers" not in data:
             data["dns_servers"] = DEFAULT_DNS_SERVERS
 
+        if "debug_ip" not in data:
+            data["debug_ip"] = None
+
 
         # Load certificates
         try:
@@ -129,6 +132,7 @@ if __name__ == '__main__':
                     data["number"],
                     data["remote_port"],
                     data["dns_servers"],
+                    data["debug_ip"],
                     swapfq
                     )
         sctl = servercontrol(

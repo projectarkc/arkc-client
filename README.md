@@ -57,6 +57,7 @@ For a full list of settings:
 | remote_cert           | str, path of server pub  | REQUIRED          |
 | control_domain	| str, standard domain     | REQUIRED 	       |
 | dns_server            | list, servers to send dns query to | [] (use system resolver)|
+| debug_ip              | str, address of the client (only for debug use) | None |
 
 ##Build on Windows
 ```
