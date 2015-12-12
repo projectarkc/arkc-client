@@ -20,7 +20,7 @@ class coordinate(object):
     '''Request connections and deal with part of authentication'''
 
     def __init__(self, ctl_domain, localcert, localcert_sha1, remotecert,
-                 localpub, required, remote_port, dns_servers, debug_ip,
+                 localpub, required, remote_host, remote_port, dns_servers, debug_ip,
                  swapcount=5):
         self.remotepub = remotecert
         self.localcert = localcert
@@ -28,6 +28,7 @@ class coordinate(object):
         self.authdata = localpub
         self.required = required
         self.remote_port = remote_port
+        self.remote_host = remote_host
         self.dns_init(dns_servers)
         self.swapcount = swapcount
         self.ctl_domain = ctl_domain
@@ -49,7 +50,7 @@ class coordinate(object):
         req.start()
 
     def ptinit(self):
-        ptproxy.ptproxy.ptproxy(self.localcert_sha1 + self.localcert_sha1[:30], self.remote_port)  # TODO: add main_pw into the certs string
+        ptproxy.ptproxy.ptproxy(self.localcert_sha1 + self.localcert_sha1[:30], self.remote_host + ":" + str(self.remote_port))  # TODO: add main_pw into the certs string
     
     def dns_init(self, dns_servers):
         """Initialize a list of dns resolvers.

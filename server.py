@@ -15,12 +15,13 @@ REAL_SERVERPORT=55000
 
 class servercontrol(asyncore.dispatcher):
 
-    def __init__(self, serverip, serverport, ctl, backlog=5):
+    def __init__(self, ctl, backlog=5):
         self.ctl = ctl
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)  # #TODO: support IPv6
         self.set_reuse_addr()
         serverport=REAL_SERVERPORT
+        serverip="127.0.0.1"
         self.bind((serverip, serverport))
         self.listen(backlog)
 

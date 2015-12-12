@@ -11,9 +11,7 @@ import subprocess
 import socketserver
 import ptproxy.socks as socks
 
-REAL_SERVERPORT=55000
-
-def ptproxy(certs, localport, iat=0, ptexec="obfs4proxy -logLevel=ERROR -enableLogging=true"):
+def ptproxy(certs, localstr, iat=0, ptexec="obfs4proxy -logLevel=ERROR -enableLogging=true"):
     global logtime
     global DEVNULL
     global TRANSPORT_VERSIONS
@@ -21,6 +19,9 @@ def ptproxy(certs, localport, iat=0, ptexec="obfs4proxy -logLevel=ERROR -enableL
     global CFG
     global PT_PROC
     global PTREADY
+    
+    realserverport=56000
+    
     logtime = lambda: time.strftime('%Y-%m-%d %H:%M:%S')
     DEVNULL = open(os.devnull, 'wb')        
     TRANSPORT_VERSIONS = ('1',)
@@ -29,7 +30,7 @@ def ptproxy(certs, localport, iat=0, ptexec="obfs4proxy -logLevel=ERROR -enableL
            "role": "server",
            "state": "/tmp/ptserver",
            # "server": "127.0.0.1:8000",
-           "local": "127.0.0.1:" + str(REAL_SERVERPORT),
+           "local": "127.0.0.1:" + str(realserverport),
            "ptexec": ptexec,
            "ptname": "obfs4",
            # "ptargs": "cert=AAAAAAAAAAAAAAAAAAAAAAAAAAAAA+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;iat-mode=0",
@@ -38,7 +39,7 @@ def ptproxy(certs, localport, iat=0, ptexec="obfs4proxy -logLevel=ERROR -enableL
     }
 
     # initialize CFG
-    CFG["server"] = "0.0.0.0:" + str(localport)
+    CFG["server"] = localstr
     CFG["ptargs"] = "cert=" + certs + ";iat-mode=" + str(iat)
     if os.name == 'nt':
         startupinfo = subprocess.STARTUPINFO()

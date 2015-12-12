@@ -127,16 +127,13 @@ if __name__ == '__main__':
                     remotecert,
                     localpub_sha1,
                     data["number"],
+                    data["remote_host"],
                     data["remote_port"],
                     data["dns_servers"],
                     data["debug_ip"],
                     swapfq
                     )
-        sctl = servercontrol(
-                data["remote_host"],
-                data["remote_port"],
-                ctl
-                )
+        sctl = servercontrol(ctl)
         cctl = clientcontrol(
             ctl,
             data["local_host"],
