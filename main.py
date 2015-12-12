@@ -71,9 +71,8 @@ if __name__ == '__main__':
 
         # Load certificates
         try:
-            remote_cert_file = open(data["remote_cert"], "r")
-            remotecert = certloader(remote_cert_file).importKey()
-            remote_cert_file.close()
+            remotecert_data = open(data["remote_cert"], "r").read()
+            remotecert = certloader(remotecert_data).importKey()
         except KeyError as e:
             logging.error(e.tostring() + "is not found in the config file. Quitting.")
             quit()
@@ -83,11 +82,10 @@ if __name__ == '__main__':
             quit()
 
         try:
-            local_cert_file = open(data["local_cert"], "r")
-            localcert = certloader(local_cert_file).importKey()
-            localcert_sha1 = certloader(local_cert_file).getSHA1()
-            local_cert_file.close()
-            if not localcert.has_private():
+            localpri_data = open(data["local_cert"], "r").read()
+            localpri = certloader(localpri_data).importKey()
+            localpri_sha1 = certloader(localpri_data).getSHA1()
+            if not localpri.has_private():
                 print("Fatal error, no private key included in local certificate.")
         except KeyError as e:
             logging.error(e.tostring() + "is not found in the config file. Quitting.")
@@ -98,9 +96,8 @@ if __name__ == '__main__':
             quit()
 
         try:
-            local_pub_file = open(data["local_cert_pub"], "r")
-            localpub = certloader(local_pub_file).getSHA1()
-            local_pub_file.close()
+            localpub_data = open(data["local_cert_pub"], "r").read()
+            localpub_sha1 = certloader(localpub_data).getSHA1()
         except KeyError as e:
             logging.error(e.tostring() + "is not found in the config file. Quitting.")
             quit()
@@ -125,10 +122,10 @@ if __name__ == '__main__':
     try:
         ctl = coordinate(
                     data["control_domain"],
-                    localcert,
-                    localcert_sha1,
+                    localpri,
+                    localpri_sha1,
                     remotecert,
-                    localpub,
+                    localpub_sha1,
                     data["number"],
                     data["remote_port"],
                     data["dns_servers"],

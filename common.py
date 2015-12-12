@@ -33,29 +33,22 @@ class AESCipher:
 
 class certloader:
 
-    ''' Used to load certfiles'''
-
-    def __init__(self, certfile):
-        self.certfile = certfile
+    def __init__(self, cert_data):
+        self.cert_data = cert_data
 
     # TODO: need to support more formats
     # Return RSA key files
     def importKey(self):
         try:
-            data = self.certfile.read()
-            return RSA.importKey(data)
+            return RSA.importKey(self.cert_data)
         except Exception as err:
             print ("Fatal error while loading certificate.")
             print (err)
             quit()
 
-    # Note: This SHA1 is different from the SHA1 of the Der version
-    # Return HEX version of SHA1
     def getSHA1(self):
         try:
-            data = self.certfile.read()
-            # TODO: should use compatible SHA1 value
-            return sha1(data.encode("UTF-8")).hexdigest()
+            return sha1(self.cert_data.encode("UTF-8")).hexdigest()
         except Exception as err:
             print ("Cannot get SHA1 of the certificate.")
             print (err)
