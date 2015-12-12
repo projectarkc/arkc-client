@@ -11,9 +11,9 @@ from time import sleep
 
 from common import get_ip
 import pyotp
+import ptproxy.ptproxy
 
 CLOSECHAR = chr(4) * 5
-
 
 class coordinate(object):
 
@@ -34,6 +34,9 @@ class coordinate(object):
         self.ip = get_ip(debug_ip)
         self.clientreceivers = {}
         self.ready = None
+        
+        pt = threading.Thread(target=self.ptinit)
+        pt.setDaemon(True)
 
         self.recvs = []  # For serverreceivers
         self.str = (''.join(random.choice(string.ascii_letters) for i in range(16))).encode('ASCII')  # #TODO:stronger random required
@@ -41,8 +44,13 @@ class coordinate(object):
         self.check.set()
         req = threading.Thread(target=self.reqconn)
         req.setDaemon(True)
+        
+        pt.start()
         req.start()
 
+    def ptinit(self):
+        ptproxy.ptproxy.ptproxy(self.localcert_sha1 + self.localcert_sha1[:30], self.remote_port)  # TODO: add main_pw into the certs string
+    
     def dns_init(self, dns_servers):
         """Initialize a list of dns resolvers.
 

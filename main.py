@@ -148,7 +148,7 @@ if __name__ == '__main__':
         logging.error("Bad config file. Quitting.")
         quit()
 
-    except Exception as e:
-        print ("An error occurred: \n")
-        print(e)
+    #except Exception as e:
+    #    print ("An error occurred: \n")
+    #    print(e)
     asyncore.loop()

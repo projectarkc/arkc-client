@@ -2,49 +2,47 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
 import time
-import json
 import shlex
 import select
 import threading
 import subprocess
 
-import SocketServer
+import socketserver
 import ptproxy.socks as socks
 
-logtime = lambda: time.strftime('%Y-%m-%d %H:%M:%S')
+REAL_SERVERPORT=55000
 
-DEVNULL = open(os.devnull, 'wb')        
-TRANSPORT_VERSIONS = ('1',)
-startupinfo = None
-CFG = None
+def ptproxy(certs, localport, iat=0, ptexec="obfs4proxy -logLevel=ERROR -enableLogging=true"):
+    global logtime
+    global DEVNULL
+    global TRANSPORT_VERSIONS
+    global startupinfo
+    global CFG
+    global PT_PROC
+    global PTREADY
+    logtime = lambda: time.strftime('%Y-%m-%d %H:%M:%S')
+    DEVNULL = open(os.devnull, 'wb')        
+    TRANSPORT_VERSIONS = ('1',)
+    startupinfo = None
+    CFG = {
+           "role": "server",
+           "state": "/tmp/ptserver",
+           # "server": "127.0.0.1:8000",
+           "local": "127.0.0.1:" + str(REAL_SERVERPORT),
+           "ptexec": ptexec,
+           "ptname": "obfs4",
+           # "ptargs": "cert=AAAAAAAAAAAAAAAAAAAAAAAAAAAAA+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;iat-mode=0",
+           "ptserveropt": "",
+           "ptproxy": ""
+    }
 
-def ptproxy(inputlist):
-    CFG=inputlist
+    # initialize CFG
+    CFG["server"] = "0.0.0.0:" + str(localport)
+    CFG["ptargs"] = "cert=" + certs + ";iat-mode=" + str(iat)
     if os.name == 'nt':
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    
-    try:
-        if len(sys.argv) == 1:
-            pass
-        elif len(sys.argv) == 2:
-            if sys.argv[1] in ('-h', '--help'):
-                print('usage: python3 %s [-c|-s] [config.json]' % __file__)
-                sys.exit(0)
-            else:
-                CFG = json.load(open(sys.argv[1], 'r'))
-        elif len(sys.argv) == 3:
-            CFG = json.load(open(sys.argv[2], 'r'))
-            if sys.argv[1] == '-c':
-                CFG['role'] = 'client'
-        elif sys.argv[1] == '-s':
-            CFG['role'] = 'server'
-    except Exception as ex:
-        print(ex)
-        print('usage: python3 %s [-c|-s] [config.json]' % sys.argv[0])
-        sys.exit(1)
 
     PT_PROC = None
     PTREADY = threading.Event()
@@ -71,12 +69,11 @@ def ptproxy(inputlist):
 class PTConnectFailed(Exception):
     pass
 
-
-class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
     allow_reuse_address = True
 
 
-class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
+class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
         ptsock = socks.socksocket()
@@ -110,6 +107,7 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
 
 
 def ptenv():
+
     env = os.environ.copy()
     env['TOR_PT_STATE_LOCATION'] = CFG['state']
     env['TOR_PT_MANAGED_TRANSPORT_VER'] = ','.join(TRANSPORT_VERSIONS)
@@ -141,7 +139,6 @@ def checkproc():
 
 
 def parseptline(iterable):
-    global CFG
     for ln in iterable:
         ln = ln.decode('utf_8', errors='replace').rstrip('\n')
         sp = ln.split(' ', 1)
@@ -194,7 +191,8 @@ def runpt():
             out = proc.stdout.readline()
             while out:
                 print(logtime(), out.decode('utf_8', errors='replace').rstrip('\n'))
-        except Exception:#original = BrokenPipeError
+        except Exception:  # original = BrokenPipeError
             pass
         PTREADY.clear()
+        #TODO: need to make sure PTREADY is waiting when the entire program is closing
         print(logtime(), 'PT died.')

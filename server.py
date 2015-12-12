@@ -11,6 +11,7 @@ from _io import BlockingIOError
 
 MAX_HANDLE = 100
 CLOSECHAR = chr(4) * 5
+REAL_SERVERPORT=55000
 
 class servercontrol(asyncore.dispatcher):
 
@@ -19,6 +20,7 @@ class servercontrol(asyncore.dispatcher):
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)  # #TODO: support IPv6
         self.set_reuse_addr()
+        serverport=REAL_SERVERPORT
         self.bind((serverip, serverport))
         self.listen(backlog)
 
