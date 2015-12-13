@@ -35,7 +35,10 @@ class coordinate(object):
         self.ip = get_ip(debug_ip)
         self.clientreceivers = {}
         self.ready = None
+        self.certs_send = None
         
+        self.certcheck = threading.Event()
+        self.certcheck.clear()
         pt = threading.Thread(target=self.ptinit)
         pt.setDaemon(True)
 
@@ -47,10 +50,17 @@ class coordinate(object):
         req.setDaemon(True)
         
         pt.start()
+        #self.certcheck.wait(1000)
         req.start()
 
     def ptinit(self):
-        ptproxy.ptproxy.ptproxy(self.localcert_sha1 + self.localcert_sha1[:30], self.remote_host + ":" + str(self.remote_port))  # TODO: add main_pw into the certs string
+        #ptproxy.ptproxy.ptproxy(self, self.remote_host + ":" + str(self.remote_port), self.certcheck)
+        print("####        Warning: Experimental function PTproxy          ####")
+        print("####Please copy the cert string manually to the server side.####")
+        with open("/home/tony/arkc/arkc-client/ptclient.py") as f:
+            code = compile(f.read(), "ptclient.py", 'exec')
+            globals={"SERVER_string":self.remote_host + ":" + str(self.remote_port), "ptexec":"obfs4proxy -logLevel=ERROR -enableLogging=true"}
+            exec(code, globals)
     
     def dns_init(self, dns_servers):
         """Initialize a list of dns resolvers.
@@ -139,7 +149,7 @@ class coordinate(object):
             used_remote_listening_port (HEX, 4 bytes) +
             sha1(cert_pub) ,
             pyotp.TOTP(pri_sha1 + ip_in_number_form + salt) , ## TODO: client identity must be checked
-            main_pw,##must send in encrypted form to avoid MITM
+            main_pw,##must send in encrypted form to avoid MITM,
             ip_in_number_form,
             salt
             Total length is 2 + 4 + 40 = 46, 16, 16, ?, 16

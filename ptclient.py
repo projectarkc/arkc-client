@@ -1,56 +1,12 @@
-"""
-SocksiPy - Python SOCKS module.
-Version 1.5.6
-
-Copyright 2006 Dan-Haim. All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-1. Redistributions of source code must retain the above copyright notice, this
-   list of conditions and the following disclaimer.
-2. Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
-3. Neither the name of Dan Haim nor the names of his contributors may be used
-   to endorse or promote products derived from this software without specific
-   prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY DAN HAIM "AS IS" AND ANY EXPRESS OR IMPLIED
-WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
-MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO
-EVENT SHALL DAN HAIM OR HIS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA
-OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMANGE.
-
-
-This module provides a standard socket-like interface for Python
-for tunneling connections through SOCKS proxies.
-
-===============================================================================
-
-Minor modifications made by Christopher Gilbert (http://motomastyle.com/)
-for use in PyLoris (http://pyloris.sourceforge.net/)
-
-Minor modifications made by Mario Vilas (http://breakingcode.wordpress.com/)
-mainly to merge bug fixes found in Sourceforge
-
-Modifications made by Anorov (https://github.com/Anorov)
--Forked and renamed to PySocks
--Fixed issue with HTTP proxy failure checking (same bug that was in the old ___recvall() method)
--Included SocksiPyHandler (sockshandler.py), to be used as a urllib2 handler,
- courtesy of e000 (https://github.com/e000): https://gist.github.com/869791#file_socksipyhandler.py
--Re-styled code to make it readable
-    -Aliased PROXY_TYPE_SOCKS5 -> SOCKS5 etc.
-    -Improved exception handling and output
-    -Removed irritating use of sequence indexes, replaced with tuple unpacked variables
-    -Fixed up Python 3 bytestring handling - chr(0x03).encode() -> b"\x03"
-    -Other general fixes
--Added clarification that the HTTP proxy connection method only supports CONNECT-style tunneling HTTP proxies
--Various small bug fixes
-"""
+import os
+import sys
+import time
+import json
+import shlex
+import select
+import threading
+import subprocess
+import socketserver
 
 __version__ = "1.5.6"
 
@@ -71,9 +27,6 @@ PRINTABLE_PROXY_TYPES = dict(zip(PROXY_TYPES.values(), PROXY_TYPES.keys()))
 _orgsocket = _orig_socket = socket.socket
 
 class ProxyError(IOError):
-    """
-    socket_err contains original socket.error exception.
-    """
     def __init__(self, msg, socket_err=None):
         self.msg = msg
         self.socket_err = socket_err
@@ -112,12 +65,6 @@ DEFAULT_PORTS = { SOCKS4: 1080,
                 }
 
 def set_default_proxy(proxy_type=None, addr=None, port=None, rdns=True, username=None, password=None):
-    """
-    set_default_proxy(proxy_type, addr[, port[, rdns[, username, password]]])
-
-    Sets a default proxy which all further socksocket objects will use,
-    unless explicitly changed. All parameters are as for socket.set_proxy().
-    """
     socksocket.default_proxy = (proxy_type, addr, port, rdns,
                                 username.encode() if username else None,
                                 password.encode() if password else None)
@@ -125,20 +72,11 @@ def set_default_proxy(proxy_type=None, addr=None, port=None, rdns=True, username
 setdefaultproxy = set_default_proxy
 
 def get_default_proxy():
-    """
-    Returns the default proxy, set by set_default_proxy.
-    """
     return socksocket.default_proxy
 
 getdefaultproxy = get_default_proxy
 
 def wrap_module(module):
-    """
-    Attempts to replace a module's socket library with a SOCKS socket. Must set
-    a default proxy using set_default_proxy(...) first.
-    This will only work on modules that import socket directly into the namespace;
-    most of the Python Standard Library falls into this category.
-    """
     if socksocket.default_proxy:
         module.socket.socket = socksocket
     else:
@@ -151,17 +89,6 @@ def create_connection(dest_pair, proxy_type=None, proxy_addr=None,
                       proxy_username=None, proxy_password=None,
                       timeout=None, source_address=None,
                       socket_options=None):
-    """create_connection(dest_pair, *[, timeout], **proxy_args) -> socket object
-
-    Like socket.create_connection(), but connects to proxy
-    before returning the socket object.
-
-    dest_pair - 2-tuple of (IP/hostname, port).
-    **proxy_args - Same args passed to socksocket.set_proxy() if present.
-    timeout - Optional socket timeout value, in seconds.
-    source_address - tuple (host, port) for the socket to bind to as its source
-    address before connecting (only for compatibility)
-    """
     sock = socksocket()
     if socket_options is not None:
         for opt in socket_options:
@@ -178,8 +105,6 @@ def create_connection(dest_pair, proxy_type=None, proxy_addr=None,
     return sock
 
 class _BaseSocket(socket.socket):
-    """Allows Python 2's "delegated" methods such as send() to be overridden
-    """
     def __init__(self, *pos, **kw):
         _orig_socket.__init__(self, *pos, **kw)
 
@@ -204,13 +129,7 @@ for name in ("sendto", "send", "recvfrom", "recv"):
         setattr(_BaseSocket, name, _makemethod(name))
 
 class socksocket(_BaseSocket):
-    """socksocket([family[, type[, proto]]]) -> socket object
 
-    Open a SOCKS enabled socket. The parameters are the same as
-    those of the standard socket init. In order for SOCKS to work,
-    you must specify family=AF_INET and proto=0.
-    The "type" argument must be either SOCK_STREAM or SOCK_DGRAM.
-    """
 
     default_proxy = None
 
@@ -230,10 +149,6 @@ class socksocket(_BaseSocket):
         self.proxy_peername = None
 
     def _readall(self, file, count):
-        """
-        Receive EXACTLY the number of bytes requested from the file object.
-        Blocks until the required number of bytes have been received.
-        """
         data = b""
         while len(data) < count:
             d = file.read(count - len(data))
@@ -243,23 +158,6 @@ class socksocket(_BaseSocket):
         return data
 
     def set_proxy(self, proxy_type=None, addr=None, port=None, rdns=True, username=None, password=None):
-        """set_proxy(proxy_type, addr[, port[, rdns[, username[, password]]]])
-        Sets the proxy to be used.
-
-        proxy_type -    The type of the proxy to be used. Three types
-                        are supported: PROXY_TYPE_SOCKS4 (including socks4a),
-                        PROXY_TYPE_SOCKS5 and PROXY_TYPE_HTTP
-        addr -        The address of the server (IP or DNS).
-        port -        The port of the server. Defaults to 1080 for SOCKS
-                       servers and 8080 for HTTP proxy servers.
-        rdns -        Should DNS queries be performed on the remote side
-                       (rather than the local side). The default is True.
-                       Note: This has no effect with SOCKS4 servers.
-        username -    Username to authenticate with to the server.
-                       The default is no authentication.
-        password -    Password to authenticate with to the server.
-                       Only relevant when username is also provided.
-        """
         self.proxy = (proxy_type, addr, port, rdns,
                       username.encode() if username else None,
                       password.encode() if password else None)
@@ -267,10 +165,6 @@ class socksocket(_BaseSocket):
     setproxy = set_proxy
 
     def bind(self, *pos, **kw):
-        """
-        Implements proxy connection for UDP sockets,
-        which happens during the bind() phase.
-        """
         proxy_type, proxy_addr, proxy_port, rdns, username, password = self.proxy
         if not proxy_type or self.type != socket.SOCK_DGRAM:
             return _orig_socket.bind(self, *pos, **kw)
@@ -357,43 +251,26 @@ class socksocket(_BaseSocket):
         return _BaseSocket.close(self)
 
     def get_proxy_sockname(self):
-        """
-        Returns the bound IP address and port number at the proxy.
-        """
         return self.proxy_sockname
 
     getproxysockname = get_proxy_sockname
 
     def get_proxy_peername(self):
-        """
-        Returns the IP and port number of the proxy.
-        """
         return _BaseSocket.getpeername(self)
 
     getproxypeername = get_proxy_peername
 
     def get_peername(self):
-        """
-        Returns the IP address and port number of the destination
-        machine (note: get_proxy_peername returns the proxy)
-        """
         return self.proxy_peername
 
     getpeername = get_peername
 
     def _negotiate_SOCKS5(self, *dest_addr):
-        """
-        Negotiates a stream connection through a SOCKS5 server.
-        """
         CONNECT = b"\x01"
         self.proxy_peername, self.proxy_sockname = self._SOCKS5_request(self,
             CONNECT, dest_addr)
 
     def _SOCKS5_request(self, conn, cmd, dst):
-        """
-        Send SOCKS5 request with given command (CMD field) and
-        address (DST field). Returns resolved DST address that was used.
-        """
         proxy_type, addr, port, rdns, username, password = self.proxy
 
         writer = conn.makefile("wb")
@@ -472,10 +349,6 @@ class socksocket(_BaseSocket):
             writer.close()
 
     def _write_SOCKS5_address(self, addr, file):
-        """
-        Return the host and port packed for the SOCKS5 protocol,
-        and the resolved address as a tuple object.
-        """
         host, port = addr
         proxy_type, _, _, rdns, username, password = self.proxy
 
@@ -514,9 +387,6 @@ class socksocket(_BaseSocket):
         return addr, port
 
     def _negotiate_SOCKS4(self, dest_addr, dest_port):
-        """
-        Negotiates a connection through a SOCKS4 server.
-        """
         proxy_type, addr, port, rdns, username, password = self.proxy
 
         writer = self.makefile("wb")
@@ -573,10 +443,6 @@ class socksocket(_BaseSocket):
             writer.close()
 
     def _negotiate_HTTP(self, dest_addr, dest_port):
-        """
-        Negotiates a connection through an HTTP server.
-        NOTE: This currently only supports HTTP CONNECT-style proxies.
-        """
         proxy_type, addr, port, rdns, username, password = self.proxy
 
         # If we need to resolve locally, we do this now
@@ -625,13 +491,6 @@ class socksocket(_BaseSocket):
 
 
     def connect(self, dest_pair):
-        """
-        Connects to the specified destination through a proxy.
-        Uses the same API as socket's connect().
-        To select the proxy server, use set_proxy().
-
-        dest_pair - 2-tuple of (IP/hostname, port).
-        """
         # It actually supports IPv6 without problem!
         #if len(dest_pair) != 2 or dest_pair[0].startswith("["):
             # Probably IPv6, not supported -- raise an error, and hope
@@ -703,11 +562,218 @@ class socksocket(_BaseSocket):
                 raise
 
     def _proxy_addr(self):
-        """
-        Return proxy address to connect to as tuple object
-        """
         proxy_type, proxy_addr, proxy_port, rdns, username, password = self.proxy
         proxy_port = proxy_port or DEFAULT_PORTS.get(proxy_type)
         if not proxy_port:
             raise GeneralProxyError("Invalid proxy type")
         return proxy_addr, proxy_port
+
+try:
+    DEVNULL = subprocess.DEVNULL
+except AttributeError:
+    # Python 3.2
+    DEVNULL = open(os.devnull, 'wb')
+
+realserverport=55000
+
+# Default config
+# If config file is not specified on the command line, this is used instead.
+
+CFG = {
+        "role": "server",
+        "state": "/tmp/ptserver",
+         # "server": "127.0.0.1:8000",
+        "local": "127.0.0.1:" + str(realserverport),
+        "ptexec": ptexec,
+        "ptname": "obfs4",
+        "ptargs": "cert=AAAAAAAAAAAAAAAAAAAAAAAAAAAAA+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;iat-mode=0",
+        "ptserveropt": "",
+        "ptproxy": ""        
+    }
+    
+CFG["server"]=SERVER_string
+
+# End
+
+TRANSPORT_VERSIONS = ('1',)
+
+startupinfo = None
+if os.name == 'nt':
+    startupinfo = subprocess.STARTUPINFO()
+    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
+logtime = lambda: time.strftime('%Y-%m-%d %H:%M:%S')
+
+class PTConnectFailed(Exception):
+    pass
+
+
+class ThreadedTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+    allow_reuse_address = True
+
+
+class ThreadedTCPRequestHandler(socketserver.BaseRequestHandler):
+
+    def handle(self):
+        ptsock = socksocket()
+        ptsock.set_proxy(*CFG['_ptcli'])
+        host, port = CFG['server'].rsplit(':', 1)
+        try:
+            ptsock.connect((host, int(port)))
+        except GeneralProxyError as ex:
+            print(logtime(), ex)
+            print(logtime(), 'WARNING: Please check the config and the log of PT.')
+        run = 1
+        while run:
+            rl, wl, xl = select.select([self.request, ptsock], [], [], 300)
+            if not rl:
+                break
+            run = 0
+            for s in rl:
+                try:
+                    data = s.recv(1024)
+                except Exception as ex:
+                    print(logtime(), ex)
+                    continue
+                if data:
+                    run += 1
+                else:
+                    continue
+                if s is self.request:
+                    ptsock.sendall(data)
+                elif s is ptsock:
+                    self.request.sendall(data)
+
+
+def ptenv():
+    env = os.environ.copy()
+    env['TOR_PT_STATE_LOCATION'] = CFG['state']
+    env['TOR_PT_MANAGED_TRANSPORT_VER'] = ','.join(TRANSPORT_VERSIONS)
+    if CFG["role"] == "client":
+        env['TOR_PT_CLIENT_TRANSPORTS'] = CFG['ptname']
+        if CFG.get('ptproxy'):
+            env['TOR_PT_PROXY'] = CFG['ptproxy']
+    elif CFG["role"] == "server":
+        env['TOR_PT_SERVER_TRANSPORTS'] = CFG['ptname']
+        env['TOR_PT_SERVER_BINDADDR'] = '%s-%s' % (
+            CFG['ptname'], CFG['server'])
+        env['TOR_PT_ORPORT'] = CFG['local']
+        env['TOR_PT_EXTENDED_SERVER_PORT'] = ''
+        if CFG.get('ptserveropt'):
+            env['TOR_PT_SERVER_TRANSPORT_OPTIONS'] = ';'.join(
+                '%s:%s' % (CFG['ptname'], kv) for kv in CFG['ptserveropt'].split(';'))
+    else:
+        raise ValueError('"role" must be either "server" or "client"')
+    return env
+
+
+def checkproc():
+    global PT_PROC
+    if PT_PROC is None or PT_PROC.poll() is not None:
+        PT_PROC = subprocess.Popen(shlex.split(
+            CFG['ptexec']), stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=DEVNULL, env=ptenv(), startupinfo=startupinfo)
+    return PT_PROC
+
+
+def parseptline(iterable):
+    global CFG
+    for ln in iterable:
+        ln = ln.decode('utf_8', errors='replace').rstrip('\n')
+        sp = ln.split(' ', 1)
+        kw = sp[0]
+        if kw in ('ENV-ERROR', 'VERSION-ERROR', 'PROXY-ERROR',
+                  'CMETHOD-ERROR', 'SMETHOD-ERROR'):
+            raise PTConnectFailed(ln)
+        elif kw == 'VERSION':
+            if sp[1] not in TRANSPORT_VERSIONS:
+                raise PTConnectFailed('PT returned invalid version: ' + sp[1])
+        elif kw == 'PROXY':
+            if sp[1] != 'DONE':
+                raise PTConnectFailed('PT returned invalid info: ' + ln)
+        elif kw == 'CMETHOD':
+            vals = sp[1].split(' ')
+            if vals[0] == CFG['ptname']:
+                host, port = vals[2].split(':')
+                CFG['_ptcli'] = (
+                    PROXY_TYPES[vals[1].upper()], host, int(port),
+                    True, CFG['ptargs'][:255], CFG['ptargs'][255:] or '\0')
+        elif kw == 'SMETHOD':
+            vals = sp[1].split(' ')
+            if vals[0] == CFG['ptname']:
+                print('===== Server information =====')
+                print('"server": "%s",' % vals[1])
+                print('"ptname": "%s",' % vals[0])
+                for opt in vals[2:]:
+                    if opt.startswith('ARGS:'):
+                        print('"ptargs": "%s",' % opt[5:].replace(',', ';'))
+                print('==============================')
+        elif kw in ('CMETHODS', 'SMETHODS') and sp[1] == 'DONE':
+            print(logtime(), 'PT started successfully.')
+            return
+        else:
+            # Some PTs may print extra debugging info
+            print(logtime(), ln)
+
+
+def runpt():
+    global CFG, PTREADY
+    while CFG['_run']:
+        print(logtime(), 'Starting PT...')
+        proc = checkproc()
+        # If error then die
+        parseptline(proc.stdout)
+        PTREADY.set()
+        # Use this to block
+        # stdout may be a channel for logging
+        try:
+            out = proc.stdout.readline()
+            while out:
+                print(logtime(), out.decode('utf_8', errors='replace').rstrip('\n'))
+        except BrokenPipeError:
+            pass
+        PTREADY.clear()
+        print(logtime(), 'PT died.')
+
+
+try:
+    if len(sys.argv) == 1:
+        pass
+    elif len(sys.argv) == 2:
+        if sys.argv[1] in ('-h', '--help'):
+            print('usage: python3 %s [-c|-s] [config.json]' % __file__)
+            sys.exit(0)
+        else:
+            CFG = json.load(open(sys.argv[1], 'r'))
+    elif len(sys.argv) == 3:
+        CFG = json.load(open(sys.argv[2], 'r'))
+        if sys.argv[1] == '-c':
+            CFG['role'] = 'client'
+        elif sys.argv[1] == '-s':
+            CFG['role'] = 'server'
+except Exception as ex:
+    print(ex)
+    print('usage: python3 %s [-c|-s] [config.json]' % sys.argv[0])
+    sys.exit(1)
+
+PT_PROC = None
+PTREADY = threading.Event()
+
+try:
+    CFG['_run'] = True
+    if CFG['role'] == 'client':
+        ptthr = threading.Thread(target=runpt)
+        ptthr.daemon = True
+        ptthr.start()
+        PTREADY.wait()
+        host, port = CFG['local'].split(':')
+        server = ThreadedTCPServer(
+            (host, int(port)), ThreadedTCPRequestHandler)
+        server.serve_forever()
+    else:
+        runpt()
+finally:
+    CFG['_run'] = False
+    if PT_PROC:
+        PT_PROC.kill()
+
