@@ -5,6 +5,8 @@ import struct
 import logging
 from hashlib import sha1
 
+logging.getLogger("requests").setLevel(logging.DEBUG)
+
 try:
     from Crypto.PublicKey import RSA
 except Exception as e:
