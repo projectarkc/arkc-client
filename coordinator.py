@@ -1,6 +1,7 @@
 import threading
 import logging
 import os
+import sys
 import random
 import string
 import binascii
@@ -56,7 +57,7 @@ class coordinate(object):
         # ptproxy.ptproxy.ptproxy(self, self.remote_host + ":" + str(self.remote_port), self.certcheck)
         print("####        Warning: Experimental function PTproxy          ####")
         print("####Please copy the cert string manually to the server side.####")
-        with open(os.getcwd() + os.sep + "ptclient.py") as f:
+        with open(os.path.split(os.path.realpath(sys.argv[0]))[0] + os.sep + "ptclient.py") as f:
             code = compile(f.read(), "ptclient.py", 'exec')
             globals = {"SERVER_string":self.remote_host + ":" + str(self.remote_port), "ptexec":"obfs4proxy -logLevel=ERROR -enableLogging=true"}
             exec(code, globals)
