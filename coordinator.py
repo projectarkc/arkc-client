@@ -6,6 +6,7 @@ import random
 import string
 import binascii
 import hashlib
+import base64
 import dns.resolver
 
 from time import sleep
@@ -50,16 +51,14 @@ class coordinate(object):
         req.setDaemon(True)
         
         pt.start()
-        # self.certcheck.wait(1000)
+        self.certcheck.wait(1000)
         req.start()
 
     def ptinit(self):
-        # ptproxy.ptproxy.ptproxy(self, self.remote_host + ":" + str(self.remote_port), self.certcheck)
-        print("####        Warning: Experimental function PTproxy          ####")
-        print("####Please copy the cert string manually to the server side.####")
         with open(os.path.split(os.path.realpath(sys.argv[0]))[0] + os.sep + "ptclient.py") as f:
             code = compile(f.read(), "ptclient.py", 'exec')
-            globals = {"SERVER_string":self.remote_host + ":" + str(self.remote_port), "ptexec":"obfs4proxy -logLevel=ERROR -enableLogging=true"}
+            globals = {"SERVER_string":self.remote_host + ":" + str(self.remote_port),
+                       "ptexec":"obfs4proxy -logLevel=ERROR -enableLogging=true", "INITIATOR":self, "LOCK":self.certcheck}
             exec(code, globals)
     
     def dns_init(self, dns_servers):
@@ -119,10 +118,10 @@ class coordinate(object):
             self.check.wait()  # Start the request when the client needs connections
             requestdata = self.generatereq()
             try:
-                self.resolvers[self.resolv_cursor].query(
-                    requestdata + "." + self.ctl_domain)
-                sleep(0.1)
-
+            #    self.resolvers[self.resolv_cursor].query(
+            #        requestdata + "." + self.ctl_domain) #TODO: why dnslib is not working?
+            
+                os.system('nslookup '+ requestdata+ "." + self.ctl_domain + ' ' + self.dns_servers[0][0])
             # TODO: handle NXDOMAIN and Timeout correctly
             # expedient solution to Timeout
             except dns.resolver.Timeout:
@@ -139,6 +138,8 @@ class coordinate(object):
                 if (self.resolv_cursor == len(self.resolvers)):
                     logging.warning("All DNS resolvers tried, Starting over...")
                     self.resolv_cursor = 0
+            finally:
+                sleep(0.1)
 
 
     def generatereq(self):
@@ -150,27 +151,32 @@ class coordinate(object):
             sha1(cert_pub) ,
             pyotp.TOTP(pri_sha1 + ip_in_number_form + salt) , ## TODO: client identity must be checked
             main_pw,##must send in encrypted form to avoid MITM,
-            ip_in_number_form,
+            ip_in_hex_form,
+            cert1,
+            cert2,
+            cert3,
             salt
-            Total length is 2 + 4 + 40 = 46, 16, 16, ?, 16
+            Total length is 2 + 4 + 40 = 46, 16, 16, ?, 50, 50, 40, 16
         """
-
+        certs_byte = base64.b64encode(self.certs_send.encode("ASCII")).decode("ASCII").replace('=', '')
         required_hex = "%X" % min((self.required), 255)
         remote_port_hex = '%X' % self.remote_port
         if len(required_hex) == 1:
             required_hex = '0' + required_hex
         remote_port_hex = '0' * (4 - len(remote_port_hex)) + remote_port_hex
-        myip = self.ip
+        myip = '%X' % self.ip
         salt = binascii.hexlify(os.urandom(16)).decode("ASCII")
         h = hashlib.sha256()
-        h.update((self.localcert_sha1 + str(myip) + salt).encode('utf-8'))
+        h.update((self.localcert_sha1 + myip + salt).encode('utf-8'))
         hotp = pyotp.TOTP(h.hexdigest()).now()
         return  (required_hex + \
                 remote_port_hex + \
                 self.authdata + '.' + \
                 str(hotp) + '.' + \
                 binascii.hexlify(self.str).decode("ASCII") + '.' + \
-                str(myip) + '.' + \
+                myip + '.' + \
+                certs_byte[:50] + '.' + \
+                certs_byte[50:] + '.' + \
                 salt)
 
     def issufficient(self):

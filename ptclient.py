@@ -8,6 +8,13 @@ import threading
 import subprocess
 import socketserver
 
+import atexit
+
+def exit_handler():
+    PT_PROC.kill()
+
+atexit.register(exit_handler)
+
 __version__ = "1.5.6"
 
 import socket
@@ -707,9 +714,11 @@ def parseptline(iterable):
                 for opt in vals[2:]:
                     if opt.startswith('ARGS:'):
                         print('"ptargs": "%s",' % opt[5:].replace(',', ';'))
+                        INITIATOR.certs_send = opt[10:80]
                 print('==============================')
         elif kw in ('CMETHODS', 'SMETHODS') and sp[1] == 'DONE':
             print(logtime(), 'PT started successfully.')
+            LOCK.set()
             return
         else:
             # Some PTs may print extra debugging info
