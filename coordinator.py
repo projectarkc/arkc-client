@@ -1,10 +1,12 @@
 import threading
 import logging
 import os
+import sys
 import random
 import string
 import binascii
 import hashlib
+import base64
 import dns.resolver
 
 from time import sleep
@@ -14,13 +16,12 @@ import pyotp
 
 CLOSECHAR = chr(4) * 5
 
-
 class coordinate(object):
 
     '''Request connections and deal with part of authentication'''
 
     def __init__(self, ctl_domain, localcert, localcert_sha1, remotecert,
-                 localpub, required, remote_port, dns_servers, debug_ip,
+                 localpub, required, remote_host, remote_port, dns_servers, debug_ip,
                  swapcount=5):
         self.remotepub = remotecert
         self.localcert = localcert
@@ -28,12 +29,19 @@ class coordinate(object):
         self.authdata = localpub
         self.required = required
         self.remote_port = remote_port
+        self.remote_host = remote_host
         self.dns_init(dns_servers)
         self.swapcount = swapcount
         self.ctl_domain = ctl_domain
         self.ip = get_ip(debug_ip)
         self.clientreceivers = {}
         self.ready = None
+        self.certs_send = None
+        
+        self.certcheck = threading.Event()
+        self.certcheck.clear()
+        pt = threading.Thread(target=self.ptinit)
+        pt.setDaemon(True)
 
         self.recvs = []  # For serverreceivers
         self.str = (''.join(random.choice(string.ascii_letters) for i in range(16))).encode('ASCII')  # #TODO:stronger random required
@@ -41,8 +49,18 @@ class coordinate(object):
         self.check.set()
         req = threading.Thread(target=self.reqconn)
         req.setDaemon(True)
+        
+        pt.start()
+        self.certcheck.wait(1000)
         req.start()
 
+    def ptinit(self):
+        with open(os.path.split(os.path.realpath(sys.argv[0]))[0] + os.sep + "ptclient.py") as f:
+            code = compile(f.read(), "ptclient.py", 'exec')
+            globals = {"SERVER_string":self.remote_host + ":" + str(self.remote_port),
+                       "ptexec":"obfs4proxy -logLevel=ERROR -enableLogging=true", "INITIATOR":self, "LOCK":self.certcheck}
+            exec(code, globals)
+    
     def dns_init(self, dns_servers):
         """Initialize a list of dns resolvers.
 
@@ -100,10 +118,10 @@ class coordinate(object):
             self.check.wait()  # Start the request when the client needs connections
             requestdata = self.generatereq()
             try:
-                self.resolvers[self.resolv_cursor].query(
-                    requestdata + "." + self.ctl_domain)
-                sleep(0.1)
-
+            #    self.resolvers[self.resolv_cursor].query(
+            #        requestdata + "." + self.ctl_domain) #TODO: why dnslib is not working?
+            
+                os.system('nslookup '+ requestdata+ "." + self.ctl_domain + ' ' + self.dns_servers[0][0])
             # TODO: handle NXDOMAIN and Timeout correctly
             # expedient solution to Timeout
             except dns.resolver.Timeout:
@@ -120,6 +138,8 @@ class coordinate(object):
                 if (self.resolv_cursor == len(self.resolvers)):
                     logging.warning("All DNS resolvers tried, Starting over...")
                     self.resolv_cursor = 0
+            finally:
+                sleep(0.1)
 
 
     def generatereq(self):
@@ -130,28 +150,33 @@ class coordinate(object):
             used_remote_listening_port (HEX, 4 bytes) +
             sha1(cert_pub) ,
             pyotp.TOTP(pri_sha1 + ip_in_number_form + salt) , ## TODO: client identity must be checked
-            main_pw,##must send in encrypted form to avoid MITM
-            ip_in_number_form,
+            main_pw,##must send in encrypted form to avoid MITM,
+            ip_in_hex_form,
+            cert1,
+            cert2,
+            cert3,
             salt
-            Total length is 2 + 4 + 40 = 46, 16, 16, ?, 16
+            Total length is 2 + 4 + 40 = 46, 16, 16, ?, 50, 50, 40, 16
         """
-
+        certs_byte = base64.b64encode(self.certs_send.encode("ASCII")).decode("ASCII").replace('=', '')
         required_hex = "%X" % min((self.required), 255)
         remote_port_hex = '%X' % self.remote_port
         if len(required_hex) == 1:
             required_hex = '0' + required_hex
         remote_port_hex = '0' * (4 - len(remote_port_hex)) + remote_port_hex
-        myip = self.ip
+        myip = '%X' % self.ip
         salt = binascii.hexlify(os.urandom(16)).decode("ASCII")
         h = hashlib.sha256()
-        h.update((self.localcert_sha1 + str(myip) + salt).encode('utf-8'))
+        h.update((self.localcert_sha1 + myip + salt).encode('utf-8'))
         hotp = pyotp.TOTP(h.hexdigest()).now()
         return  (required_hex + \
                 remote_port_hex + \
                 self.authdata + '.' + \
                 str(hotp) + '.' + \
                 binascii.hexlify(self.str).decode("ASCII") + '.' + \
-                str(myip) + '.' + \
+                myip + '.' + \
+                certs_byte[:50] + '.' + \
+                certs_byte[50:] + '.' + \
                 salt)
 
     def issufficient(self):
