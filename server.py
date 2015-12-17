@@ -13,7 +13,7 @@ MAX_HANDLE = 100
 CLOSECHAR = chr(4) * 5
 REAL_SERVERPORT=55000
 
-class servercontrol(asyncore.dispatcher):
+class servercontrol_pt(asyncore.dispatcher):
 
     def __init__(self, ctl, backlog=5):
         self.ctl = ctl
@@ -22,6 +22,24 @@ class servercontrol(asyncore.dispatcher):
         self.set_reuse_addr()
         serverport=REAL_SERVERPORT
         serverip="127.0.0.1"
+        self.bind((serverip, serverport))
+        self.listen(backlog)
+
+    def handle_accept(self):
+        conn, addr = self.accept()
+        logging.info('Serv_recv_Accept from %s' % str(addr))
+        serverreceiver(conn, self.ctl)
+        
+    def getrecv(self):
+        return self.ctl.offerconn()
+    
+class servercontrol(asyncore.dispatcher):
+
+    def __init__(self, serverip, serverport, ctl, backlog=5):
+        self.ctl = ctl
+        asyncore.dispatcher.__init__(self)
+        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)  # #TODO: support IPv6
+        self.set_reuse_addr()
         self.bind((serverip, serverport))
         self.listen(backlog)
 

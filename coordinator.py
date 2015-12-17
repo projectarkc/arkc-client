@@ -8,6 +8,7 @@ import binascii
 import hashlib
 import base64
 import dnslib
+import socket
 
 from time import sleep
 
@@ -29,7 +30,10 @@ class coordinate(object):
         self.authdata = localpub
         self.required = required
         self.remote_port = remote_port
-        self.dns_init(dns_servers)
+        self.dns_servers = dns_servers
+        random.shuffle(self.dns_servers)
+        self.dns_count = 0
+        self.sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
         self.swapcount = swapcount
         self.ctl_domain = ctl_domain
         self.ip = get_ip(debug_ip)
@@ -79,12 +83,11 @@ class coordinate(object):
             self.check.wait()  # Start the request when the client needs connections
             requestdata = self.generatereq()
             d = dnslib.DNSRecord.question(requestdata + "." + self.ctl_domain)
-            d.send(self.dns_servers[self.dns_count][0], self.dns_servers[self.dns_count][1], False, 500)
+            self.sock.sendto(d.pack(),(self.dns_servers[self.dns_count][0], self.dns_servers[self.dns_count][1]))
             self.dns_count += 1
             if self.dns_count == len(self.dns_servers):
                 self.dns_count = 0
             sleep(0.1)
-
 
     def generatereq(self):
         # Generate strings for authentication
@@ -162,6 +165,7 @@ class coordinate_pt(object):
         with open(os.path.split(os.path.realpath(sys.argv[0]))[0] + os.sep + "ptclient.py") as f:
             self.ptcode = compile(f.read(), "ptclient.py", 'exec')
         self.dns_count = 0
+        self.sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
         self.swapcount = swapcount
         self.ctl_domain = ctl_domain
         self.ip = get_ip(debug_ip)
@@ -228,7 +232,7 @@ class coordinate_pt(object):
             self.check.wait()  # Start the request when the client needs connections
             requestdata = self.generatereq()
             d = dnslib.DNSRecord.question(requestdata + "." + self.ctl_domain)
-            d.send(self.dns_servers[self.dns_count][0], self.dns_servers[self.dns_count][1], False, 500)
+            self.sock.sendto(d.pack(),(self.dns_servers[self.dns_count][0], self.dns_servers[self.dns_count][1]))
             self.dns_count += 1
             if self.dns_count == len(self.dns_servers):
                 self.dns_count = 0

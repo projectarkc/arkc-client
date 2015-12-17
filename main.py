@@ -10,7 +10,7 @@ import json
 
 from common import certloader
 from coordinator import coordinate, coordinate_pt
-from server import servercontrol
+from server import servercontrol, servercontrol_pt
 from client import clientcontrol
 
 # Const used in the client.
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     # Start the main event loop
     try:
         if options.pt:
-            ctl = coordinate(
+            ctl = coordinate_pt(
                     data["control_domain"],
                     localpri,
                     localpri_sha1,
@@ -140,8 +140,9 @@ if __name__ == '__main__':
                     swapfq,
                     data["obfs4_exec"]
                     )
+            sctl = servercontrol_pt(ctl)
         else:
-            ctl = coordinate_pt(
+            ctl = coordinate(
                     data["control_domain"],
                     localpri,
                     localpri_sha1,
@@ -153,7 +154,11 @@ if __name__ == '__main__':
                     data["debug_ip"],
                     swapfq
                     )
-        sctl = servercontrol(ctl)
+            sctl = servercontrol(
+                data["remote_host"],
+                data["remote_port"],
+                ctl
+                )
         cctl = clientcontrol(
             ctl,
             data["local_host"],
