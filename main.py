@@ -9,7 +9,7 @@ import logging
 import json
 
 from common import certloader
-from coordinator import coordinate
+from coordinator import coordinate, coordinate_pt
 from server import servercontrol
 from client import clientcontrol
 
@@ -30,6 +30,7 @@ if __name__ == '__main__':
         parser.add_argument("-v", dest="v", action="store_true", help="show detailed logs")
         parser.add_argument('-c', '--config', dest="config", help="You must specify a configuration files. By default ./config.json is used.", default='config.json')
         parser.add_argument('-fs', '--frequent-swap', dest="fs", action="store_true", help="Use frequent connection swapping")  # #TODO: support this function
+        parser.add_argument("-pt", dest="pt", action="store_true", help="use obfs4proxy")
         options = parser.parse_args()
 
         data = {}
@@ -124,7 +125,8 @@ if __name__ == '__main__':
 
     # Start the main event loop
     try:
-        ctl = coordinate(
+        if options.pt:
+            ctl = coordinate(
                     data["control_domain"],
                     localpri,
                     localpri_sha1,
@@ -135,8 +137,21 @@ if __name__ == '__main__':
                     data["remote_port"],
                     data["dns_servers"],
                     data["debug_ip"],
-                    swapfq, 
+                    swapfq,
                     data["obfs4_exec"]
+                    )
+        else:
+            ctl = coordinate_pt(
+                    data["control_domain"],
+                    localpri,
+                    localpri_sha1,
+                    remotecert,
+                    localpub_sha1,
+                    data["number"],
+                    data["remote_port"],
+                    data["dns_servers"],
+                    data["debug_ip"],
+                    swapfq
                     )
         sctl = servercontrol(ctl)
         cctl = clientcontrol(
@@ -150,7 +165,7 @@ if __name__ == '__main__':
         logging.error("Bad config file. Quitting.")
         quit()
 
-    #except Exception as e:
+    # except Exception as e:
     #    print ("An error occurred: \n")
     #    print(e)
     asyncore.loop()
