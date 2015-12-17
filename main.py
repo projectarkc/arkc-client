@@ -20,7 +20,8 @@ DEFAULT_REMOTE_HOST = "0.0.0.0"
 DEFAULT_LOCAL_PORT = 8001
 DEFAULT_REMOTE_PORT = 8000
 DEFAULT_REQUIRED = 3
-DEFAULT_DNS_SERVERS = None
+DEFAULT_DNS_SERVERS = [["8.8.8.8", 53]]
+DEFAULT_OBFS4_EXECADDR = "obfs4proxy"
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="ArkC Client")
@@ -64,6 +65,9 @@ if __name__ == '__main__':
 
         if "dns_servers" not in data:
             data["dns_servers"] = DEFAULT_DNS_SERVERS
+        
+        if "obfs4_exec" not in data:
+            data["obfs4_exec"] = DEFAULT_OBFS4_EXECADDR
 
         if "debug_ip" not in data:
             data["debug_ip"] = None
@@ -131,7 +135,8 @@ if __name__ == '__main__':
                     data["remote_port"],
                     data["dns_servers"],
                     data["debug_ip"],
-                    swapfq
+                    swapfq, 
+                    data["obfs4_exec"]
                     )
         sctl = servercontrol(ctl)
         cctl = clientcontrol(

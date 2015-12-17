@@ -455,7 +455,7 @@ class socksocket(_BaseSocket):
         # If we need to resolve locally, we do this now
         addr = dest_addr if rdns else socket.gethostbyname(dest_addr)
 
-        self.sendall(b"CONNECT " + addr.encode('idna') + b":" + str(dest_port).encode() +
+        self.sendall(b"CONNECT " + addr.encode('idna') + b":" + str(dest_port).encode() + 
                      b" HTTP/1.1\r\n" + b"Host: " + dest_addr.encode('idna') + b"\r\n\r\n")
 
         # We just need the first line to check if the connection was successful
@@ -499,11 +499,11 @@ class socksocket(_BaseSocket):
 
     def connect(self, dest_pair):
         # It actually supports IPv6 without problem!
-        #if len(dest_pair) != 2 or dest_pair[0].startswith("["):
+        # if len(dest_pair) != 2 or dest_pair[0].startswith("["):
             # Probably IPv6, not supported -- raise an error, and hope
             # Happy Eyeballs (RFC6555) makes sure at least the IPv4
             # connection works...
-            #raise socket.error("PySocks doesn't support IPv6")
+            # raise socket.error("PySocks doesn't support IPv6")
 
         dest_addr, dest_port = dest_pair
 
@@ -581,7 +581,7 @@ except AttributeError:
     # Python 3.2
     DEVNULL = open(os.devnull, 'wb')
 
-realserverport=55000
+realserverport = 55000
 
 # Default config
 # If config file is not specified on the command line, this is used instead.
@@ -598,7 +598,7 @@ CFG = {
         "ptproxy": ""        
     }
     
-CFG["server"]=SERVER_string
+CFG["server"] = SERVER_string
 
 # End
 

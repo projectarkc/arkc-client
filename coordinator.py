@@ -7,7 +7,7 @@ import string
 import binascii
 import hashlib
 import base64
-import dns.resolver
+import dnslib
 
 from time import sleep
 
@@ -22,7 +22,7 @@ class coordinate(object):
 
     def __init__(self, ctl_domain, localcert, localcert_sha1, remotecert,
                  localpub, required, remote_host, remote_port, dns_servers, debug_ip,
-                 swapcount=5):
+                 swapcount=5, obfs4_exec="obfs4proxy"):
         self.remotepub = remotecert
         self.localcert = localcert
         self.localcert_sha1 = localcert_sha1
@@ -30,14 +30,18 @@ class coordinate(object):
         self.required = required
         self.remote_port = remote_port
         self.remote_host = remote_host
-        self.dns_init(dns_servers)
+        self.dns_servers = dns_servers
+        random.shuffle(self.dns_servers)
+        with open(os.path.split(os.path.realpath(sys.argv[0]))[0] + os.sep + "ptclient.py") as f:
+            self.ptcode = compile(f.read(), "ptclient.py", 'exec')
+        self.dns_count = 0
         self.swapcount = swapcount
         self.ctl_domain = ctl_domain
         self.ip = get_ip(debug_ip)
         self.clientreceivers = {}
         self.ready = None
         self.certs_send = None
-        
+        self.obfs4_exec = obfs4_exec
         self.certcheck = threading.Event()
         self.certcheck.clear()
         pt = threading.Thread(target=self.ptinit)
@@ -55,30 +59,9 @@ class coordinate(object):
         req.start()
 
     def ptinit(self):
-        with open(os.path.split(os.path.realpath(sys.argv[0]))[0] + os.sep + "ptclient.py") as f:
-            code = compile(f.read(), "ptclient.py", 'exec')
-            globals = {"SERVER_string":self.remote_host + ":" + str(self.remote_port),
-                       "ptexec":"obfs4proxy -logLevel=ERROR -enableLogging=true", "INITIATOR":self, "LOCK":self.certcheck}
-            exec(code, globals)
-    
-    def dns_init(self, dns_servers):
-        """Initialize a list of dns resolvers.
-
-        Each resolver contains either all of the system nameservers,
-        or ONE of the user-defined nameserver.
-        (Since user nameservers may have different ports, multiple resolvers are
-         needed)
-        """
-        self.dns_servers = dns_servers
-        self.resolvers = []
-        if not dns_servers:
-            self.resolvers.append(dns.resolver.Resolver())
-        else:
-            for server, port in dns_servers:
-                user_resolver = dns.resolver.Resolver()
-                user_resolver.nameservers = [server]
-                user_resolver.port = port
-                self.resolvers.append(user_resolver)
+        pt_globals = {"SERVER_string":self.remote_host + ":" + str(self.remote_port),
+                       "ptexec":self.obfs4_exec + " -logLevel=ERROR -enableLogging=true", "INITIATOR":self, "LOCK":self.certcheck}
+        exec(self.ptcode, pt_globals)
 
         # Index of the resolver currently in use, move forward on failure
         self.resolv_cursor = 0
@@ -117,29 +100,12 @@ class coordinate(object):
         while True:
             self.check.wait()  # Start the request when the client needs connections
             requestdata = self.generatereq()
-            try:
-            #    self.resolvers[self.resolv_cursor].query(
-            #        requestdata + "." + self.ctl_domain) #TODO: why dnslib is not working?
-            
-                os.system('nslookup '+ requestdata+ "." + self.ctl_domain + ' ' + self.dns_servers[0][0])
-            # TODO: handle NXDOMAIN and Timeout correctly
-            # expedient solution to Timeout
-            except dns.resolver.Timeout:
-                pass
-
-            except dns.resolver.NXDOMAIN:
-                # This is the expected bahavior
-                logging.info("DNS response received")
-            except dns.resolver.YXDOMAIN:
-                logging.error("The name is too long after DNAME substitution.")
-            except:
-                logging.error("DNS resolver fails. Trying next...")
-                self.resolv_cursor += 1
-                if (self.resolv_cursor == len(self.resolvers)):
-                    logging.warning("All DNS resolvers tried, Starting over...")
-                    self.resolv_cursor = 0
-            finally:
-                sleep(0.1)
+            d = dnslib.DNSRecord.question(requestdata + "." + self.ctl_domain)
+            d.send(self.dns_servers[self.dns_count][0], self.dns_servers[self.dns_count][1], False, 500)
+            self.dns_count += 1
+            if self.dns_count == len(self.dns_servers):
+                self.dns_count = 0
+            sleep(0.1)
 
 
     def generatereq(self):
