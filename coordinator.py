@@ -152,7 +152,7 @@ class coordinate_pt(object):
 
     def __init__(self, ctl_domain, localcert, localcert_sha1, remotecert,
                  localpub, required, remote_host, remote_port, dns_servers, debug_ip,
-                 swapcount=5, obfs4_exec="obfs4proxy"):
+                 swapcount=5, obfs4_exec="obfs4proxy", obfs_level = 1):
         self.remotepub = remotecert
         self.localcert = localcert
         self.localcert_sha1 = localcert_sha1
@@ -168,10 +168,12 @@ class coordinate_pt(object):
         self.sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
         self.swapcount = swapcount
         self.ctl_domain = ctl_domain
+        self.obfs_level = obfs_level
         self.ip = get_ip(debug_ip)
         self.clientreceivers = {}
         self.ready = None
         self.certs_send = None
+        self.certs_random = (''.join(random.choice(string.ascii_letters) for i in range(40)))
         self.obfs4_exec = obfs4_exec
         self.certcheck = threading.Event()
         self.certcheck.clear()
@@ -190,8 +192,8 @@ class coordinate_pt(object):
         req.start()
 
     def ptinit(self):
-        pt_globals = {"SERVER_string":self.remote_host + ":" + str(self.remote_port),
-                       "ptexec":self.obfs4_exec + " -logLevel=ERROR -enableLogging=true", "INITIATOR":self, "LOCK":self.certcheck}
+        pt_globals = {"SERVER_string":self.remote_host + ":" + str(self.remote_port), "CERT_STR":self.certs_random,
+                       "ptexec":self.obfs4_exec + " -logLevel=ERROR", "INITIATOR":self, "LOCK":self.certcheck, "IAT":self.obfs_level}
         exec(self.ptcode, pt_globals)
 
         # Index of the resolver currently in use, move forward on failure

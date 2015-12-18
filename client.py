@@ -39,7 +39,7 @@ class clientreceiver(asyncore.dispatcher):
 
     def handle_read(self):
         read = self.recv(4096)
-        logging.info('%04i from client' % len(read))
+        logging.debug('%04i from client' % len(read))
         self.to_remote_buffer += read
 
     def writable(self):
@@ -50,7 +50,7 @@ class clientreceiver(asyncore.dispatcher):
         while self.writable():
             sent = sent + self.send(self.from_remote_buffer.pop(self.from_remote_buffer_index))
             self.next_from_remote_buffer()
-        logging.info('%04i to client' % sent)
+        logging.debug('%04i to client' % sent)
 
     def handle_close(self):
         self.control.remove(self.idchar)

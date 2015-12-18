@@ -28,9 +28,9 @@ if __name__ == '__main__':
     try:
         # Load arguments
         parser.add_argument("-v", dest="v", action="store_true", help="show detailed logs")
+        parser.add_argument("-vv", dest="vv", action="store_true", help="show debug logs")
         parser.add_argument('-c', '--config', dest="config", help="You must specify a configuration files. By default ./config.json is used.", default='config.json')
         parser.add_argument('-fs', '--frequent-swap', dest="fs", action="store_true", help="Use frequent connection swapping")  # #TODO: support this function
-        parser.add_argument("-pt", dest="pt", action="store_true", help="use obfs4proxy")
         options = parser.parse_args()
 
         data = {}
@@ -72,6 +72,9 @@ if __name__ == '__main__':
 
         if "debug_ip" not in data:
             data["debug_ip"] = None
+            
+        if "obfs_level" not in data:
+            data["obfs_level"] = 0
 
 
         # Load certificates
@@ -113,6 +116,9 @@ if __name__ == '__main__':
 
         if options.v:
             logging.basicConfig(level=logging.INFO)
+        
+        if options.vv:
+            logging.basicConfig(level=logging.DEBUG)
 
         if options.fs:
             swapfq = 3
@@ -125,7 +131,7 @@ if __name__ == '__main__':
 
     # Start the main event loop
     try:
-        if options.pt:
+        if data["obfs_level"] != 0:
             ctl = coordinate_pt(
                     data["control_domain"],
                     localpri,
@@ -138,7 +144,8 @@ if __name__ == '__main__':
                     data["dns_servers"],
                     data["debug_ip"],
                     swapfq,
-                    data["obfs4_exec"]
+                    data["obfs4_exec"],
+                    data["obfs_level"]
                     )
             sctl = servercontrol_pt(ctl)
         else:

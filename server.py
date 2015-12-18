@@ -97,7 +97,7 @@ class serverreceiver(asyncore.dispatcher):
                             read_count += len(decryptedtext) - 5
                 else:
                     self.from_remote_buffer_raw = bytessplit[Index]
-            logging.info('%04i from server' % read_count)
+            logging.debug('%04i from server' % read_count)
 
     def begin_auth(self):
         # Deal with the beginning authentication
@@ -116,7 +116,7 @@ class serverreceiver(asyncore.dispatcher):
                     self.cipher = AESCipher(self.ctl.localcert.decrypt(self.read[-256:]), self.ctl.str)
                     self.full = False
                     self.ctl.newconn(self)
-                    logging.info("Authentication succeed, connection established")  # , client auth string sent")
+                    logging.debug("Authentication succeed, connection established")  # , client auth string sent")
             else:
                 if len(self.read) == 0:
                     self.no_data_count += 1
@@ -179,7 +179,7 @@ class serverreceiver(asyncore.dispatcher):
             self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + bytes('%i' % self.ctl.clientreceivers[cli_id].to_remote_buffer_index, "UTF-8") + bytes(lastcontents, "UTF-8")) + bytes(self.splitchar, "UTF-8"))
             sent += len(lastcontents)
             # self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
-        logging.info('%04i to server' % sent)
+        logging.debug('%04i to server' % sent)
         try:
             self.ctl.clientreceivers[cli_id].to_remote_buffer = self.ctl.clientreceivers[cli_id].to_remote_buffer[sent:]
         except KeyError as err:

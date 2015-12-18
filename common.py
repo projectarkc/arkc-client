@@ -57,6 +57,7 @@ class certloader:
             quit()
 
 def get_ip(debug_ip=None):  # TODO: Get local network interfaces ip
+    logging.info("Getting public IP address")
     if debug_ip:
         ip = debug_ip
     else:
@@ -66,11 +67,14 @@ def get_ip(debug_ip=None):  # TODO: Get local network interfaces ip
             logging.error(err)
             logging.warning("Error getting address. Using 127.0.0.1 instead.")
             ip = "127.0.0.1"
+    logging.info("IP address to be sent is " + ip)
     return struct.unpack("!L", socket.inet_aton(ip))[0]
 
 def get_ip_str():
+    logging.info("Getting public IP address")
     try:
         ip = get('https://api.ipify.org').text
+        logging.info("IP address to be sent is " + ip)
         return ip
     except Exception as err:
         print("Error occurred in getting address. Using default 127.0.0.1 in testing environment.")

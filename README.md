@@ -11,7 +11,7 @@ Running ArkC-Client requires Python 3 and PyCrypto.
 For Debian or Ubuntu users:
     
 ```
-sudo apt-get install python3 python3-pip python3-dev
+sudo apt-get install python3 python3-pip python3-dev python3-psutil obfs4proxy
 sudo pip3 install -r requirements.txt
 ```
 
@@ -39,7 +39,8 @@ For the configuration file, you can find an example here:
     "dns_servers": [
             ["8.8.8.8", 53],
             ["127.0.0.1", 9000]
-        ]
+        ],
+    "obfs_level":0
 }
 ```
 
@@ -58,6 +59,10 @@ For a full list of settings:
 | control_domain	| str, standard domain     | REQUIRED 	       |
 | dns_server            | list, servers to send dns query to | [] (use system resolver)|
 | debug_ip              | str, address of the client (only for debug use) | None |
+| obfs4_exec		| str, command line of obfs4proxy executable | "obfs4proxy" |
+| obfs_level		| integer, obfs leve 0~3, the same as server side | 0 |
+
+Note: if obfs_level is set to a non-zero value, obfs4_exec must be appropriate set. Obfs4 will use an IAT mode of (obfs_level - 1), which means if obfs_level is set to 2 or 3, the connection speed may be affected.
 
 ##Build on Windows
 ```
@@ -68,6 +73,8 @@ pyinstaller [--onefile] main.py
 ##Acknowledgements
 
 The client-end software adapted part of the pyotp library created by Mark Percival <m@mdp.im>. His code is reused under Python Port copyright, license attached.
+
+File ptclient.py is based on ptproxy by Dingyuan Wang. Code reused and edited under MIT license, attached in file.
 
 ##License
 
