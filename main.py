@@ -7,6 +7,7 @@ import asyncore
 import argparse
 import logging
 import json
+import sys
 
 from common import certloader
 from coordinator import coordinate, coordinate_pt
@@ -113,12 +114,15 @@ if __name__ == '__main__':
             print ("Fatal error while calculating SHA1 digest.")
             print (err)
             quit()
+			
+        logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 
         if options.v:
-            logging.basicConfig(level=logging.INFO)
+            logging.basicConfig(stream=sys.stdout, level=logging.INFO)
         
         if options.vv:
-            logging.basicConfig(level=logging.DEBUG)
+            logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+		
 
         if options.fs:
             swapfq = 3
