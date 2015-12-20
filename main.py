@@ -114,14 +114,13 @@ if __name__ == '__main__':
             print ("Fatal error while calculating SHA1 digest.")
             print (err)
             quit()
-			
-        logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 
-        if options.v:
-            logging.basicConfig(stream=sys.stdout, level=logging.INFO)
-        
         if options.vv:
             logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+        elif options.v:
+            logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+        else:
+            logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 		
 
         if options.fs:
