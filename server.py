@@ -12,6 +12,7 @@ from _io import BlockingIOError
 MAX_HANDLE = 100
 CLOSECHAR = chr(4) * 5
 REAL_SERVERPORT = 55000
+SEG_SIZE = 4096
 
 
 class servercontrol(asyncore.dispatcher):
@@ -150,22 +151,31 @@ class serverreceiver(asyncore.dispatcher):
         self.ctl.closeconn(self)
         self.close()
 
+    def encrypt_and_send(self, cli_id, buf=None):
+        """Encrypt and send data, and return the length sent.
+
+        When `buf` is not specified, it is automatically read from the
+        `to_remote_buffer` corresponding to `cli_id`.
+        """
+        b_id = bytes(cli_id, "UTF-8")
+        idx = self.ctl.clientreceivers[cli_id].to_remote_buffer_index
+        b_idx = bytes('%i' % idx, "UTF-8")
+        if buf is None:
+            buf = self.ctl.clientreceivers[cli_id].to_remote_buffer
+        b_split = bytes(self.splitchar, "UTF-8")
+        self.send(self.cipher.encrypt(b_id + b_idx + buf[:SEG_SIZE]) + b_split)
+        return min(SEG_SIZE, len(buf))
+
     def id_write(self, cli_id, lastcontents=None):
         # Write to a certain cli_id. Lastcontents is used for CLOSECHAR
         sent = 0
         try:
-            if len(self.ctl.clientreceivers[cli_id].to_remote_buffer) <= 4096:
-                sent = len(self.ctl.clientreceivers[cli_id].to_remote_buffer)
-                self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + bytes('%i' % self.ctl.clientreceivers[cli_id].to_remote_buffer_index, "UTF-8") + self.ctl.clientreceivers[cli_id].to_remote_buffer) + bytes(self.splitchar, "UTF-8"))
-            else:
-                self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + bytes('%i' % self.ctl.clientreceivers[cli_id].to_remote_buffer_index, "UTF-8") + self.ctl.clientreceivers[cli_id].to_remote_buffer[:4096]) + bytes(self.splitchar, "UTF-8"))
-                sent = 4096
+            sent = self.encrypt_and_send(cli_id)
             self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
         except KeyError as err:
             pass
         if lastcontents is not None:
-            self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + bytes('%i' % self.ctl.clientreceivers[cli_id].to_remote_buffer_index, "UTF-8") + bytes(lastcontents, "UTF-8")) + bytes(self.splitchar, "UTF-8"))
-            sent += len(lastcontents)
+            sent += self.encrypt_and_send(cli_id, bytes(lastcontents, "UTF-8"))
             # self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
         logging.debug('%04i to server' % sent)
         try:
