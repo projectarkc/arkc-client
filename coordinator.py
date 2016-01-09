@@ -18,6 +18,8 @@ import pyotp
 
 CLOSECHAR = chr(4) * 5
 
+rng = random.SystemRandom()
+
 
 class coordinate(object):
 
@@ -45,9 +47,8 @@ class coordinate(object):
         self.clientreceivers = {}
         self.ready = None
         self.recvs = []  # For serverreceivers
-        self.str = (''.join(random.choice(ascii_letters) for i in range(16)))\
-            .encode('ASCII')      # TODO:stronger random required
-
+        self.str = (''.join(rng.choice(ascii_letters) for _ in range(16)))\
+            .encode('ASCII')
         self.check = threading.Event()
         self.check.set()
         req = threading.Thread(target=self.reqconn)
@@ -56,8 +57,8 @@ class coordinate(object):
         # ptproxy enabled
         if self.obfs_level:
             self.certs_send = None
-            self.certs_random = ''.join(random.choice(ascii_letters)
-                                        for i in range(40))
+            self.certs_random = ''.join(rng.choice(ascii_letters)
+                                        for _ in range(40))
             self.certcheck = threading.Event()
             self.certcheck.clear()
             pt = threading.Thread(target=self.ptinit)
