@@ -146,13 +146,14 @@ class coordinate(object):
             self.ready.id_write(cli_id, CLOSECHAR)
         self.clientreceivers.pop(cli_id)
 
-class coordinate_pt(object):
+class coordinate_pt(coordinate):
 
-    '''Request connections and deal with part of authentication'''
+    '''Request connections and deal with part of authentication, ptproxy-based'''
 
     def __init__(self, ctl_domain, localcert, localcert_sha1, remotecert,
                  localpub, required, remote_host, remote_port, dns_servers, debug_ip,
                  swapcount=5, obfs4_exec="obfs4proxy", obfs_level = 1):
+        '''not inheriting coordinate.__init__ due to threading issues'''
         self.remotepub = remotecert
         self.localcert = localcert
         self.localcert_sha1 = localcert_sha1
@@ -199,48 +200,6 @@ class coordinate_pt(object):
         # Index of the resolver currently in use, move forward on failure
         self.resolv_cursor = 0
 
-    def newconn(self, recv):
-        # Called when receive new connections
-        self.recvs.append(recv)
-        if self.ready is None:
-            self.ready = recv
-            recv.preferred = True
-        self.refreshconn()
-        if len(self.recvs) + 2 >= self.required:
-            self.check.clear()
-        logging.info("Running socket %d" % len(self.recvs))
-
-    def closeconn(self, conn):
-        # Called when a connection is closed
-        if self.ready is not None:
-            if self.ready.closing:
-                if len(self.recvs) > 0:
-                    self.ready = self.recvs[0]
-                    self.recvs[0].preferred = True
-                    self.refreshconn()
-                else:
-                    self.ready = None
-        try:
-            self.recvs.remove(conn)
-        except ValueError as err:
-            pass
-        if len(self.recvs) < self.required:
-            self.check.set()
-        logging.info("Running socket %d" % len(self.recvs))
-
-    def reqconn(self):
-        # Sending DNS queries
-        while True:
-            self.check.wait()  # Start the request when the client needs connections
-            requestdata = self.generatereq()
-            d = dnslib.DNSRecord.question(requestdata + "." + self.ctl_domain)
-            self.sock.sendto(d.pack(),(self.dns_servers[self.dns_count][0], self.dns_servers[self.dns_count][1]))
-            self.dns_count += 1
-            if self.dns_count == len(self.dns_servers):
-                self.dns_count = 0
-            sleep(0.1)
-
-
     def generatereq(self):
         # Generate strings for authentication
         """
@@ -277,28 +236,3 @@ class coordinate_pt(object):
                 certs_byte[:50] + '.' + \
                 certs_byte[50:] + '.' + \
                 salt)
-
-    def issufficient(self):
-        return len(self.recvs) >= self.required
-
-    def refreshconn(self):
-        next_conn = random.choice(self.recvs)
-        self.ready.preferred = False
-        self.ready = next_conn
-        next_conn.preferred = True
-
-    def register(self, clirecv):
-        cli_id = None
-        if len(self.recvs) == 0:
-            return None
-        while (cli_id is None) or (cli_id in self.clientreceivers):
-            a = list(string.ascii_letters)
-            random.shuffle(a)
-            cli_id = ''.join(a[:2])
-        self.clientreceivers[cli_id] = clirecv
-        return cli_id
-
-    def remove(self, cli_id):
-        if len(self.recvs) > 0:
-            self.ready.id_write(cli_id, CLOSECHAR)
-        self.clientreceivers.pop(cli_id)
