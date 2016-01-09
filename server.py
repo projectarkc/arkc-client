@@ -12,7 +12,7 @@ from _io import BlockingIOError
 MAX_HANDLE = 100
 CLOSECHAR = chr(4) * 5
 REAL_SERVERPORT = 55000
-SEG_SIZE = 4096
+SEG_SIZE = 4084     # 4096(total) - 2(id) - 3(index) - 7(splitchar)
 
 
 class servercontrol(asyncore.dispatcher):
