@@ -11,35 +11,22 @@ from _io import BlockingIOError
 
 MAX_HANDLE = 100
 CLOSECHAR = chr(4) * 5
-REAL_SERVERPORT=55000
+REAL_SERVERPORT = 55000
 
-class servercontrol_pt(asyncore.dispatcher):
 
-    def __init__(self, ctl, backlog=5):
-        self.ctl = ctl
-        asyncore.dispatcher.__init__(self)
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)  # #TODO: support IPv6
-        self.set_reuse_addr()
-        serverport=REAL_SERVERPORT
-        serverip="127.0.0.1"
-        self.bind((serverip, serverport))
-        self.listen(backlog)
-
-    def handle_accept(self):
-        conn, addr = self.accept()
-        logging.info('Serv_recv_Accept from %s' % str(addr))
-        serverreceiver(conn, self.ctl)
-        
-    def getrecv(self):
-        return self.ctl.offerconn()
-    
 class servercontrol(asyncore.dispatcher):
 
-    def __init__(self, serverip, serverport, ctl, backlog=5):
+    def __init__(self, serverip, serverport, ctl, pt=False, backlog=5):
         self.ctl = ctl
         asyncore.dispatcher.__init__(self)
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)  # #TODO: support IPv6
+        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        # TODO: support IPv6
         self.set_reuse_addr()
+
+        if pt:
+            serverip = "127.0.0.1"
+            serverport = REAL_SERVERPORT
+
         self.bind((serverip, serverport))
         self.listen(backlog)
 
@@ -47,10 +34,11 @@ class servercontrol(asyncore.dispatcher):
         conn, addr = self.accept()
         logging.info('Serv_recv_Accept from %s' % str(addr))
         serverreceiver(conn, self.ctl)
-        
+
     def getrecv(self):
         return self.ctl.offerconn()
-        
+
+
 class serverreceiver(asyncore.dispatcher):
 
     def __init__(self, conn, ctl):
@@ -122,14 +110,14 @@ class serverreceiver(asyncore.dispatcher):
                     self.no_data_count += 1
         except BlockingIOError as err:
             pass
-        
+
         except socket.error as err:
             logging.info("empty recv error")
-        
+
         except Exception as err:
             logging.error("Authentication failed, due to error, socket closing")
             self.close()
-            
+
     def writable(self):
         if self.preferred:
             for cli_id in self.ctl.clientreceivers:
@@ -160,12 +148,12 @@ class serverreceiver(asyncore.dispatcher):
     def handle_close(self):
         self.closing = True
         self.ctl.closeconn(self)
-        self.close()        
-        
+        self.close()
+
     def id_write(self, cli_id, lastcontents=None):
         # Write to a certain cli_id. Lastcontents is used for CLOSECHAR
         sent = 0
-        try:    
+        try:
             if len(self.ctl.clientreceivers[cli_id].to_remote_buffer) <= 4096:
                 sent = len(self.ctl.clientreceivers[cli_id].to_remote_buffer)
                 self.send(self.cipher.encrypt(bytes(cli_id, "UTF-8") + bytes('%i' % self.ctl.clientreceivers[cli_id].to_remote_buffer_index, "UTF-8") + self.ctl.clientreceivers[cli_id].to_remote_buffer) + bytes(self.splitchar, "UTF-8"))

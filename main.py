@@ -10,8 +10,8 @@ import json
 import sys
 
 from common import certloader
-from coordinator import coordinate, coordinate_pt
-from server import servercontrol, servercontrol_pt
+from coordinator import coordinate
+from server import servercontrol
 from client import clientcontrol
 
 # Const used in the client.
@@ -67,13 +67,13 @@ if __name__ == '__main__':
 
         if "dns_servers" not in data:
             data["dns_servers"] = DEFAULT_DNS_SERVERS
-        
+
         if "obfs4_exec" not in data:
             data["obfs4_exec"] = DEFAULT_OBFS4_EXECADDR
 
         if "debug_ip" not in data:
             data["debug_ip"] = None
-            
+
         if "obfs_level" not in data:
             data["obfs_level"] = 0
 
@@ -121,7 +121,7 @@ if __name__ == '__main__':
             logging.basicConfig(stream=sys.stdout, level=logging.INFO)
         else:
             logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
-		
+
 
         if options.fs:
             swapfq = 3
@@ -134,46 +134,32 @@ if __name__ == '__main__':
 
     # Start the main event loop
     try:
-        if data["obfs_level"] != 0:
-            ctl = coordinate_pt(
-                    data["control_domain"],
-                    localpri,
-                    localpri_sha1,
-                    remotecert,
-                    localpub_sha1,
-                    data["number"],
-                    data["remote_host"],
-                    data["remote_port"],
-                    data["dns_servers"],
-                    data["debug_ip"],
-                    swapfq,
-                    data["obfs4_exec"],
-                    data["obfs_level"]
-                    )
-            sctl = servercontrol_pt(ctl)
-        else:
-            ctl = coordinate(
-                    data["control_domain"],
-                    localpri,
-                    localpri_sha1,
-                    remotecert,
-                    localpub_sha1,
-                    data["number"],
-                    data["remote_port"],
-                    data["dns_servers"],
-                    data["debug_ip"],
-                    swapfq
-                    )
-            sctl = servercontrol(
+        ctl = coordinate(
+                data["control_domain"],
+                localpri,
+                localpri_sha1,
+                remotecert,
+                localpub_sha1,
+                data["number"],
                 data["remote_host"],
                 data["remote_port"],
-                ctl
-                )
+                data["dns_servers"],
+                data["debug_ip"],
+                swapfq,
+                data["obfs4_exec"],
+                data["obfs_level"]
+            )
+        sctl = servercontrol(
+            data["remote_host"],
+            data["remote_port"],
+            ctl,
+            pt=bool(data["obfs_level"])
+        )
         cctl = clientcontrol(
             ctl,
             data["local_host"],
             data["local_port"]
-            )
+        )
 
     except KeyError as e:
         print(e)
