@@ -112,7 +112,7 @@ class coordinate(object):
         salt = binascii.hexlify(os.urandom(16)).decode("ASCII")
         h = hashlib.sha256()
         h.update((self.localcert_sha1 + str(myip) + salt).encode('utf-8'))
-        hotp = pyotp.TOTP(h.hexdigest()).now()
+        hotp = pyotp.TOTP(bytes(h.hexdigest(), "UTF-8")).now()
         return  (required_hex + \
                 remote_port_hex + \
                 self.authdata + '.' + \
