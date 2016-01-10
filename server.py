@@ -12,7 +12,7 @@ from _io import BlockingIOError
 MAX_HANDLE = 100
 CLOSECHAR = chr(4) * 5
 REAL_SERVERPORT = 55000
-SEG_SIZE = 4084     # 4096(total) - 2(id) - 3(index) - 7(splitchar)
+SEG_SIZE = 4083     # 4096(total) - 1(type) - 2(id) - 3(index) - 7(splitchar)
 
 
 class servercontrol(asyncore.dispatcher):
@@ -58,32 +58,39 @@ class serverreceiver(asyncore.dispatcher):
         pass
 
     def handle_read(self):
-        # Handle received data
+        """Handle received data."""
+
+        b_split = bytes(self.splitchar, "UTF-8")
+        b_close = bytes(CLOSECHAR, "ASCII")
+
         if self.cipher == None:
             self.begin_auth()
         else:
             read_count = 0
             self.from_remote_buffer_raw += self.recv(8192)
-            bytessplit = self.from_remote_buffer_raw.split(bytes(self.splitchar, "UTF-8"))
+            bytessplit = self.from_remote_buffer_raw.split(b_split)
             for Index in range(len(bytessplit)):
                 if Index < len(bytessplit) - 1:
                     decryptedtext = self.cipher.decrypt(bytessplit[Index])
                     try:
-                        cli_id = decryptedtext[:2].decode("ASCII")
-                        seq = int(decryptedtext[2:5].decode("ASCII"))
-                    except Exception as err:
+                        # flag is 0 for normal data packet, 1 for ping packet
+                        flag = decryptedtext[0]
+                        cli_id = decryptedtext[1:3].decode("ASCII")
+                        seq = int(decryptedtext[3:6].decode("ASCII"))
+                        b_data = decryptedtext[6:]
+                    except Exception:
                         logging.warning("decode error")
                         cli_id = None
-                    if cli_id == "00" and decryptedtext[5:] == bytes(CLOSECHAR, "ASCII"):
+                    if cli_id == "00" and b_data == b_close:
                         self.closing = True
                         self.ctl.closeconn(self)
                     else:
                         if cli_id in self.ctl.clientreceivers:
-                            if decryptedtext[5:] != bytes(CLOSECHAR, "ASCII"):
-                                self.ctl.clientreceivers[cli_id].from_remote_buffer[seq] = decryptedtext[5:]
+                            if b_data != b_close:
+                                self.ctl.clientreceivers[cli_id].from_remote_buffer[seq] = b_data
                             else:
                                 self.ctl.clientreceivers[cli_id].close()
-                            read_count += len(decryptedtext) - 5
+                            read_count += len(b_data)
                 else:
                     self.from_remote_buffer_raw = bytessplit[Index]
             logging.debug('%04i from server' % read_count)
@@ -163,7 +170,8 @@ class serverreceiver(asyncore.dispatcher):
         if buf is None:
             buf = self.ctl.clientreceivers[cli_id].to_remote_buffer
         b_split = bytes(self.splitchar, "UTF-8")
-        self.send(self.cipher.encrypt(b_id + b_idx + buf[:SEG_SIZE]) + b_split)
+        self.send(self.cipher.encrypt(b"0" + b_id + b_idx + buf[:SEG_SIZE]) +
+                  b_split)
         return min(SEG_SIZE, len(buf))
 
     def id_write(self, cli_id, lastcontents=None):
