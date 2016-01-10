@@ -4,6 +4,7 @@ import socket
 import struct
 import logging
 from hashlib import sha1
+from time import time
 
 logging.getLogger("requests").setLevel(logging.DEBUG)
 
@@ -13,6 +14,7 @@ except Exception as e:
     print("Library Crypto (pycrypto) is not installed. Fatal error.")
     quit()
 # TODO:Need to switch to PKCS for better security
+
 
 class AESCipher:
     """A reusable wrapper of PyCrypto's AES cipher, i.e. resets every time."""
@@ -32,6 +34,7 @@ class AESCipher:
         dec = self.cipher.decrypt(data)
         self.cipher = AES.new(self.password, AES.MODE_CFB, self.iv)
         return dec
+
 
 class certloader:
 
@@ -56,6 +59,7 @@ class certloader:
             print (err)
             quit()
 
+
 def get_ip(debug_ip=None):  # TODO: Get local network interfaces ip
     logging.info("Getting public IP address")
     if debug_ip:
@@ -70,6 +74,7 @@ def get_ip(debug_ip=None):  # TODO: Get local network interfaces ip
     logging.info("IP address to be sent is " + ip)
     return struct.unpack("!L", socket.inet_aton(ip))[0]
 
+
 def get_ip_str():
     logging.info("Getting public IP address")
     try:
@@ -80,3 +85,13 @@ def get_ip_str():
         print("Error occurred in getting address. Using default 127.0.0.1 in testing environment.")
         print(err)
         return "127.0.0.1"
+
+
+def get_timestamp():
+    """Get the current time in milliseconds, in hexagon."""
+    return hex(int(time() * 1000))[2:]
+
+
+def parse_timestamp(timestamp):
+    """Convert hexagon timestamp to integer (time in milliseconds)."""
+    return int(timestamp, 16)
