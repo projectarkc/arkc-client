@@ -157,7 +157,7 @@ class coordinate(object):
         salt = binascii.hexlify(os.urandom(16)).decode("ASCII")
         h = hashlib.sha256()
         h.update((self.localcert_sha1 + myip + salt).encode('utf-8'))
-        msg.append(bytes(pyotp.TOTP(h.hexdigest(), "UTF-8").now()))
+        msg.append(pyotp.TOTP(bytes(h.hexdigest(), "UTF-8")).now())
         msg.append(binascii.hexlify(self.str).decode("ASCII"))
         msg.append(myip)
         msg.append(salt)
