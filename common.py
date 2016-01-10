@@ -3,6 +3,8 @@ from requests import get
 import socket
 import struct
 import logging
+import random
+import bisect
 from hashlib import sha1
 from time import time
 
@@ -95,3 +97,15 @@ def get_timestamp():
 def parse_timestamp(timestamp):
     """Convert hexagon timestamp to integer (time in milliseconds)."""
     return int(timestamp, 16)
+
+
+def weighted_choice(l, f_weight):
+    """Weighted random choice with the given weight function."""
+    sum_weight = 0
+    breakpoints = []
+    for item in l:
+        sum_weight += f_weight(item)
+        breakpoints.append(sum_weight)
+    r = random.random() * sum_weight
+    i = bisect.bisect(breakpoints, r)
+    return l[i]

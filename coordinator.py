@@ -13,6 +13,8 @@ import socket
 from time import sleep
 from string import ascii_letters
 
+from common import weighted_choice
+
 from common import get_ip
 import pyotp
 
@@ -173,7 +175,9 @@ class coordinate(object):
         return len(self.recvs) >= self.required
 
     def refreshconn(self):
-        next_conn = random.choice(self.recvs)
+        # TODO: better algorithm
+        f = lambda r: 1.0 / (1 + r.latency ** 2)
+        next_conn = weighted_choice(self.recvs, f)
         self.ready.preferred = False
         self.ready = next_conn
         next_conn.preferred = True
