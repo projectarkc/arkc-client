@@ -6,14 +6,14 @@ import random
 import string
 import binascii
 import hashlib
-import base64
 import dnslib
+import base64
 import socket
 
 from time import sleep
 from string import ascii_letters
 
-from common import weighted_choice, get_ip, ip6_to_integer
+from common import weighted_choice, get_ip, ip6_to_integer, urlsafe_b64_short_encode, int2base
 
 import pyotp
 
@@ -157,9 +157,9 @@ class coordinate(object):
         msg[0] += "%04X" % self.remote_port
         msg[0] += self.authdata
         if self.ipv6 == "":
-            myip = "%X" % self.ip
+            myip = int2base(self.ip)
         else:
-            myip = "%X" % ip6_to_integer(self.ipv6) + "G"
+            myip = int2base(self.ipv6) + "G"
         salt = binascii.hexlify(os.urandom(16)).decode("ASCII")
         h = hashlib.sha256()
         h.update((self.localcert_sha1 + myip + salt).encode('utf-8'))
@@ -167,12 +167,9 @@ class coordinate(object):
         msg.append(binascii.hexlify(self.str).decode("ASCII"))
         msg.append(myip)
         msg.append(salt)
-
         if self.obfs_level:
-            certs_byte = base64.b64encode(self.certs_send.encode("ASCII"))\
-                .decode("ASCII").replace('=', '')
+            certs_byte = urlsafe_b64_short_encode(self.certs_send)
             msg.extend([certs_byte[:50], certs_byte[50:]])
-
         return '.'.join(msg)
 
     def issufficient(self):

@@ -5,6 +5,8 @@ import struct
 import logging
 import random
 import bisect
+import string
+import base64
 from hashlib import sha1
 from time import time
 
@@ -16,6 +18,36 @@ except Exception as e:
     print("Library Crypto (pycrypto) is not installed. Fatal error.")
     quit()
 # TODO:Need to switch to PKCS for better security
+
+
+def urlsafe_b64_short_encode(value):
+    return base64.urlsafe_b64encode(value.encode("UTF-8"))\
+        .decode("UTF-8").replace('=', '')
+
+
+def urlsafe_b64_short_decode(text):
+    value = text
+    value += '=' * ((4 - len(value)) % 4)
+    return base64.urlsafe_b64decode(value)
+
+
+def int2base(x, base=36):
+    digs = string.digits + string.ascii_lowercase
+    if x < 0:
+        sign = -1
+    elif x == 0:
+        return digs[0]
+    else:
+        sign = 1
+    x *= sign
+    digits = []
+    while x:
+        digits.append(digs[x % base])
+        x = int(x / base)
+    if sign < 0:
+        digits.append('-')
+    digits.reverse()
+    return ''.join(digits)
 
 
 class AESCipher:
