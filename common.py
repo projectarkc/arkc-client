@@ -84,14 +84,15 @@ def get_ip_str():
         logging.info("IP address to be sent is " + ip)
         return ip
     except Exception as err:
-        print("Error occurred in getting address. Using default 127.0.0.1 in testing environment.")
+        print(
+            "Error occurred in getting address. Using default 127.0.0.1 in testing environment.")
         print(err)
         return "127.0.0.1"
 
 
 def get_timestamp():
     """Get the current time in milliseconds, in hexagon."""
-    return hex(int(time() * 1000))[2:]
+    return hex(int(time() * 1000)).rstrip("L").lstrip("0x")
 
 
 def parse_timestamp(timestamp):
@@ -109,3 +110,9 @@ def weighted_choice(l, f_weight):
     r = random.random() * sum_weight
     i = bisect.bisect(breakpoints, r)
     return l[i]
+
+
+def ip6_to_integer(ip6):
+    ip6 = socket.inet_pton(socket.AF_INET6, ip6)
+    a, b = struct.unpack(">QQ", ip6)
+    return (a << 64) | b

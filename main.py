@@ -17,7 +17,7 @@ from client import clientcontrol
 # Const used in the client.
 
 DEFAULT_LOCAL_HOST = "127.0.0.1"
-DEFAULT_REMOTE_HOST = "0.0.0.0"
+DEFAULT_REMOTE_HOST = ''
 DEFAULT_LOCAL_PORT = 8001
 DEFAULT_REMOTE_PORT = 8000
 DEFAULT_REQUIRED = 3
@@ -28,10 +28,17 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="ArkC Client")
     try:
         # Load arguments
-        parser.add_argument("-v", dest="v", action="store_true", help="show detailed logs")
-        parser.add_argument("-vv", dest="vv", action="store_true", help="show debug logs")
-        parser.add_argument('-c', '--config', dest="config", help="You must specify a configuration files. By default ./config.json is used.", default='config.json')
-        parser.add_argument('-fs', '--frequent-swap', dest="fs", action="store_true", help="Use frequent connection swapping")  # #TODO: support this function
+        parser.add_argument(
+            "-v", dest="v", action="store_true", help="show detailed logs")
+        parser.add_argument(
+            "-vv", dest="vv", action="store_true", help="show debug logs")
+        parser.add_argument('-c', '--config', dest="config",
+                            help="You must specify a configuration files. By default ./config.json is used.", default='config.json')
+        parser.add_argument('-fs', '--frequent-swap', dest="fs", action="store_true",
+                            help="Use frequent connection swapping")  # #TODO: support this function
+
+        parser.add_argument("-v6", dest="ipv6", default="")
+
         options = parser.parse_args()
 
         data = {}
@@ -42,7 +49,8 @@ if __name__ == '__main__':
             data = json.load(data_file)
             data_file.close()
         except Exception as err:
-            logging.error("Fatal error while loading configuration file.\n" + err)
+            logging.error(
+                "Fatal error while loading configuration file.\n" + err)
             quit()
 
         if "control_domain" not in data:
@@ -77,13 +85,13 @@ if __name__ == '__main__':
         if "obfs_level" not in data:
             data["obfs_level"] = 0
 
-
         # Load certificates
         try:
             remotecert_data = open(data["remote_cert"], "r").read()
             remotecert = certloader(remotecert_data).importKey()
         except KeyError as e:
-            logging.error(e.tostring() + "is not found in the config file. Quitting.")
+            logging.error(
+                e.tostring() + "is not found in the config file. Quitting.")
             quit()
         except Exception as err:
             print ("Fatal error while loading remote host certificate.")
@@ -95,9 +103,11 @@ if __name__ == '__main__':
             localpri = certloader(localpri_data).importKey()
             localpri_sha1 = certloader(localpri_data).getSHA1()
             if not localpri.has_private():
-                print("Fatal error, no private key included in local certificate.")
+                print(
+                    "Fatal error, no private key included in local certificate.")
         except KeyError as e:
-            logging.error(e.tostring() + "is not found in the config file. Quitting.")
+            logging.error(
+                e.tostring() + "is not found in the config file. Quitting.")
             quit()
         except Exception as err:
             print ("Fatal error while loading local certificate.")
@@ -108,7 +118,8 @@ if __name__ == '__main__':
             localpub_data = open(data["local_cert_pub"], "r").read()
             localpub_sha1 = certloader(localpub_data).getSHA1()
         except KeyError as e:
-            logging.error(e.tostring() + "is not found in the config file. Quitting.")
+            logging.error(
+                e.tostring() + "is not found in the config file. Quitting.")
             quit()
         except Exception as err:
             print ("Fatal error while calculating SHA1 digest.")
@@ -122,7 +133,6 @@ if __name__ == '__main__':
         else:
             logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
 
-
         if options.fs:
             swapfq = 3
         else:
@@ -135,20 +145,21 @@ if __name__ == '__main__':
     # Start the main event loop
     try:
         ctl = coordinate(
-                data["control_domain"],
-                localpri,
-                localpri_sha1,
-                remotecert,
-                localpub_sha1,
-                data["number"],
-                data["remote_host"],
-                data["remote_port"],
-                data["dns_servers"],
-                data["debug_ip"],
-                swapfq,
-                data["obfs4_exec"],
-                data["obfs_level"]
-            )
+            data["control_domain"],
+            localpri,
+            localpri_sha1,
+            remotecert,
+            localpub_sha1,
+            data["number"],
+            data["remote_host"],
+            data["remote_port"],
+            data["dns_servers"],
+            data["debug_ip"],
+            swapfq,
+            data["obfs4_exec"],
+            data["obfs_level"],
+            options.ipv6
+        )
         sctl = servercontrol(
             data["remote_host"],
             data["remote_port"],

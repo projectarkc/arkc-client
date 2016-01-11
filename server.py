@@ -21,14 +21,16 @@ class servercontrol(asyncore.dispatcher):
     def __init__(self, serverip, serverport, ctl, pt=False, backlog=5):
         self.ctl = ctl
         asyncore.dispatcher.__init__(self)
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        if ctl.ipv6 == "":
+            self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        else:
+            self.create_socket(socket.AF_INET6, socket.SOCK_STREAM)
         # TODO: support IPv6
         self.set_reuse_addr()
 
         if pt:
             serverip = "127.0.0.1"
             serverport = REAL_SERVERPORT
-
         self.bind((serverip, serverport))
         self.listen(backlog)
 
@@ -110,7 +112,8 @@ class serverreceiver(asyncore.dispatcher):
                         else:
                             if cli_id in self.ctl.clientreceivers:
                                 if b_data != b_close:
-                                    self.ctl.clientreceivers[cli_id].from_remote_buffer[seq] = b_data
+                                    self.ctl.clientreceivers[
+                                        cli_id].from_remote_buffer[seq] = b_data
                                 else:
                                     self.ctl.clientreceivers[cli_id].close()
                                 read_count += len(b_data)
@@ -136,10 +139,13 @@ class serverreceiver(asyncore.dispatcher):
                     self.close()
                 else:
                     # self.send(self.ctl.localcert.encrypt(pyotp.HOTP(self.ctl.localcert_sha1)) + self.splitchar)
-                    self.cipher = AESCipher(self.ctl.localcert.decrypt(self.read[-256:]), self.ctl.str)
+                    self.cipher = AESCipher(
+                        self.ctl.localcert.decrypt(self.read[-256:]), self.ctl.str)
                     self.full = False
                     self.ctl.newconn(self)
-                    logging.debug("Authentication succeed, connection established")  # , client auth string sent")
+                    # , client auth string sent")
+                    logging.debug(
+                        "Authentication succeed, connection established")
             else:
                 if len(self.read) == 0:
                     self.no_data_count += 1
@@ -150,14 +156,16 @@ class serverreceiver(asyncore.dispatcher):
             logging.info("empty recv error")
 
         except Exception:
-            logging.error("Authentication failed, due to error, socket closing")
+            logging.error(
+                "Authentication failed, due to error, socket closing")
             self.close()
 
     def writable(self):
         if self.preferred:
             for cli_id in self.ctl.clientreceivers:
                 if self.ctl.clientreceivers[cli_id] is None:
-                    logging.warning("Client receiver %s NoneType error" % cli_id)
+                    logging.warning(
+                        "Client receiver %s NoneType error" % cli_id)
                     del self.ctl.clientreceivers[cli_id]
                 else:
                     if len(self.ctl.clientreceivers[cli_id].to_remote_buffer) > 0:
@@ -213,6 +221,7 @@ class serverreceiver(asyncore.dispatcher):
             # self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
         logging.debug('%04i to server' % sent)
         try:
-            self.ctl.clientreceivers[cli_id].to_remote_buffer = self.ctl.clientreceivers[cli_id].to_remote_buffer[sent:]
+            self.ctl.clientreceivers[cli_id].to_remote_buffer = self.ctl.clientreceivers[
+                cli_id].to_remote_buffer[sent:]
         except KeyError:
             pass

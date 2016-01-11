@@ -13,9 +13,8 @@ import socket
 from time import sleep
 from string import ascii_letters
 
-from common import weighted_choice
+from common import weighted_choice, get_ip, ip6_to_integer
 
-from common import get_ip
 import pyotp
 
 CLOSECHAR = chr(4) * 5
@@ -29,7 +28,7 @@ class coordinate(object):
 
     def __init__(self, ctl_domain, localcert, localcert_sha1, remotecert,
                  localpub, required, remote_host, remote_port, dns_servers,
-                 debug_ip, swapcount, obfs4_exec, obfs_level):
+                 debug_ip, swapcount, obfs4_exec, obfs_level, ipv6):
         self.remotepub = remotecert
         self.localcert = localcert
         self.localcert_sha1 = localcert_sha1
@@ -43,7 +42,9 @@ class coordinate(object):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.swapcount = swapcount
         self.ctl_domain = ctl_domain
-        self.ip = get_ip(debug_ip)
+        if ipv6 == "":
+            self.ip = get_ip(debug_ip)
+        self.ipv6 = ipv6
         self.obfs4_exec = obfs4_exec
         self.obfs_level = obfs_level
         self.clientreceivers = {}
@@ -155,7 +156,10 @@ class coordinate(object):
         msg[0] += "%02X" % min((self.required), 255)
         msg[0] += "%04X" % self.remote_port
         msg[0] += self.authdata
-        myip = "%X" % self.ip
+        if self.ipv6 == "":
+            myip = "%X" % self.ip
+        else:
+            myip = "%X" % ip6_to_integer(self.ipv6) + "G"
         salt = binascii.hexlify(os.urandom(16)).decode("ASCII")
         h = hashlib.sha256()
         h.update((self.localcert_sha1 + myip + salt).encode('utf-8'))

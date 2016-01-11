@@ -4,8 +4,9 @@ import asyncore
 
 # Need to switch to asyncio
 
+
 class clientcontrol(asyncore.dispatcher):
-    
+
     """ a standard client service dispatcher """
 
     def __init__(self, control, clientip, clientport, backlog=5):
@@ -20,6 +21,7 @@ class clientcontrol(asyncore.dispatcher):
         conn, addr = self.accept()
         logging.info('Client_recv_Accept from %s' % str(addr))
         clientreceiver(conn, self.control)
+
 
 class clientreceiver(asyncore.dispatcher):
 
@@ -48,19 +50,21 @@ class clientreceiver(asyncore.dispatcher):
     def handle_write(self):
         sent = 0
         while self.writable():
-            sent = sent + self.send(self.from_remote_buffer.pop(self.from_remote_buffer_index))
+            sent = sent + \
+                self.send(
+                    self.from_remote_buffer.pop(self.from_remote_buffer_index))
             self.next_from_remote_buffer()
         logging.debug('%04i to client' % sent)
 
     def handle_close(self):
         self.control.remove(self.idchar)
         self.close()
-        
+
     def next_to_remote_buffer(self):
         self.to_remote_buffer_index += 1
         if self.to_remote_buffer_index == 1000:
             self.to_remote_buffer_index = 100
-            
+
     def next_from_remote_buffer(self):
         self.from_remote_buffer_index += 1
         if self.from_remote_buffer_index == 1000:
