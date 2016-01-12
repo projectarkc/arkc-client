@@ -159,7 +159,7 @@ class coordinate(object):
         if self.ipv6 == "":
             myip = int2base(self.ip)
         else:
-            myip = int2base(self.ipv6) + "G"
+            myip = int2base(int(binascii.hexlify(socket.inet_pton(socket.AF_INET6, self.ipv6)), 16)) + "G"
         salt = binascii.hexlify(os.urandom(16)).decode("ASCII")
         h = hashlib.sha256()
         h.update((self.localcert_sha1 + myip + salt).encode('utf-8'))
