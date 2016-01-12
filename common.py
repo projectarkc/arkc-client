@@ -31,23 +31,21 @@ def urlsafe_b64_short_decode(text):
     return base64.urlsafe_b64decode(value)
 
 
-def int2base(x, base=36):
-    digs = string.digits + string.ascii_lowercase
-    if x < 0:
-        sign = -1
-    elif x == 0:
-        return digs[0]
+def int2base(num, base=36, numerals="0123456789abcdefghijklmnopqrstuvwxyz"):
+    if num == 0:
+        return "0"
+
+    if num < 0:
+        return '-' + baseN((-1) * num, base, numerals)
+
+    if not 2 <= base <= len(numerals):
+        raise ValueError('Base must be between 2-%d' % len(numerals))
+
+    left_digits = num // base
+    if left_digits == 0:
+        return numerals[num % base]
     else:
-        sign = 1
-    x *= sign
-    digits = []
-    while x:
-        digits.append(digs[x % base])
-        x = int(x / base)
-    if sign < 0:
-        digits.append('-')
-    digits.reverse()
-    return ''.join(digits)
+        return int2base(left_digits, base, numerals) + numerals[num % base]
 
 
 class AESCipher:
