@@ -1,14 +1,10 @@
-import socket
-import asyncore
+import asyncio
 import logging
 import time
 import struct
 
 from common import AESCipher
 from common import get_timestamp, parse_timestamp
-from _io import BlockingIOError
-
-# Need to switch to asyncio
 
 MAX_HANDLE = 100
 CLOSECHAR = chr(4) * 5
@@ -16,38 +12,17 @@ REAL_SERVERPORT = 55000
 SEG_SIZE = 4083     # 4096(total) - 1(type) - 2(id) - 3(index) - 7(splitchar)
 
 
-class servercontrol(asyncore.dispatcher):
+class servercontrol(asyncio.Protocol):
 
-    def __init__(self, serverip, serverport, ctl, pt=False, backlog=5):
+    def __init__(self, ctl):
         self.ctl = ctl
-        asyncore.dispatcher.__init__(self)
-        if ctl.ipv6 == "":
-            self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-        else:
-            self.create_socket(socket.AF_INET6, socket.SOCK_STREAM)
-        # TODO: support IPv6
-        self.set_reuse_addr()
-
-        if pt:
-            serverip = "127.0.0.1"
-            serverport = REAL_SERVERPORT
-        self.bind((serverip, serverport))
-        self.listen(backlog)
-
-    def handle_accept(self):
-        conn, addr = self.accept()
-        logging.info('Serv_recv_Accept from %s' % str(addr))
-        serverreceiver(conn, self.ctl)
-
-    def getrecv(self):
-        return self.ctl.offerconn()
-
-
-class serverreceiver(asyncore.dispatcher):
-
-    def __init__(self, conn, ctl):
+        # if pt:
+        #    serverip = "127.0.0.1"
+        #    serverport = REAL_SERVERPORT
+        self.write_event = asyncio.Event()
+        self.write_event.clear()
+        self.auth_raw = b''
         self.ctl = ctl
-        asyncore.dispatcher.__init__(self, conn)
         self.from_remote_buffer_raw = b''
         self.cipher = None
         self.preferred = False
@@ -61,9 +36,17 @@ class serverreceiver(asyncore.dispatcher):
             "UTF-8"
         )
         self.no_data_count = 0
-        self.read = b''
+        self.auth_raw = b''
         self.latency = 10000
+
+    def connection_made(self, transport):
+        peername = transport.get_extra_info('peername')
+        logging.info('Serv_recv_Accept from {}'.format(peername))
+        self.transport = transport
         self.begin_auth()
+
+    def getrecv(self):
+        return self.ctl.offerconn()
 
     def ping_recv(self, msg):
         """Parse ping (without flag) and send back when necessary."""
@@ -73,25 +56,22 @@ class serverreceiver(asyncore.dispatcher):
             raw_packet = "1" + "1" + msg[1:] + get_timestamp()
             to_write = self.cipher.encrypt(raw_packet) + self.split
             logging.debug("send ping1")
-            self.send(to_write)
+            self.transport.write(to_write)
         else:
             time1 = parse_timestamp(msg[1:])
             self.latency = int(time.time() * 1000) - time1
             logging.debug("latency: %dms" % self.latency)
 
-    def handle_connect(self):
-        pass
-
-    def handle_read(self):
+    def data_received(self, data):
         """Handle received data."""
 
         b_close = bytes(CLOSECHAR, "ASCII")
 
         if self.cipher is None:
-            self.begin_auth()
+            self.begin_auth(data)
         else:
             read_count = 0
-            self.from_remote_buffer_raw += self.recv(8192)
+            self.from_remote_buffer_raw += data
             bytessplit = self.from_remote_buffer_raw.split(self.split)
             for Index in range(len(bytessplit)):
                 if Index < len(bytessplit) - 1:
@@ -125,36 +105,32 @@ class serverreceiver(asyncore.dispatcher):
                     self.from_remote_buffer_raw = bytessplit[Index]
             logging.debug('%04i from server' % read_count)
 
-    def begin_auth(self):
+    def begin_auth(self, data):
+
         # Deal with the beginning authentication
         time.sleep(0.05)
-        self.read = b''
+        self.auth_raw = b''
         try:
-            self.read += self.recv(768)
-            if len(self.read) >= 768:
-                self.read = self.read[:768]
-                blank = self.read[:512]
+            self.auth_raw += data
+            if len(self.auth_raw) >= 768:
+                self.auth_raw = self.auth_raw[:768]
+                blank = self.auth_raw[:512]
                 if not self.ctl.remotepub.verify(self.ctl.str, (int(blank, 16), None)):
                     logging.warning("Authentication failed, socket closing")
                     self.close()
                 else:
                     # self.send(self.ctl.localcert.encrypt(pyotp.HOTP(self.ctl.localcert_sha1)) + self.splitchar)
                     self.cipher = AESCipher(
-                        self.ctl.localcert.decrypt(self.read[-256:]), self.ctl.str)
+                        self.ctl.localcert.decrypt(self.auth_raw[-256:]), self.ctl.str)
                     self.full = False
                     self.ctl.newconn(self)
                     # , client auth string sent")
                     logging.debug(
                         "Authentication succeed, connection established")
+                    self.handle_write()
             else:
-                if len(self.read) == 0:
+                if len(self.auth_raw) == 0:
                     self.no_data_count += 1
-        except BlockingIOError:
-            pass
-
-        except socket.error:
-            logging.info("empty recv error")
-
         except Exception:
             logging.error(
                 "Authentication failed, due to error, socket closing")
@@ -169,29 +145,36 @@ class serverreceiver(asyncore.dispatcher):
                     del self.ctl.clientreceivers[cli_id]
                 else:
                     if len(self.ctl.clientreceivers[cli_id].to_remote_buffer) > 0:
+                        self.write_event.set()
                         return True
+            self.write_event.clear()
+            return False
         else:
+            self.write_event.clear()
             return False
 
     def handle_write(self):
         # Called when writable
-        if self.cipher is not None:
-            if self.ctl.ready == self:
-                written = 0
-                for cli_id in self.ctl.clientreceivers:
-                    if self.ctl.clientreceivers[cli_id].to_remote_buffer:
-                        self.id_write(cli_id)
-                        written += 1
-                    if written >= self.ctl.swapcount:
-                        break
-            self.ctl.refreshconn()
-        else:
-            self.handle_read()
+        while True:
+            self.write_event.wait()
+            if self.cipher is not None:
+                if self.ctl.ready == self:
+                    written = 0
+                    for cli_id in self.ctl.clientreceivers:
+                        if self.ctl.clientreceivers[cli_id].to_remote_buffer:
+                            self.id_write(cli_id)
+                            written += 1
+                        if written >= self.ctl.swapcount:
+                            break
+                self.ctl.refreshconn()
+            else:
+                self.handle_read()
+            self.writable()
 
     def handle_close(self):
         self.closing = True
         self.ctl.closeconn(self)
-        self.close()
+        self.transport.close()
 
     def encrypt_and_send(self, cli_id, buf=None):
         """Encrypt and send data, and return the length sent.
@@ -204,8 +187,8 @@ class serverreceiver(asyncore.dispatcher):
         b_idx = bytes('%i' % idx, "UTF-8")
         if buf is None:
             buf = self.ctl.clientreceivers[cli_id].to_remote_buffer
-        self.send(self.cipher.encrypt(b"0" + b_id + b_idx + buf[:SEG_SIZE]) +
-                  self.split)
+        self.transport.write(self.cipher.encrypt(b"0" + b_id + b_idx + buf[:SEG_SIZE]) +
+                             self.split)
         return min(SEG_SIZE, len(buf))
 
     def id_write(self, cli_id, lastcontents=None):

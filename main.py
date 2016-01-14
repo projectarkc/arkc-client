@@ -3,7 +3,8 @@
 # By ArkC developers
 # Released under GNU General Public License 2
 
-import asyncore
+import socket
+import asyncio
 import argparse
 import logging
 import json
@@ -23,6 +24,7 @@ DEFAULT_REMOTE_PORT = 8000
 DEFAULT_REQUIRED = 3
 DEFAULT_DNS_SERVERS = [["8.8.8.8", 53]]
 DEFAULT_OBFS4_EXECADDR = "obfs4proxy"
+REAL_SERVERPORT = 55000
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="ArkC Client")
@@ -85,6 +87,9 @@ if __name__ == '__main__':
         if "obfs_level" not in data:
             data["obfs_level"] = 0
 
+        if data["obfs_level"] > 0:
+            pt = True
+
         # Load certificates
         try:
             remotecert_data = open(data["remote_cert"], "r").read()
@@ -143,6 +148,13 @@ if __name__ == '__main__':
         print(e)
 
     # Start the main event loop
+    loop = asyncio.get_event_loop()
+
+    if options.ipv6 == "":
+        server_socket_family = socket.AF_INET
+    else:
+        server_socket_family = socket.AF_INET6
+
     try:
         ctl = coordinate(
             data["control_domain"],
@@ -160,24 +172,25 @@ if __name__ == '__main__':
             data["obfs_level"],
             options.ipv6
         )
-        sctl = servercontrol(
-            data["remote_host"],
-            data["remote_port"],
-            ctl,
-            pt=bool(data["obfs_level"])
-        )
-        cctl = clientcontrol(
-            ctl,
-            data["local_host"],
-            data["local_port"]
-        )
+        sctl = loop.create_server(lambda: servercontrol(ctl),
+                                  (data["remote_host"] if not(pt)
+                                   else "127.0.0.1"),
+                                  (data["remote_port"] if not(pt)
+                                   else REAL_SERVERPORT),
+                                  family=server_socket_family)
+        cctl = loop.create_server(lambda: clientcontrol(ctl),
+                                  data["local_host"], data["local_port"],
+                                  family=socket.AF_INET)
 
     except KeyError as e:
         print(e)
         logging.error("Bad config file. Quitting.")
         quit()
 
+    loop.run_forever()
+
     # except Exception as e:
     #    print ("An error occurred: \n")
     #    print(e)
-    asyncore.loop(use_poll = 1)
+
+    # asyncore.loop(use_poll = 1)

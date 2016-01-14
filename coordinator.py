@@ -13,7 +13,7 @@ import socket
 from time import sleep
 from string import ascii_letters
 
-from common import weighted_choice, get_ip, ip6_to_integer, urlsafe_b64_short_encode, int2base
+from common import weighted_choice, get_ip, urlsafe_b64_short_encode, int2base
 
 import pyotp
 
@@ -159,7 +159,8 @@ class coordinate(object):
         if self.ipv6 == "":
             myip = int2base(self.ip)
         else:
-            myip = int2base(int(binascii.hexlify(socket.inet_pton(socket.AF_INET6, self.ipv6)), 16)) + "G"
+            myip = int2base(
+                int(binascii.hexlify(socket.inet_pton(socket.AF_INET6, self.ipv6)), 16)) + "G"
         salt = binascii.hexlify(os.urandom(16)).decode("ASCII")
         h = hashlib.sha256()
         h.update((self.localcert_sha1 + myip + salt).encode('utf-8'))

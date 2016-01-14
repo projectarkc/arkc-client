@@ -1,33 +1,17 @@
-import socket
 import logging
-import asyncore
+import asyncio
 
 # Need to switch to asyncio
 
 
-class clientcontrol(asyncore.dispatcher):
+class clientcontrol(asyncio.Protocol):
 
     """ a standard client service dispatcher """
 
-    def __init__(self, control, clientip, clientport, backlog=5):
+    def __init__(self, control):
         self.control = control
-        asyncore.dispatcher.__init__(self)
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.set_reuse_addr()
-        self.bind((clientip, clientport))
-        self.listen(backlog)
-
-    def handle_accept(self):
-        conn, addr = self.accept()
-        logging.info('Client_recv_Accept from %s' % str(addr))
-        clientreceiver(conn, self.control)
-
-
-class clientreceiver(asyncore.dispatcher):
-
-    def __init__(self, conn, control):
-        self.control = control
-        asyncore.dispatcher.__init__(self, conn)
+        self.write_event = asyncio.Event()
+        self.write_event.clear()
         self.idchar = self.control.register(self)
         if self.idchar is None:
             self.close()
@@ -36,29 +20,36 @@ class clientreceiver(asyncore.dispatcher):
         self.to_remote_buffer = b''
         self.to_remote_buffer_index = 100
 
-    def handle_connect(self):
-        pass
+    def connection_made(self, transport):
+        peername = transport.get_extra_info('peername')
+        logging.info('Client_recv_Accept from %s'.format(peername))
+        self.transport = transport
 
-    def handle_read(self):
-        read = self.recv(4096)
-        logging.debug('%04i from client' % len(read))
-        self.to_remote_buffer += read
+    def data_received(self, data):
+        data
+        logging.debug('%04i from client' % len(data))
+        self.to_remote_buffer += data
 
     def writable(self):
-        return self.from_remote_buffer_index in self.from_remote_buffer
+        if self.from_remote_buffer_index in self.from_remote_buffer:
+            self.write_event.set()
+        else:
+            self.write_event.lock()
 
     def handle_write(self):
-        sent = 0
-        while self.writable():
+        while True:
+            sent = 0
+            self.write_event.wait()
             sent = sent + \
-                self.send(
+                self.transport.write(
                     self.from_remote_buffer.pop(self.from_remote_buffer_index))
             self.next_from_remote_buffer()
-        logging.debug('%04i to client' % sent)
+            logging.debug('%04i to client' % sent)
+            self.writable()
 
     def handle_close(self):
         self.control.remove(self.idchar)
-        self.close()
+        self.transport.close()
 
     def next_to_remote_buffer(self):
         self.to_remote_buffer_index += 1
