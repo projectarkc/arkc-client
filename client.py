@@ -1,6 +1,8 @@
 import logging
 import asyncio
 
+from main import loop
+
 # Need to switch to asyncio
 
 
@@ -24,6 +26,7 @@ class clientcontrol(asyncio.Protocol):
         peername = transport.get_extra_info('peername')
         logging.info('Client_recv_Accept from %s'.format(peername))
         self.transport = transport
+        loop.call_soon(self.handle_write())
 
     def data_received(self, data):
         data
@@ -36,7 +39,7 @@ class clientcontrol(asyncio.Protocol):
         else:
             self.write_event.lock()
 
-    def handle_write(self):
+    async def handle_write(self):
         while True:
             sent = 0
             self.write_event.wait()

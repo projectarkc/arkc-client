@@ -5,10 +5,10 @@ import struct
 
 from common import AESCipher
 from common import get_timestamp, parse_timestamp
+from main import loop
 
 MAX_HANDLE = 100
 CLOSECHAR = chr(4) * 5
-REAL_SERVERPORT = 55000
 SEG_SIZE = 4083     # 4096(total) - 1(type) - 2(id) - 3(index) - 7(splitchar)
 
 
@@ -16,9 +16,6 @@ class servercontrol(asyncio.Protocol):
 
     def __init__(self, ctl):
         self.ctl = ctl
-        # if pt:
-        #    serverip = "127.0.0.1"
-        #    serverport = REAL_SERVERPORT
         self.write_event = asyncio.Event()
         self.write_event.clear()
         self.auth_raw = b''
@@ -127,7 +124,7 @@ class servercontrol(asyncio.Protocol):
                     # , client auth string sent")
                     logging.debug(
                         "Authentication succeed, connection established")
-                    self.handle_write()
+                    loop.call_soon(self.handle_write())
             else:
                 if len(self.auth_raw) == 0:
                     self.no_data_count += 1
@@ -153,7 +150,7 @@ class servercontrol(asyncio.Protocol):
             self.write_event.clear()
             return False
 
-    def handle_write(self):
+    async def handle_write(self):
         # Called when writable
         while True:
             self.write_event.wait()
@@ -167,8 +164,6 @@ class servercontrol(asyncio.Protocol):
                         if written >= self.ctl.swapcount:
                             break
                 self.ctl.refreshconn()
-            else:
-                self.handle_read()
             self.writable()
 
     def handle_close(self):
@@ -197,7 +192,7 @@ class servercontrol(asyncio.Protocol):
         try:
             sent = self.encrypt_and_send(cli_id)
             self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
-        except KeyError as err:
+        except KeyError:
             pass
         if lastcontents is not None:
             sent += self.encrypt_and_send(cli_id, bytes(lastcontents, "UTF-8"))

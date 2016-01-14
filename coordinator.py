@@ -7,7 +7,6 @@ import string
 import binascii
 import hashlib
 import dnslib
-import base64
 import socket
 
 from time import sleep
