@@ -16,8 +16,8 @@ class servercontrol(asyncio.Protocol):
     def __init__(self, ctl, loop):
         self.ctl = ctl
         self.loop = loop
-        self.write_event = asyncio.Event()
-        self.write_event.clear()
+        self.write_lock = asyncio.Lock()
+        self.write_lock.acquire()
         self.auth_raw = b''
         self.ctl = ctl
         self.from_remote_buffer_raw = b''
@@ -90,8 +90,11 @@ class servercontrol(asyncio.Protocol):
                                 if b_data != b_close:
                                     self.ctl.clientreceivers[
                                         cli_id].from_remote_buffer[seq] = b_data
+                                    self.ctl.clientreceivers[
+                                        cli_id].write_lock.release()
                                 else:
-                                    self.ctl.clientreceivers[cli_id].close()
+                                    self.ctl.clientreceivers[
+                                        cli_id].transport.close()
                                 read_count += len(b_data)
                     else:
                         # strip off type (always 1)
@@ -142,19 +145,17 @@ class servercontrol(asyncio.Protocol):
                     del self.ctl.clientreceivers[cli_id]
                 else:
                     if len(self.ctl.clientreceivers[cli_id].to_remote_buffer) > 0:
-                        self.write_event.set()
+                        self.write_lock.release()
                         return True
-            self.write_event.clear()
-            return False
-        else:
-            self.write_event.clear()
-            return False
+        if not(self.write_lock.locked()):
+            self.write_lock.acquire()
+        return False
 
     @asyncio.coroutine
     def handle_write(self):
         # Called when writable
         while True:
-            self.write_event.wait()
+            await self.write_lock.acquire()
             if self.cipher is not None:
                 if self.ctl.ready == self:
                     written = 0
@@ -165,8 +166,7 @@ class servercontrol(asyncio.Protocol):
                         if written >= self.ctl.swapcount:
                             break
                 self.ctl.refreshconn()
-            if not(self.writable()):
-                yield from asyncio.sleep(0.01)
+            self.writable()
 
     def connection_lost(self, exc):
         self.closing = True

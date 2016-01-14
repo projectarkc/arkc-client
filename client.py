@@ -11,8 +11,8 @@ class clientcontrol(asyncio.Protocol):
     def __init__(self, control, loop):
         self.control = control
         self.loop = loop
-        self.write_event = asyncio.Event()
-        self.write_event.clear()
+        self.write_lock = asyncio.Lock()
+        self.write_lock.acquire()
 
         self.from_remote_buffer = {}
         self.from_remote_buffer_index = 100
@@ -30,28 +30,28 @@ class clientcontrol(asyncio.Protocol):
             self.loop.create_task(self.handle_write())
 
     def data_received(self, data):
-        data
         logging.debug('%04i from client' % len(data))
         self.to_remote_buffer += data
+        self.control.ready.release()
 
     def writable(self):
         if self.from_remote_buffer_index in self.from_remote_buffer:
-            self.write_event.set()
+            self.write_lock.release
         else:
-            self.write_event.lock()
+            if not(self.write_lock.locked()):
+                self.write_lock.acquire()()
 
     @asyncio.coroutine
     def handle_write(self):
         while True:
             sent = 0
-            self.write_event.wait()
+            await self.write_lock.acquire()
             sent = sent + \
                 self.transport.write(
                     self.from_remote_buffer.pop(self.from_remote_buffer_index))
             self.next_from_remote_buffer()
             logging.debug('%04i to client' % sent)
-            if not(self.writable()):
-                yield from asyncio.sleep(0.01)
+            self.writable()
 
     def handle_close(self):
         self.control.remove(self.idchar)
