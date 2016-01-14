@@ -55,7 +55,11 @@ class AESCipher:
     def __init__(self, password, iv):
         self.password = password
         self.iv = iv
-        self.cipher = AES.new(self.password, AES.MODE_CFB, self.iv)
+        try:
+            self.cipher = AES.new(self.password, AES.MODE_CFB, self.iv)
+        except ValueError:
+            print((password, iv))
+            print(len(password))
 
     def encrypt(self, data):
         enc = self.cipher.encrypt(data)

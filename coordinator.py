@@ -153,7 +153,8 @@ class coordinate(object):
             )
         """
         msg = [""]
-        msg[0] += "%02X" % min((self.required), 255)
+        number_in_hex = "%02X" % min((self.required), 255)
+        msg[0] += number_in_hex
         msg[0] += "%04X" % self.remote_port
         msg[0] += self.authdata
         if self.ipv6 == "":
@@ -163,7 +164,8 @@ class coordinate(object):
                 int(binascii.hexlify(socket.inet_pton(socket.AF_INET6, self.ipv6)), 16)) + "G"
         salt = binascii.hexlify(os.urandom(16)).decode("ASCII")
         h = hashlib.sha256()
-        h.update((self.localcert_sha1 + myip + salt).encode('utf-8'))
+        h.update(
+            (self.localcert_sha1 + myip + salt + number_in_hex).encode('utf-8'))
         msg.append(pyotp.TOTP(bytes(h.hexdigest(), "UTF-8")).now())
         msg.append(binascii.hexlify(self.str).decode("ASCII"))
         msg.append(myip)
