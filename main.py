@@ -89,6 +89,8 @@ if __name__ == '__main__':
 
         if data["obfs_level"] > 0:
             pt = True
+        else:
+            pt = False
 
         # Load certificates
         try:
@@ -172,25 +174,28 @@ if __name__ == '__main__':
             data["obfs_level"],
             options.ipv6
         )
-        sctl = loop.create_server(lambda: servercontrol(ctl),
+        sctl = loop.create_server(lambda: servercontrol(ctl, loop),
                                   (data["remote_host"] if not(pt)
                                    else "127.0.0.1"),
                                   (data["remote_port"] if not(pt)
                                    else REAL_SERVERPORT),
                                   family=server_socket_family)
-        cctl = loop.create_server(lambda: clientcontrol(ctl),
+        cctl = loop.create_server(lambda: clientcontrol(ctl, loop),
                                   data["local_host"], data["local_port"],
                                   family=socket.AF_INET)
-
     except KeyError as e:
         print(e)
         logging.error("Bad config file. Quitting.")
         quit()
 
-    loop.run_forever()
+        # except Exception as e:
+        #    print ("An error occurred: \n")
+        #    print(e)
 
-    # except Exception as e:
-    #    print ("An error occurred: \n")
-    #    print(e)
-
-    # asyncore.loop(use_poll = 1)
+        # asyncore.loop(use_poll = 1)
+    server = loop.run_until_complete(sctl)
+    client = loop.run_until_complete(cctl)
+    try:
+        loop.run_forever()
+    except KeyboardInterrupt:
+        pass

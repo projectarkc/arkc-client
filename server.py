@@ -5,7 +5,6 @@ import struct
 
 from common import AESCipher
 from common import get_timestamp, parse_timestamp
-from main import loop
 
 MAX_HANDLE = 100
 CLOSECHAR = chr(4) * 5
@@ -14,8 +13,9 @@ SEG_SIZE = 4083     # 4096(total) - 1(type) - 2(id) - 3(index) - 7(splitchar)
 
 class servercontrol(asyncio.Protocol):
 
-    def __init__(self, ctl):
+    def __init__(self, ctl, loop):
         self.ctl = ctl
+        self.loop = loop
         self.write_event = asyncio.Event()
         self.write_event.clear()
         self.auth_raw = b''
@@ -40,7 +40,6 @@ class servercontrol(asyncio.Protocol):
         peername = transport.get_extra_info('peername')
         logging.info('Serv_recv_Accept from {}'.format(peername))
         self.transport = transport
-        self.begin_auth()
 
     def getrecv(self):
         return self.ctl.offerconn()
@@ -114,7 +113,7 @@ class servercontrol(asyncio.Protocol):
                 blank = self.auth_raw[:512]
                 if not self.ctl.remotepub.verify(self.ctl.str, (int(blank, 16), None)):
                     logging.warning("Authentication failed, socket closing")
-                    self.close()
+                    self.transport.close()
                 else:
                     # self.send(self.ctl.localcert.encrypt(pyotp.HOTP(self.ctl.localcert_sha1)) + self.splitchar)
                     self.cipher = AESCipher(
@@ -124,14 +123,15 @@ class servercontrol(asyncio.Protocol):
                     # , client auth string sent")
                     logging.debug(
                         "Authentication succeed, connection established")
-                    loop.call_soon(self.handle_write())
+                    self.loop.create_task(self.handle_write())
             else:
                 if len(self.auth_raw) == 0:
                     self.no_data_count += 1
-        except Exception:
+        except IOError:
+            print("Error string: " + repr(self.ctl.str))
             logging.error(
                 "Authentication failed, due to error, socket closing")
-            self.close()
+            self.transport.close()
 
     def writable(self):
         if self.preferred:
@@ -150,7 +150,8 @@ class servercontrol(asyncio.Protocol):
             self.write_event.clear()
             return False
 
-    async def handle_write(self):
+    @asyncio.coroutine
+    def handle_write(self):
         # Called when writable
         while True:
             self.write_event.wait()
@@ -164,12 +165,13 @@ class servercontrol(asyncio.Protocol):
                         if written >= self.ctl.swapcount:
                             break
                 self.ctl.refreshconn()
-            self.writable()
+            if not(self.writable()):
+                yield from asyncio.sleep(0.01)
 
-    def handle_close(self):
+    def connection_lost(self, exc):
         self.closing = True
         self.ctl.closeconn(self)
-        self.transport.close()
+        # self.transport.close()
 
     def encrypt_and_send(self, cli_id, buf=None):
         """Encrypt and send data, and return the length sent.

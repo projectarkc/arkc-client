@@ -1,8 +1,6 @@
 import logging
 import asyncio
 
-from main import loop
-
 # Need to switch to asyncio
 
 
@@ -10,13 +8,12 @@ class clientcontrol(asyncio.Protocol):
 
     """ a standard client service dispatcher """
 
-    def __init__(self, control):
+    def __init__(self, control, loop):
         self.control = control
+        self.loop = loop
         self.write_event = asyncio.Event()
         self.write_event.clear()
-        self.idchar = self.control.register(self)
-        if self.idchar is None:
-            self.close()
+
         self.from_remote_buffer = {}
         self.from_remote_buffer_index = 100
         self.to_remote_buffer = b''
@@ -25,8 +22,12 @@ class clientcontrol(asyncio.Protocol):
     def connection_made(self, transport):
         peername = transport.get_extra_info('peername')
         logging.info('Client_recv_Accept from %s'.format(peername))
-        self.transport = transport
-        loop.call_soon(self.handle_write())
+        self.idchar = self.control.register(self)
+        if self.idchar is None:
+            self.transport.close()
+        else:
+            self.transport = transport
+            self.loop.create_task(self.handle_write())
 
     def data_received(self, data):
         data
@@ -39,7 +40,8 @@ class clientcontrol(asyncio.Protocol):
         else:
             self.write_event.lock()
 
-    async def handle_write(self):
+    @asyncio.coroutine
+    def handle_write(self):
         while True:
             sent = 0
             self.write_event.wait()
@@ -48,7 +50,8 @@ class clientcontrol(asyncio.Protocol):
                     self.from_remote_buffer.pop(self.from_remote_buffer_index))
             self.next_from_remote_buffer()
             logging.debug('%04i to client' % sent)
-            self.writable()
+            if not(self.writable()):
+                yield from asyncio.sleep(0.01)
 
     def handle_close(self):
         self.control.remove(self.idchar)

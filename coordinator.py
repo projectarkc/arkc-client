@@ -99,6 +99,11 @@ class coordinate(object):
 
     def closeconn(self, conn):
         # Called when a connection is closed
+        try:
+            self.recvs.remove(conn)
+        except ValueError:
+            pass
+        # MUST wait for all the connecctions to be removed
         if self.ready is not None:
             if self.ready.closing:
                 if len(self.recvs) > 0:
@@ -107,10 +112,6 @@ class coordinate(object):
                     self.refreshconn()
                 else:
                     self.ready = None
-        try:
-            self.recvs.remove(conn)
-        except ValueError:
-            pass
         if len(self.recvs) < self.required:
             self.check.set()
         logging.info("Running socket %d" % len(self.recvs))
@@ -178,10 +179,14 @@ class coordinate(object):
     def refreshconn(self):
         # TODO: better algorithm
         f = lambda r: 1.0 / (1 + r.latency ** 2)
-        next_conn = weighted_choice(self.recvs, f)
-        self.ready.preferred = False
-        self.ready = next_conn
-        next_conn.preferred = True
+        try:
+            next_conn = weighted_choice(self.recvs, f)
+            self.ready.preferred = False
+            self.ready = next_conn
+            next_conn.preferred = True
+        except IndexError:
+            if len(self.recvs) > 0:
+                self.recvs[0].preferred = True
 
     def register(self, clirecv):
         cli_id = None
