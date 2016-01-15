@@ -92,13 +92,14 @@ class coordinate(object):
         self.resolv_cursor = 0
 
     def meekinit(self):
+        if self.remote_host == "":
+            self.remote_host = "0.0.0.0"
         path = os.path.split(os.path.realpath(sys.argv[0]))[0]
         with open(path + os.sep + "meekclient.py") as f:
             code = compile(f.read(), "meekclient.py", 'exec')
             globals = {
                 "SERVER_string": self.remote_host + ":" + str(self.remote_port),
-                "ptexec": self.ptexec + " --disable-tls -logLevel=ERROR",
-                "INITIATOR": self
+                "ptexec": self.ptexec + " --disable-tls"
             }
             exec(code, globals)
         # Index of the resolver currently in use, move forward on failure

@@ -711,6 +711,8 @@ CFG = {
     "ptproxy": ""
 }
 
+PT_PROC = None
+PTREADY = threading.Event()
 CFG["server"] = SERVER_string
 
 TRANSPORT_VERSIONS = ('1',)
@@ -877,9 +879,6 @@ except Exception as ex:
     print(ex)
     print('usage: python3 %s [-c|-s] [config.json]' % sys.argv[0])
     sys.exit(1)
-
-PT_PROC = None
-PTREADY = threading.Event()
 
 try:
     CFG['_run'] = True

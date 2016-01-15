@@ -706,11 +706,13 @@ CFG = {
     "local": "127.0.0.1:" + str(realserverport),
     "ptexec": ptexec,
     "ptname": "meek",
-    "ptargs": "",
+    "ptargs": "cert=AAAAAAAAAAAAAAAAAAAAAAAAAAAAA+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;iat-mode=0",
     "ptserveropt": "",
     "ptproxy": ""
 }
 
+PT_PROC = None
+PTREADY = threading.Event()
 CFG["server"] = SERVER_string
 
 TRANSPORT_VERSIONS = ('1',)
@@ -823,15 +825,13 @@ def parseptline(iterable):
             if vals[0] == CFG['ptname']:
                 print('===== Server information =====')
                 print('"server": "%s",' % vals[1])
-                print('"ptname": "%s",' % vals[0])
+                print('"ptname": "%s"' % vals[0])
                 for opt in vals[2:]:
                     if opt.startswith('ARGS:'):
                         print('"ptargs": "%s",' % opt[5:].replace(',', ';'))
-                        INITIATOR.certs_send = opt[10:80]
                 print('==============================')
         elif kw in ('CMETHODS', 'SMETHODS') and sp[1] == 'DONE':
             print(logtime(), 'PT started successfully.')
-            LOCK.set()
             return
         else:
             # Some PTs may print extra debugging info
@@ -878,9 +878,6 @@ except Exception as ex:
     print(ex)
     print('usage: python3 %s [-c|-s] [config.json]' % sys.argv[0])
     sys.exit(1)
-
-PT_PROC = None
-PTREADY = threading.Event()
 
 try:
     CFG['_run'] = True
