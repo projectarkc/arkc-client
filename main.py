@@ -76,8 +76,8 @@ if __name__ == '__main__':
         if "dns_servers" not in data:
             data["dns_servers"] = DEFAULT_DNS_SERVERS
 
-        if "obfs4_exec" not in data:
-            data["obfs4_exec"] = DEFAULT_OBFS4_EXECADDR
+        if "pt_exec" not in data:
+            data["pt_exec"] = DEFAULT_OBFS4_EXECADDR
 
         if "debug_ip" not in data:
             data["debug_ip"] = None
@@ -156,7 +156,7 @@ if __name__ == '__main__':
             data["dns_servers"],
             data["debug_ip"],
             swapfq,
-            data["obfs4_exec"],
+            data["pt_exec"],
             data["obfs_level"],
             options.ipv6
         )
@@ -180,4 +180,4 @@ if __name__ == '__main__':
     # except Exception as e:
     #    print ("An error occurred: \n")
     #    print(e)
-    asyncore.loop(use_poll = 1)
+    asyncore.loop(use_poll=1)

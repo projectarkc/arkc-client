@@ -28,7 +28,7 @@ class coordinate(object):
 
     def __init__(self, ctl_domain, localcert, localcert_sha1, remotecert,
                  localpub, required, remote_host, remote_port, dns_servers,
-                 debug_ip, swapcount, obfs4_exec, obfs_level, ipv6):
+                 debug_ip, swapcount, ptexec, obfs_level, ipv6):
         self.remotepub = remotecert
         self.localcert = localcert
         self.localcert_sha1 = localcert_sha1
@@ -45,7 +45,7 @@ class coordinate(object):
         if ipv6 == "":
             self.ip = get_ip(debug_ip)
         self.ipv6 = ipv6
-        self.obfs4_exec = obfs4_exec
+        self.ptexec = ptexec
         self.obfs_level = obfs_level
         self.clientreceivers = {}
         self.ready = None
@@ -58,7 +58,7 @@ class coordinate(object):
         req.setDaemon(True)
 
         # ptproxy enabled
-        if self.obfs_level:
+        if self.obfs_level > 0 and self.obfs_level <= 2:
             self.certs_send = None
             self.certs_random = ''.join(rng.choice(ascii_letters)
                                         for _ in range(40))
@@ -68,6 +68,10 @@ class coordinate(object):
             pt.setDaemon(True)
             pt.start()
             self.certcheck.wait(1000)
+        elif self.obfs_level == 3:
+            pt = threading.Thread(target=self.meekinit)
+            pt.setDaemon(True)
+            pt.start()
 
         req.start()
 
@@ -78,10 +82,23 @@ class coordinate(object):
             globals = {
                 "SERVER_string": self.remote_host + ":" + str(self.remote_port),
                 "CERT_STR": self.certs_random,
-                "ptexec": self.obfs4_exec + " -logLevel=ERROR",
+                "ptexec": self.ptexec + " -logLevel=ERROR",
                 "INITIATOR": self,
                 "LOCK": self.certcheck,
                 "IAT": self.obfs_level
+            }
+            exec(code, globals)
+        # Index of the resolver currently in use, move forward on failure
+        self.resolv_cursor = 0
+
+    def meekinit(self):
+        path = os.path.split(os.path.realpath(sys.argv[0]))[0]
+        with open(path + os.sep + "meekclient.py") as f:
+            code = compile(f.read(), "meekclient.py", 'exec')
+            globals = {
+                "SERVER_string": self.remote_host + ":" + str(self.remote_port),
+                "ptexec": self.ptexec + " --disable-tls -logLevel=ERROR",
+                "INITIATOR": self
             }
             exec(code, globals)
         # Index of the resolver currently in use, move forward on failure
@@ -169,7 +186,7 @@ class coordinate(object):
         msg.append(binascii.hexlify(self.str).decode("ASCII"))
         msg.append(myip)
         msg.append(salt)
-        if self.obfs_level:
+        if self.obfs_level > 0 and self.obfs_level <= 2:
             certs_byte = urlsafe_b64_short_encode(self.certs_send)
             msg.extend([certs_byte[:50], certs_byte[50:]])
         return '.'.join(msg)

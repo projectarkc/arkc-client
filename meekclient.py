@@ -705,8 +705,8 @@ CFG = {
     "state": tempfile.gettempdir(),
     "local": "127.0.0.1:" + str(realserverport),
     "ptexec": ptexec,
-    "ptname": "obfs4",
-    "ptargs": "cert=" + CERT_STR + ";iat-mode=" + str(IAT - 1),
+    "ptname": "meek",
+    "ptargs": "",
     "ptserveropt": "",
     "ptproxy": ""
 }
@@ -831,6 +831,7 @@ def parseptline(iterable):
                 print('==============================')
         elif kw in ('CMETHODS', 'SMETHODS') and sp[1] == 'DONE':
             print(logtime(), 'PT started successfully.')
+            LOCK.set()
             return
         else:
             # Some PTs may print extra debugging info
