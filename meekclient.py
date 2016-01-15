@@ -711,6 +711,8 @@ CFG = {
     "ptproxy": ""
 }
 
+print(CFG)
+
 PT_PROC = None
 PTREADY = threading.Event()
 CFG["server"] = SERVER_string

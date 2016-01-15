@@ -58,7 +58,7 @@ class coordinate(object):
         req.setDaemon(True)
 
         # ptproxy enabled
-        if self.obfs_level > 0 and self.obfs_level <= 2:
+        if 1 <= self.obfs_level <= 2:
             self.certs_send = None
             self.certs_random = ''.join(rng.choice(ascii_letters)
                                         for _ in range(40))
@@ -188,9 +188,11 @@ class coordinate(object):
         msg.append(binascii.hexlify(self.str).decode("ASCII"))
         msg.append(myip)
         msg.append(salt)
-        if self.obfs_level > 0 and self.obfs_level <= 2:
+        if 1 <= self.obfs_level <= 2:
             certs_byte = urlsafe_b64_short_encode(self.certs_send)
             msg.extend([certs_byte[:50], certs_byte[50:]])
+        elif self.obfs_level == 3:
+            msg.append(''.join([random.choice(ascii_letters) for _ in range(5)]))
         return '.'.join(msg)
 
     def issufficient(self):
