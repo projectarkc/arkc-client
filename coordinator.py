@@ -155,8 +155,8 @@ class coordinate(object):
         msg = [""]
         number_in_hex = "%02X" % min((self.required), 255)
         msg[0] += number_in_hex
-        msg[0] += self.authdata
         msg[0] += "%04X" % self.remote_port
+        msg[0] += self.authdata
         if self.ipv6 == "":
             myip = int2base(self.ip)
         else:
