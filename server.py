@@ -107,6 +107,7 @@ class serverreceiver(asyncore.dispatcher):
                             logging.warning("decode error")
                             cli_id = None
                         if cli_id == "00" and b_data == b_close:
+                            logging.debug("closing connection")
                             self.closing = True
                             self.ctl.closeconn(self)
                         else:
