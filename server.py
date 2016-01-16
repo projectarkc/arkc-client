@@ -214,13 +214,9 @@ class serverreceiver(asyncore.dispatcher):
         try:
             sent = self.encrypt_and_send(cli_id)
             self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
-        except KeyError as err:
-            pass
-        if lastcontents is not None:
-            sent += self.encrypt_and_send(cli_id, bytes(lastcontents, "UTF-8"))
-            # self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
-        logging.debug('%04i to server' % sent)
-        try:
+            if lastcontents is not None:
+                sent += self.encrypt_and_send(cli_id, bytes(lastcontents, "UTF-8"))
+            logging.debug('%04i to server' % sent)
             self.ctl.clientreceivers[cli_id].to_remote_buffer = self.ctl.clientreceivers[
                 cli_id].to_remote_buffer[sent:]
         except KeyError:
