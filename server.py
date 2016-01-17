@@ -136,6 +136,7 @@ class serverreceiver(asyncore.dispatcher):
             if len(self.read) >= 768:
                 self.read = self.read[:768]
                 blank = self.read[:512]
+                # TODO: fix an error in int(blank,16)
                 if not self.ctl.remotepub.verify(self.ctl.str, (int(blank, 16), None)):
                     logging.warning("Authentication failed, socket closing")
                     self.close()
@@ -145,9 +146,11 @@ class serverreceiver(asyncore.dispatcher):
                         self.ctl.localcert.decrypt(self.read[-256:]), self.ctl.str)
                     self.full = False
                     self.ctl.newconn(self)
-                    # , client auth string sent")
                     logging.debug(
                         "Authentication succeed, connection established")
+                    # send confirmation
+                    self.send(
+                        self.cipher.encrypt(b"2AUTHENTICATED") + self.split)
             else:
                 if len(self.read) == 0:
                     self.no_data_count += 1
@@ -217,7 +220,8 @@ class serverreceiver(asyncore.dispatcher):
             sent = self.encrypt_and_send(cli_id)
             self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
             if lastcontents is not None:
-                sent += self.encrypt_and_send(cli_id, bytes(lastcontents, "UTF-8"))
+                sent += self.encrypt_and_send(cli_id,
+                                              bytes(lastcontents, "UTF-8"))
             logging.debug('%04i to server' % sent)
             self.ctl.clientreceivers[cli_id].to_remote_buffer = self.ctl.clientreceivers[
                 cli_id].to_remote_buffer[sent:]
