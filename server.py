@@ -124,7 +124,8 @@ class serverreceiver(asyncore.dispatcher):
 
                 else:
                     self.from_remote_buffer_raw = bytessplit[Index]
-            logging.debug('%04i from server' % read_count)
+            if read_count > 0:
+                logging.debug('%04i from server' % read_count)
 
     def begin_auth(self):
         # Deal with the beginning authentication
