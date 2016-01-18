@@ -216,6 +216,7 @@ class serverreceiver(asyncore.dispatcher):
 
     def id_write(self, cli_id, lastcontents=None):
         # Write to a certain cli_id. Lastcontents is used for CLOSECHAR
+        # TODO: need a transmission check strategy?
         sent = 0
         try:
             sent = self.encrypt_and_send(cli_id)
