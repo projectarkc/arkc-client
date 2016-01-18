@@ -110,6 +110,7 @@ class serverreceiver(asyncore.dispatcher):
                             logging.debug("closing connection")
                             self.closing = True
                             self.ctl.closeconn(self)
+                            self.close()
                         else:
                             if cli_id in self.ctl.clientreceivers:
                                 if b_data != b_close:
