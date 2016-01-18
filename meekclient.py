@@ -1,4 +1,6 @@
-"""The MIT License (MIT)
+"""Adapted from PTproxy, https://github.com/gumblex/ptproxy"""
+
+""" Original License: The MIT License (MIT)
 
 Copyright (c) 2015 Dingyuan Wang
 
@@ -47,12 +49,10 @@ CFG = {
     "local": "127.0.0.1:" + str(realserverport),
     "ptexec": ptexec,
     "ptname": "meek",
-    "ptargs": "cert=AAAAAAAAAAAAAAAAAAAAAAAAAAAAA+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;iat-mode=0",
+    "ptargs": "",
     "ptserveropt": "",
     "ptproxy": ""
 }
-
-print(CFG)
 
 PT_PROC = None
 PTREADY = threading.Event()
