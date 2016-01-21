@@ -45,6 +45,8 @@ class clientreceiver(asyncore.dispatcher):
         self.to_remote_buffer += read
 
     def writable(self):
+        if self.from_remote_buffer_index + 6 in self.from_remote_buffer:
+            self.close()
         return self.from_remote_buffer_index in self.from_remote_buffer
 
     def handle_write(self):
