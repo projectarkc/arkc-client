@@ -119,8 +119,8 @@ class serverreceiver(asyncore.dispatcher):
                                 else:
                                     self.ctl.clientreceivers[cli_id].close()
                                 read_count += len(b_data)
-                            else:
-                                self.encrypt_and_send(cli_id, CLOSECHAR)
+                            # else:
+                            #    self.encrypt_and_send(cli_id, CLOSECHAR)
                     else:
                         # strip off type (always 1)
                         self.ping_recv(b_dec[1:].decode("UTF-8"))
@@ -216,6 +216,7 @@ class serverreceiver(asyncore.dispatcher):
             self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
         else:
             b_idx = b'100'  # All kinds of emergency contact use id 100
+            buf = bytes(buf, "utf-8")
         self.send(self.cipher.encrypt(b"0" + b_id + b_idx + buf[:SEG_SIZE]) +
                   self.split)
         return min(SEG_SIZE, len(buf))
@@ -228,7 +229,7 @@ class serverreceiver(asyncore.dispatcher):
             sent = self.encrypt_and_send(cli_id)
             if lastcontents is not None:
                 sent += self.encrypt_and_send(cli_id,
-                                              bytes(lastcontents, "UTF-8"))
+                                              lastcontents, "UTF-8")
             logging.debug('%04i to server' % sent)
             self.ctl.clientreceivers[cli_id].to_remote_buffer = self.ctl.clientreceivers[
                 cli_id].to_remote_buffer[sent:]
