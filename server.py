@@ -13,7 +13,7 @@ from _io import BlockingIOError
 MAX_HANDLE = 100
 CLOSECHAR = chr(4) * 5
 REAL_SERVERPORT = 55000
-SEG_SIZE = 4083     # 4096(total) - 1(type) - 2(id) - 3(index) - 7(splitchar)
+SEG_SIZE = 4096     # 4096(total) - 1(type) - 2(id) - 3(index) - 7(splitchar)
 
 
 class servercontrol(asyncore.dispatcher):
@@ -119,6 +119,8 @@ class serverreceiver(asyncore.dispatcher):
                                 else:
                                     self.ctl.clientreceivers[cli_id].close()
                                 read_count += len(b_data)
+                            else:
+                                self.encrypt_and_send(cli_id, CLOSECHAR)
                     else:
                         # strip off type (always 1)
                         self.ping_recv(b_dec[1:].decode("UTF-8"))
