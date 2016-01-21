@@ -63,7 +63,7 @@ class serverreceiver(asyncore.dispatcher):
         self.no_data_count = 0
         self.read = b''
         self.latency = 10000
-        time.sleep(0.05)
+        time.sleep(0.05)  # async
         self.begin_auth()
 
     def ping_recv(self, msg):

@@ -151,7 +151,7 @@ class coordinate(object):
             self.dns_count += 1
             if self.dns_count == len(self.dns_servers):
                 self.dns_count = 0
-            sleep(0.5)
+            sleep(0.5)  # TODO: use asyncio
 
     def generatereq(self):
         """

@@ -41,12 +41,13 @@ class clientreceiver(asyncore.dispatcher):
 
     def handle_read(self):
         read = self.recv(4096)
-        logging.debug('%04i from client' % len(read))
+        logging.debug('%04i from client ' % len(read) + self.idchar)
         self.to_remote_buffer += read
 
     def writable(self):
         if self.from_remote_buffer_index + 6 in self.from_remote_buffer:
-            self.close()
+            logging.warning("lost frame at connection " + self.idchar)
+        #    self.close()
         return self.from_remote_buffer_index in self.from_remote_buffer
 
     def handle_write(self):
@@ -56,7 +57,7 @@ class clientreceiver(asyncore.dispatcher):
                 self.send(
                     self.from_remote_buffer.pop(self.from_remote_buffer_index))
             self.next_from_remote_buffer()
-        logging.debug('%04i to client' % sent)
+        logging.debug('%04i to client ' % sent + self.idchar)
 
     def handle_close(self):
         self.control.remove(self.idchar)
