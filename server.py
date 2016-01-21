@@ -63,16 +63,17 @@ class serverreceiver(asyncore.dispatcher):
         self.no_data_count = 0
         self.read = b''
         self.latency = 10000
+        time.sleep(0.05)
         self.begin_auth()
 
     def ping_recv(self, msg):
         """Parse ping (without flag) and send back when necessary."""
         seq = int(msg[0])
-        logging.debug("recv ping%d" % seq)
+        #logging.debug("recv ping%d" % seq)
         if seq == 0:
             raw_packet = "1" + "1" + msg[1:] + get_timestamp()
             to_write = self.cipher.encrypt(raw_packet) + self.split
-            logging.debug("send ping1")
+            #logging.debug("send ping1")
             self.send(to_write)
         else:
             time1 = parse_timestamp(msg[1:])
@@ -132,7 +133,6 @@ class serverreceiver(asyncore.dispatcher):
 
     def begin_auth(self):
         # Deal with the beginning authentication
-        time.sleep(0.05)
         self.read = b''
         try:
             self.read += self.recv(768)
@@ -229,7 +229,7 @@ class serverreceiver(asyncore.dispatcher):
             sent = self.encrypt_and_send(cli_id)
             if lastcontents is not None:
                 sent += self.encrypt_and_send(cli_id,
-                                              lastcontents, "UTF-8")
+                                              lastcontents)
             logging.debug('%04i to server' % sent)
             self.ctl.clientreceivers[cli_id].to_remote_buffer = self.ctl.clientreceivers[
                 cli_id].to_remote_buffer[sent:]
