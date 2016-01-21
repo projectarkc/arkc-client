@@ -211,7 +211,7 @@ class serverreceiver(asyncore.dispatcher):
         b_id = bytes(cli_id, "UTF-8")
         if buf is None:
             b_idx = bytes(
-                self.ctl.clientreceivers[cli_id].to_remote_buffer_index, 'utf-8')
+                str(self.ctl.clientreceivers[cli_id].to_remote_buffer_index), 'utf-8')
             buf = self.ctl.clientreceivers[cli_id].to_remote_buffer
             self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
         else:
@@ -226,7 +226,6 @@ class serverreceiver(asyncore.dispatcher):
         sent = 0
         try:
             sent = self.encrypt_and_send(cli_id)
-            self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
             if lastcontents is not None:
                 sent += self.encrypt_and_send(cli_id,
                                               bytes(lastcontents, "UTF-8"))
