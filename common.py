@@ -141,6 +141,8 @@ def weighted_choice(l, f_weight):
     i = bisect.bisect(breakpoints, r)
     return l[i]
 
+# TODO: introduce reset strategy
+
 
 def ip6_to_integer(ip6):
     ip6 = socket.inet_pton(socket.AF_INET6, ip6)

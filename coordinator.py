@@ -192,7 +192,8 @@ class coordinate(object):
             certs_byte = urlsafe_b64_short_encode(self.certs_send)
             msg.extend([certs_byte[:50], certs_byte[50:]])
         elif self.obfs_level == 3:
-            msg.append(''.join([random.choice(ascii_letters) for _ in range(5)]))
+            msg.append(
+                ''.join([random.choice(ascii_letters) for _ in range(5)]))
         return '.'.join(msg)
 
     def issufficient(self):
@@ -202,6 +203,7 @@ class coordinate(object):
         # TODO: better algorithm
         f = lambda r: 1.0 / (1 + r.latency ** 2)
         next_conn = weighted_choice(self.recvs, f)
+        next_conn.latency += 100  # Avoid repetition
         self.ready.preferred = False
         self.ready = next_conn
         next_conn.preferred = True
