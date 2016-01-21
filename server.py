@@ -207,11 +207,15 @@ class serverreceiver(asyncore.dispatcher):
         When `buf` is not specified, it is automatically read from the
         `to_remote_buffer` corresponding to `cli_id`.
         """
+        # TODO: previous error located here
         b_id = bytes(cli_id, "UTF-8")
-        idx = self.ctl.clientreceivers[cli_id].to_remote_buffer_index
-        b_idx = bytes('%i' % idx, "UTF-8")
         if buf is None:
+            b_idx = bytes(
+                self.ctl.clientreceivers[cli_id].to_remote_buffer_index, 'utf-8')
             buf = self.ctl.clientreceivers[cli_id].to_remote_buffer
+            self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
+        else:
+            b_idx = b'100'  # All kinds of emergency contact use id 100
         self.send(self.cipher.encrypt(b"0" + b_id + b_idx + buf[:SEG_SIZE]) +
                   self.split)
         return min(SEG_SIZE, len(buf))
