@@ -201,7 +201,7 @@ class serverreceiver(asyncore.dispatcher):
         self.ctl.closeconn(self)
         self.close()
 
-    def encrypt_and_send(self, cli_id, buf=None, b_id=None):
+    def encrypt_and_send(self, cli_id, buf=None, b_idx=None):
         """Encrypt and send data, and return the length sent.
 
         When `buf` is not specified, it is automatically read from the

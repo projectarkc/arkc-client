@@ -233,4 +233,4 @@ class coordinate(object):
 
     def received_confirm(self, cli_id, index):
         if len(self.recvs) > 0:
-            self.ready.id_write(cli_id, index, '030')
+            self.ready.id_write(cli_id, str(index), '030')
