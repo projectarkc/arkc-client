@@ -201,7 +201,7 @@ class serverreceiver(asyncore.dispatcher):
         self.ctl.closeconn(self)
         self.close()
 
-    def encrypt_and_send(self, cli_id, buf=None):
+    def encrypt_and_send(self, cli_id, buf=None, b_id=None):
         """Encrypt and send data, and return the length sent.
 
         When `buf` is not specified, it is automatically read from the
@@ -212,26 +212,26 @@ class serverreceiver(asyncore.dispatcher):
         if buf is None:
             b_idx = bytes(
                 str(self.ctl.clientreceivers[cli_id].to_remote_buffer_index), 'utf-8')
-            buf = self.ctl.clientreceivers[cli_id].to_remote_buffer
+            buf = self.ctl.clientreceivers[cli_id].to_remote_buffer[:SEG_SIZE]
             self.ctl.clientreceivers[cli_id].next_to_remote_buffer()
+            self.ctl.clientreceivers[cli_id].to_remote_buffer = self.ctl.clientreceivers[
+                cli_id].to_remote_buffer[len(buf):]
         else:
-            b_idx = b'100'  # All kinds of emergency contact use id 100
             buf = bytes(buf, "utf-8")
-        self.send(self.cipher.encrypt(b"0" + b_id + b_idx + buf[:SEG_SIZE]) +
+        self.send(self.cipher.encrypt(b"0" + b_id + b_idx + buf) +
                   self.split)
-        return min(SEG_SIZE, len(buf))
+        return len(buf)
 
-    def id_write(self, cli_id, lastcontents=None):
+    def id_write(self, cli_id, lastcontents=None, seq=None):
         # Write to a certain cli_id. Lastcontents is used for CLOSECHAR
-        # TODO: need a transmission check strategy?
         sent = 0
         try:
-            sent = self.encrypt_and_send(cli_id)
-            if lastcontents is not None:
+            if lastcontents is not None and seq is not None:
                 sent += self.encrypt_and_send(cli_id,
-                                              lastcontents)
+                                              lastcontents,
+                                              bytes(seq, 'utf-8'))
+            sent = self.encrypt_and_send(cli_id)
             logging.debug('%04i to server' % sent)
-            self.ctl.clientreceivers[cli_id].to_remote_buffer = self.ctl.clientreceivers[
-                cli_id].to_remote_buffer[sent:]
+
         except KeyError:
             pass

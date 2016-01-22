@@ -222,7 +222,15 @@ class coordinate(object):
     def remove(self, cli_id):
         try:
             if len(self.recvs) > 0:
-                self.ready.id_write(cli_id, CLOSECHAR)
+                self.ready.id_write(cli_id, CLOSECHAR, '010')
             self.clientreceivers.pop(cli_id)
         except KeyError:
             pass
+
+    def retransmit(self, cli_id, seqs):
+        if len(self.recvs) > 0:
+            self.ready.id_write(cli_id, seqs, '020')
+
+    def received_confirm(self, cli_id, index):
+        if len(self.recvs) > 0:
+            self.ready.id_write(cli_id, index, '030')

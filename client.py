@@ -45,15 +45,26 @@ class clientreceiver(asyncore.dispatcher):
         self.to_remote_buffer += read
 
     def writable(self):
-        if self.from_remote_buffer_index + 6 in self.from_remote_buffer:
-            logging.warning("lost frame at connection " + self.idchar)
-        #    self.close()
-        return self.from_remote_buffer_index in self.from_remote_buffer
+        if self.from_remote_buffer_index in self.from_remote_buffer:
+            return True
+        elif len(self.from_remote_buffer) >= self.control.required:
+            # Retransmission
+            tosend = ''
+            for i in range(self.from_remote_buffer_index,
+                           max(self.from_remote_buffer.keys())):
+                if i not in self.from_remote_buffer:
+                    tosend += str(i)
+            self.control.retransmit(self.cli_id, tosend)
+            logging.debug(
+                "Restransmission, lost frame at connection " + self.idchar)
+        return False
 
     def handle_write(self):
         sent = self.send(
             self.from_remote_buffer.pop(self.from_remote_buffer_index))
-        self.next_from_remote_buffer()
+        if self.next_from_remote_buffer() % self.control.required == 0:
+            self.control.received_confirm(
+                self.idchar, self.from_remote_buffer_index)
         logging.debug('%04i to client ' % sent + self.idchar)
 
     def handle_close(self):
@@ -69,3 +80,4 @@ class clientreceiver(asyncore.dispatcher):
         self.from_remote_buffer_index += 1
         if self.from_remote_buffer_index == 1000:
             self.from_remote_buffer_index = 100
+        return self.from_remote_buffer_index
