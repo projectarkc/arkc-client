@@ -51,13 +51,15 @@ class clientreceiver(asyncore.dispatcher):
         elif len(self.from_remote_buffer) >= self.control.required and self.allow_retrans:
             # Retransmission
             tosend = ''
-            for i in range(self.from_remote_buffer_index,
-                           max(self.from_remote_buffer.keys())):
+            range_check = range(self.from_remote_buffer_index,
+                                min(max(self.from_remote_buffer.keys())),
+                                self.from_remote_buffer_index + 20)  # TODO: find a more elegant way
+            for i in range_check:
                 if i not in self.from_remote_buffer:
                     tosend += str(i)
             self.control.retransmit(self.idchar, tosend)
             logging.debug(
-                "Restransmission, lost frame at connection " + self.idchar)
+                "Restransmission, lost frame at connection " + self.idchar + tosend)
             self.allow_retrans = False
         return False
 
