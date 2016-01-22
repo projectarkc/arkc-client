@@ -5,7 +5,7 @@ import struct
 import logging
 import random
 import bisect
-import string
+import os
 import base64
 from hashlib import sha1
 from time import time
@@ -98,6 +98,7 @@ def get_ip(debug_ip=None):  # TODO: Get local network interfaces ip
         ip = debug_ip
     else:
         try:
+            os.environ['NO_PROXY'] = 'api.ipify.org'
             ip = get('https://api.ipify.org').text
         except Exception as err:
             logging.error(err)
@@ -140,8 +141,6 @@ def weighted_choice(l, f_weight):
     r = random.random() * sum_weight
     i = bisect.bisect(breakpoints, r)
     return l[i]
-
-# TODO: introduce reset strategy
 
 
 def ip6_to_integer(ip6):

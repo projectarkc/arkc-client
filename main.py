@@ -35,7 +35,7 @@ if __name__ == '__main__':
         parser.add_argument('-c', '--config', dest="config",
                             help="You must specify a configuration files. By default ./config.json is used.", default='config.json')
         parser.add_argument('-fs', '--frequent-swap', dest="fs", action="store_true",
-                            help="Use frequent connection swapping")  # #TODO: support this function
+                            help="Use frequent connection swapping")
 
         parser.add_argument("-v6", dest="ipv6", default="")
 
@@ -177,7 +177,7 @@ if __name__ == '__main__':
         logging.error("Bad config file. Quitting.")
         quit()
 
-    # except Exception as e:
-    #    print ("An error occurred: \n")
-    #    print(e)
+    except Exception as e:
+        print ("An error occurred: \n")
+        print(e)
     asyncore.loop(use_poll=1)
