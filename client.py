@@ -51,12 +51,9 @@ class clientreceiver(asyncore.dispatcher):
         return self.from_remote_buffer_index in self.from_remote_buffer
 
     def handle_write(self):
-        sent = 0
-        while self.writable():
-            sent = sent + \
-                self.send(
-                    self.from_remote_buffer.pop(self.from_remote_buffer_index))
-            self.next_from_remote_buffer()
+        sent = self.send(
+            self.from_remote_buffer.pop(self.from_remote_buffer_index))
+        self.next_from_remote_buffer()
         logging.debug('%04i to client ' % sent + self.idchar)
 
     def handle_close(self):
