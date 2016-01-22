@@ -240,5 +240,6 @@ class coordinate(object):
             if conn.idchar not in server_id_list:
                 self.recvs.remove(conn)
                 conn.close()
+        self.refreshconn()
         if len(self.recvs) < self.required:
             self.check.set()
