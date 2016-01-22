@@ -234,3 +234,8 @@ class coordinate(object):
     def received_confirm(self, cli_id, index):
         if len(self.recvs) > 0:
             self.ready.id_write(cli_id, str(index), '030')
+
+    def server_check(self, server_id_list):
+        for conn in self.recvs:
+            if conn.idchar not in server_id_list:
+                conn.close()

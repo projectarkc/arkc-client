@@ -33,6 +33,7 @@ class servercontrol(asyncore.dispatcher):
             serverport = REAL_SERVERPORT
         self.bind((serverip, serverport))
         self.listen(backlog)
+        self.idchar = None
 
     def handle_accept(self):
         conn, addr = self.accept()
@@ -107,11 +108,15 @@ class serverreceiver(asyncore.dispatcher):
                         except Exception:
                             logging.warning("decode error")
                             cli_id = None
-                        if cli_id == "00" and b_data == b_close:
-                            logging.debug("closing connection")
-                            self.closing = True
-                            self.ctl.closeconn(self)
-                            self.close()
+                        if cli_id == "00":
+                            if b_data == b_close:
+                                logging.debug("closing connection")
+                                self.closing = True
+                                self.ctl.closeconn(self)
+                                self.close()
+                            elif seq == 50:
+                                id_list = b_data.decode("UTF-8").split(',')
+                                self.ctl.server_check(id_list)
                         else:
                             if cli_id in self.ctl.clientreceivers:
                                 if b_data != b_close:
@@ -135,9 +140,9 @@ class serverreceiver(asyncore.dispatcher):
         # Deal with the beginning authentication
         self.read = b''
         try:
-            self.read += self.recv(768)
-            if len(self.read) >= 768:
-                self.read = self.read[:768]
+            self.read += self.recv(770)
+            if len(self.read) >= 770:
+                self.read = self.read[:770]
                 blank = self.read[:512]
                 # TODO: fix an error in int(blank,16)
                 if not self.ctl.remotepub.verify(self.ctl.str, (int(blank, 16), None)):
@@ -146,14 +151,15 @@ class serverreceiver(asyncore.dispatcher):
                 else:
                     # self.send(self.ctl.localcert.encrypt(pyotp.HOTP(self.ctl.localcert_sha1)) + self.splitchar)
                     self.cipher = AESCipher(
-                        self.ctl.localcert.decrypt(self.read[-256:]), self.ctl.str)
+                        self.ctl.localcert.decrypt(self.read[512:768]), self.ctl.str)
                     self.full = False
+                    self.idchar = self.read[768:770].decode('utf-8')
                     self.ctl.newconn(self)
                     logging.debug(
                         "Authentication succeed, connection established")
                     # send confirmation
                     self.send(
-                        self.cipher.encrypt(b"2AUTHENTICATED") + self.split)
+                        self.cipher.encrypt(b"2AUTHENTICATED" + self.read[768:770]) + self.split)
             else:
                 if len(self.read) == 0:
                     self.no_data_count += 1
