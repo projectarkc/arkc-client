@@ -48,7 +48,8 @@ class clientreceiver(asyncore.dispatcher):
     def writable(self):
         if self.from_remote_buffer_index in self.from_remote_buffer:
             return True
-        elif self.from_remote_buffer_index + self.control.required in self.from_remote_buffer:
+        elif self.from_remote_buffer_index + self.control.required in self.from_remote_buffer \
+                and self.allow_retrans:
             # Retransmission
             tosend = ''
             range_check = range(self.from_remote_buffer_index,
