@@ -238,4 +238,7 @@ class coordinate(object):
     def server_check(self, server_id_list):
         for conn in self.recvs:
             if conn.idchar not in server_id_list:
+                self.recvs.remove(conn)
                 conn.close()
+        if len(self.recvs) < self.required:
+            self.check.set()
