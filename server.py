@@ -116,7 +116,8 @@ class serverreceiver(asyncore.dispatcher):
                                 self.close()
                             elif seq == 50:
                                 id_list = b_data.decode("UTF-8").split(',')
-                                self.ctl.server_check(id_list)
+                            # self.ctl.server_check(id_list)
+                            # Experimental function
                         else:
                             if cli_id in self.ctl.clientreceivers:
                                 if b_data != b_close:
