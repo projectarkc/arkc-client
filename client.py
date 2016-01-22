@@ -48,19 +48,20 @@ class clientreceiver(asyncore.dispatcher):
     def writable(self):
         if self.from_remote_buffer_index in self.from_remote_buffer:
             return True
-        elif len(self.from_remote_buffer) >= self.control.required and self.allow_retrans:
+        elif self.from_remote_buffer_index + self.control.required in self.from_remote_buffer:
             # Retransmission
             tosend = ''
             range_check = range(self.from_remote_buffer_index,
-                                min(max(self.from_remote_buffer.keys())),
-                                self.from_remote_buffer_index + 20)  # TODO: find a more elegant way
+                                self.control.required + self.from_remote_buffer_index)
             for i in range_check:
-                if i not in self.from_remote_buffer:
+                if i - self.from_remote_buffer_index <= 50 and i not in self.from_remote_buffer:
                     tosend += str(i)
-            self.control.retransmit(self.idchar, tosend)
-            logging.debug(
-                "Restransmission, lost frame at connection " + self.idchar + tosend)
-            self.allow_retrans = False
+            if len(tosend) > 0:
+                self.control.retransmit(self.idchar, tosend)
+                logging.debug(
+                    "Restransmission, lost frame at connection " + self.idchar +
+                    ' ' + tosend)
+                self.allow_retrans = False
         return False
 
     def handle_write(self):
