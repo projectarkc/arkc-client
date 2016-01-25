@@ -36,6 +36,8 @@ if __name__ == '__main__':
                             help="You must specify a configuration files. By default ./config.json is used.", default='config.json')
         parser.add_argument('-fs', '--frequent-swap', dest="fs", action="store_true",
                             help="Use frequent connection swapping")
+        parser.add_argument('-pn', '--public-addr', dest="pn", action="store_true",
+                            help="Disable UPnP when you have public network IP address (or NAT has been manually configured)")
 
         parser.add_argument("-v6", dest="ipv6", default="")
 
@@ -158,7 +160,8 @@ if __name__ == '__main__':
             swapfq,
             data["pt_exec"],
             data["obfs_level"],
-            options.ipv6
+            options.ipv6,
+            options.pn
         )
         sctl = servercontrol(
             data["remote_host"],

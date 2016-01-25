@@ -8,8 +8,9 @@ import binascii
 import hashlib
 import dnslib
 import base64
+import atexit
 import socket
-
+import miniupnpc
 from time import sleep
 from string import ascii_letters
 
@@ -28,7 +29,7 @@ class coordinate(object):
 
     def __init__(self, ctl_domain, localcert, localcert_sha1, remotecert,
                  localpub, required, remote_host, remote_port, dns_servers,
-                 debug_ip, swapcount, ptexec, obfs_level, ipv6):
+                 debug_ip, swapcount, ptexec, obfs_level, ipv6, not_upnp):
         self.remotepub = remotecert
         self.localcert = localcert
         self.localcert_sha1 = localcert_sha1
@@ -57,6 +58,35 @@ class coordinate(object):
         req = threading.Thread(target=self.reqconn)
         req.setDaemon(True)
 
+        if not not_upnp:
+            try:
+                u = miniupnpc.UPnP()
+                u.discoverdelay = 200
+                logging.info("Scanning for UPnP devices")
+                if u.discover() > 0:
+                    logging.info("Device discovered")
+                    u.selectigd()
+                    if self.ipv6 == "" and self.ip != socket.inet_ntoa(u.externalipaddress()):
+                        logging.warning(
+                            "Mismatched external address, more than one layers of NAT? UPnP may not work.")
+                    r = u.getspecificportmapping(remote_port, 'TCP')
+                    if r:
+                        b = u.addportmapping(remote_port, 'TCP', u.lanaddr,
+                                             remote_port, 'ArkC Client port %u' % remote_port, '')
+                        if b:
+                            logging.info("Port mapping succeed")
+                            atexit.register(self.exit_handler, upnp_obj=u)
+                    else:
+                        logging.error("Remote port occupied in UPnP mapping")
+                    # TODO: implement the following function
+                    #    eport = eport + 1
+                    #    logging.warning("Original remote port used, switched to " + str(eport))
+                    #    r = u.getspecificportmapping(eport, 'TCP')
+                else:
+                    logging.error("No UPnP devices discovered")
+            except Exception:
+                logging.error("Error arose when initializing UPnP")
+
         # ptproxy enabled
         if 1 <= self.obfs_level <= 2:
             self.certs_send = None
@@ -74,6 +104,12 @@ class coordinate(object):
             pt.start()
 
         req.start()
+
+    def exit_handler(self, upnp_obj):
+        try:
+            upnp_obj.deleteportmapping(self.remote_port, 'TCP')
+        except Exception:
+            pass
 
     def ptinit(self):
         path = os.path.split(os.path.realpath(sys.argv[0]))[0]
