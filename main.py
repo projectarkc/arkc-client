@@ -183,4 +183,8 @@ if __name__ == '__main__':
     except Exception as e:
         print ("An error occurred: \n")
         print(e)
-    asyncore.loop(use_poll=1)
+
+    try:
+        asyncore.loop(use_poll=1)
+    except KeyboardInterrupt:
+        pass
