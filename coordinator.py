@@ -9,6 +9,7 @@ import hashlib
 import dnslib
 import base64
 import atexit
+import struct
 import socket
 import miniupnpc
 from time import sleep
@@ -66,16 +67,18 @@ class coordinate(object):
                 if u.discover() > 0:
                     logging.info("Device discovered")
                     u.selectigd()
-                    if self.ipv6 == "" and self.ip != socket.inet_ntoa(u.externalipaddress()):
+                    if self.ipv6 == "" and self.ip != struct.unpack("!I", socket.inet_aton(u.externalipaddress()))[0]:
                         logging.warning(
                             "Mismatched external address, more than one layers of NAT? UPnP may not work.")
                     r = u.getspecificportmapping(remote_port, 'TCP')
-                    if r:
+                    if r is None:
                         b = u.addportmapping(remote_port, 'TCP', u.lanaddr,
                                              remote_port, 'ArkC Client port %u' % remote_port, '')
                         if b:
                             logging.info("Port mapping succeed")
                             atexit.register(self.exit_handler, upnp_obj=u)
+                    elif r[0] == u.lanaddr and r[1] == remote_port:
+                        logging.info("Port mapping already existed.")
                     else:
                         logging.error("Remote port occupied in UPnP mapping")
                     # TODO: implement the following function
