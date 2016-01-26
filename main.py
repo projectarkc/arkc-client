@@ -40,6 +40,10 @@ if __name__ == '__main__':
                             help="Disable UPnP when you have public network IP address (or NAT has been manually configured)")
 
         parser.add_argument("-v6", dest="ipv6", default="")
+        print(
+            """ArkC Client V0.1.2,  by ArkC Technology.
+The programs is distributed under GNU General Public License Version 2.
+""")
 
         options = parser.parse_args()
 
@@ -128,12 +132,16 @@ if __name__ == '__main__':
             print (err)
             quit()
 
+        # TODO: make it more elegant
         if options.vv:
-            logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+            logging.basicConfig(
+                stream=sys.stdout, level=logging.DEBUG, format="%(levelname)s: %(asctime)s; %(message)s")
         elif options.v:
-            logging.basicConfig(stream=sys.stdout, level=logging.INFO)
+            logging.basicConfig(
+                stream=sys.stdout, level=logging.INFO, format="%(levelname)s: %(asctime)s; %(message)s")
         else:
-            logging.basicConfig(stream=sys.stdout, level=logging.WARNING)
+            logging.basicConfig(
+                stream=sys.stdout, level=logging.WARNING, format="%(levelname)s: %(asctime)s; %(message)s")
 
         if options.fs:
             swapfq = 3
