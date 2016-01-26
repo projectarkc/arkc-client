@@ -25,6 +25,8 @@ class clientcontrol(asyncore.dispatcher):
 
 class clientreceiver(asyncore.dispatcher):
 
+    '''represent each connection with the client (e.g. browser)'''
+
     def __init__(self, conn, control):
         self.control = control
         asyncore.dispatcher.__init__(self, conn)

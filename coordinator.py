@@ -59,6 +59,8 @@ class coordinate(object):
         req = threading.Thread(target=self.reqconn)
         req.setDaemon(True)
 
+        # Try to map ports via UPnP
+
         if not not_upnp:
             try:
                 u = miniupnpc.UPnP()
@@ -90,7 +92,7 @@ class coordinate(object):
             except Exception:
                 logging.error("Error arose when initializing UPnP")
 
-        # ptproxy enabled
+        # obfs4 = level 1 and 2, meek (GAE) = level 3
         if 1 <= self.obfs_level <= 2:
             self.certs_send = None
             self.certs_random = ''.join(rng.choice(ascii_letters)
@@ -109,12 +111,14 @@ class coordinate(object):
         req.start()
 
     def exit_handler(self, upnp_obj):
+        # Clean up UPnP
         try:
             upnp_obj.deleteportmapping(self.remote_port, 'TCP')
         except Exception:
             pass
 
     def ptinit(self):
+        # Initialize obfs4 TODO: problem may exist
         path = os.path.split(os.path.realpath(sys.argv[0]))[0]
         with open(path + os.sep + "ptclient.py") as f:
             code = compile(f.read(), "ptclient.py", 'exec')
@@ -131,6 +135,7 @@ class coordinate(object):
         self.resolv_cursor = 0
 
     def meekinit(self):
+        # Initialize MEEK
         if self.remote_host == "":
             self.remote_host = "0.0.0.0"
         path = os.path.split(os.path.realpath(sys.argv[0]))[0]
@@ -267,14 +272,17 @@ class coordinate(object):
             pass
 
     def retransmit(self, cli_id, seqs):
+        '''called when asking retransmission'''
         if len(self.recvs) > 0:
             self.ready.id_write(cli_id, seqs, '020')
 
     def received_confirm(self, cli_id, index):
+        '''send confirmation'''
         if len(self.recvs) > 0:
             self.ready.id_write(cli_id, str(index), '030')
 
     def server_check(self, server_id_list):
+        '''check ready to use connections'''
         for conn in self.recvs:
             if conn.idchar not in server_id_list:
                 self.recvs.remove(conn)

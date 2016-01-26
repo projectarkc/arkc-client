@@ -18,6 +18,8 @@ SEG_SIZE = 4096     # 4096(total) - 1(type) - 2(id) - 3(index) - 7(splitchar)
 
 class servercontrol(asyncore.dispatcher):
 
+    '''listen at the required port'''
+
     def __init__(self, serverip, serverport, ctl, pt=False, backlog=5):
         self.ctl = ctl
         asyncore.dispatcher.__init__(self)
@@ -45,6 +47,8 @@ class servercontrol(asyncore.dispatcher):
 
 
 class serverreceiver(asyncore.dispatcher):
+
+    '''represent each connection with arkc-server'''
 
     def __init__(self, conn, ctl):
         self.ctl = ctl
