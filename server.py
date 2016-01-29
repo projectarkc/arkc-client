@@ -13,7 +13,7 @@ from _io import BlockingIOError
 MAX_HANDLE = 100
 CLOSECHAR = chr(4) * 5
 REAL_SERVERPORT = 55000
-SEG_SIZE = 4096     # 4096(total) - 1(type) - 2(id) - 3(index) - 7(splitchar)
+SEG_SIZE = 4096     # 4096(total) - 1(type) - 2(id) - 4(index) - 7(splitchar)
 
 
 class servercontrol(asyncore.dispatcher):
@@ -107,8 +107,8 @@ class serverreceiver(asyncore.dispatcher):
                     if flag == 0:
                         try:
                             cli_id = b_dec[1:3].decode("UTF-8")
-                            seq = int(b_dec[3:6].decode("UTF-8"))
-                            b_data = b_dec[6:]
+                            seq = int(b_dec[3:7].decode("UTF-8"))
+                            b_data = b_dec[7:]
                         except Exception:
                             logging.warning("decode error")
                             cli_id = None

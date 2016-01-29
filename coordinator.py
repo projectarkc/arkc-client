@@ -266,7 +266,7 @@ class coordinate(object):
     def remove(self, cli_id):
         try:
             if len(self.recvs) > 0:
-                self.ready.id_write(cli_id, CLOSECHAR, '010')
+                self.ready.id_write(cli_id, CLOSECHAR, '0100')
             self.clientreceivers.pop(cli_id)
         except KeyError:
             pass

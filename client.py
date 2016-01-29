@@ -34,9 +34,9 @@ class clientreceiver(asyncore.dispatcher):
         if self.idchar is None:
             self.close()
         self.from_remote_buffer = {}
-        self.from_remote_buffer_index = 100
+        self.from_remote_buffer_index = 1000
         self.to_remote_buffer = b''
-        self.to_remote_buffer_index = 100
+        self.to_remote_buffer_index = 1000
         self.retrans_position = None
 
     def handle_connect(self):
@@ -85,8 +85,8 @@ class clientreceiver(asyncore.dispatcher):
 
     def next_to_remote_buffer(self):
         self.to_remote_buffer_index += 1
-        if self.to_remote_buffer_index == 1000:
-            self.to_remote_buffer_index = 100
+        if self.to_remote_buffer_index == 10000:
+            self.to_remote_buffer_index = 1000
 
     def next_from_remote_buffer(self):
         # Reset transmission
@@ -101,6 +101,6 @@ class clientreceiver(asyncore.dispatcher):
                     self.from_remote_buffer.pop(i)
 
         self.from_remote_buffer_index += 1
-        if self.from_remote_buffer_index == 1000:
-            self.from_remote_buffer_index = 100
+        if self.from_remote_buffer_index == 10000:
+            self.from_remote_buffer_index = 1000
         return self.from_remote_buffer_index
