@@ -107,8 +107,8 @@ class serverreceiver(asyncore.dispatcher):
                     if flag == 0:
                         try:
                             cli_id = b_dec[1:3].decode("UTF-8")
-                            seq = int(b_dec[3:7].decode("UTF-8"))
-                            b_data = b_dec[7:]
+                            seq = int(b_dec[3:9].decode("UTF-8"))
+                            b_data = b_dec[9:]
                         except Exception:
                             logging.warning("decode error")
                             cli_id = None
