@@ -266,7 +266,7 @@ class coordinate(object):
     def remove(self, cli_id):
         try:
             if len(self.recvs) > 0:
-                self.ready.id_write(cli_id, CLOSECHAR, '010000')
+                self.ready.id_write(cli_id, CLOSECHAR, '000010')
             self.clientreceivers.pop(cli_id)
         except KeyError:
             pass
@@ -274,12 +274,12 @@ class coordinate(object):
     def retransmit(self, cli_id, seqs):
         '''called when asking retransmission'''
         if len(self.recvs) > 0:
-            self.ready.id_write(cli_id, seqs, '020')
+            self.ready.id_write(cli_id, seqs, '000020')
 
     def received_confirm(self, cli_id, index):
         '''send confirmation'''
         if len(self.recvs) > 0:
-            self.ready.id_write(cli_id, str(index), '030')
+            self.ready.id_write(cli_id, str(index), '000030')
 
     def server_check(self, server_id_list):
         '''check ready to use connections'''
