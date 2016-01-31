@@ -37,7 +37,6 @@ class clientreceiver(asyncore.dispatcher):
         self.from_remote_buffer_index = 100000
         self.to_remote_buffer = b''
         self.to_remote_buffer_index = 100000
-        self.retrans_position = None
 
     def handle_connect(self):
         pass
@@ -50,23 +49,7 @@ class clientreceiver(asyncore.dispatcher):
     def writable(self):
         if self.from_remote_buffer_index in self.from_remote_buffer:
             return True
-        # default continual length = 7
-        elif self.from_remote_buffer_index + 7 in self.from_remote_buffer \
-                and self.retrans_position:
-            # Retransmission
-            tosend = ''
-            range_check = range(self.from_remote_buffer_index,
-                                7 + self.from_remote_buffer_index)
-            for i in range_check:
-                if i - self.from_remote_buffer_index <= 50 and i not in self.from_remote_buffer:
-                    tosend += str(i)
-            if len(tosend) > 0:
-                self.control.retransmit(self.idchar, tosend)
-                logging.debug(
-                    "Restransmission, lost frame at connection " + self.idchar +
-                    ' ' + tosend)
-                self.retrans_position = self.from_remote_buffer_index
-            return False
+        return False
 
     def handle_write(self):
         i = 0
@@ -90,10 +73,6 @@ class clientreceiver(asyncore.dispatcher):
             self.to_remote_buffer_index = 100000
 
     def next_from_remote_buffer(self):
-        # Reset transmission
-        if self.retrans_position is not None:
-            if self.from_remote_buffer_index - self.retrans_position == 7:
-                self.retrans_position = None
         # Clean up
         if self.from_remote_buffer_index % 20 == 0:
             for i in range(self.from_remote_buffer_index - 20,

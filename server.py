@@ -131,7 +131,6 @@ class serverreceiver(asyncore.dispatcher):
                                     self.ctl.clientreceivers[
                                         cli_id].from_remote_buffer[seq] = b_data
                                 else:
-                                    print("hi")
                                     for _ in self.ctl.max_recved_idx:
                                         if _ is not None:
                                             _.pop(cli_id, None)
@@ -170,7 +169,6 @@ class serverreceiver(asyncore.dispatcher):
                     self.ctl.newconn(self)
                     logging.debug(
                         "Authentication succeed, connection established")
-                    # send confirmation
                     self.send(
                         self.cipher.encrypt(b"2AUTHENTICATED" + self.read[768:770] +
                                             repr(self.ctl.max_recved_idx[self.i]).encode()
