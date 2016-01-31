@@ -13,7 +13,7 @@ from _io import BlockingIOError
 MAX_HANDLE = 100
 CLOSECHAR = chr(4) * 5
 REAL_SERVERPORT = 55000
-SEG_SIZE = 4096     # 4096(total) - 1(type) - 2(id) - 4(index) - 7(splitchar)
+SEG_SIZE = 4080     # 4096(total) - 1(type) - 2(id) - 6(index) - 7(splitchar)
 
 
 class servercontrol(asyncore.dispatcher):
@@ -71,6 +71,7 @@ class serverreceiver(asyncore.dispatcher):
         time.sleep(0.05)  # async
         self.begin_auth()
 
+
     def ping_recv(self, msg):
         """Parse ping (without flag) and send back when necessary."""
         seq = int(msg[0])
@@ -114,20 +115,26 @@ class serverreceiver(asyncore.dispatcher):
                             cli_id = None
                         if cli_id == "00":
                             if b_data == b_close:
+
                                 logging.debug("closing connection")
                                 self.closing = True
                                 self.ctl.closeconn(self)
                                 self.close()
-                            elif seq == 50:
-                                id_list = b_data.decode("UTF-8").split(',')
+              #               elif seq == 50:
+              #                   id_list = b_data.decode("UTF-8").split(',')
                             # self.ctl.server_check(id_list)
-                            # Experimental function
+                            # TODO: Experimental function
                         else:
                             if cli_id in self.ctl.clientreceivers:
                                 if b_data != b_close:
+                                    self.ctl.max_recved_idx[self.i][cli_id] = seq
                                     self.ctl.clientreceivers[
                                         cli_id].from_remote_buffer[seq] = b_data
                                 else:
+                                    print("hi")
+                                    for _ in self.ctl.max_recved_idx:
+                                        if _ is not None:
+                                            _.pop(cli_id, None)
                                     self.ctl.clientreceivers[cli_id].close()
                                 read_count += len(b_data)
                             # else:
@@ -159,12 +166,17 @@ class serverreceiver(asyncore.dispatcher):
                         self.ctl.localcert.decrypt(self.read[512:768]), self.ctl.str)
                     self.full = False
                     self.idchar = self.read[768:770].decode('utf-8')
+                    self.i = int(self.idchar)
                     self.ctl.newconn(self)
                     logging.debug(
                         "Authentication succeed, connection established")
                     # send confirmation
                     self.send(
-                        self.cipher.encrypt(b"2AUTHENTICATED" + self.read[768:770]) + self.split)
+                        self.cipher.encrypt(b"2AUTHENTICATED" + self.read[768:770] +
+                                            repr(self.ctl.max_recved_idx[self.i]).encode()
+                                            )
+                                            + self.split
+                    )
             else:
                 if len(self.read) == 0:
                     self.no_data_count += 1
@@ -174,7 +186,8 @@ class serverreceiver(asyncore.dispatcher):
         except socket.error:
             logging.info("empty recv error")
 
-        except Exception:
+        except Exception as err:
+            raise err
             logging.error(
                 "Authentication failed, due to error, socket closing")
             self.close()

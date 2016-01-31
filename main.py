@@ -79,6 +79,9 @@ The programs is distributed under GNU General Public License Version 2.
         if "number" not in data:
             data["number"] = DEFAULT_REQUIRED
 
+        if data["number"] > 100:
+            data["number"] = 100
+
         if "dns_servers" not in data:
             data["dns_servers"] = DEFAULT_DNS_SERVERS
 

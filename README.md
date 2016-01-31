@@ -52,7 +52,7 @@ For a full list of settings:
 | local_port            | integer, proxy port      | 8001              |
 | remote_host           | str, listening host      | "0.0.0.0"         |
 | remote_port           | integer, listening port  | 8000              |
-| number                | integer, how many conn.  | 3                 |
+| number                | integer, how many conn. (max. 100)  | 3                 |
 | local_cert            | str, path of client pri  | REQUIRED          |
 | local_cert_pub        | str, path of client pub  | REQUIRED          |
 | remote_cert           | str, path of server pub  | REQUIRED          |

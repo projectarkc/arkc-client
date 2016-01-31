@@ -51,7 +51,13 @@ class coordinate(object):
         self.obfs_level = obfs_level
         self.clientreceivers = {}
         self.ready = None
-        self.recvs = []  # For serverreceivers
+
+        # serverreceivers
+        self.recvs = [None] * self.required
+        # each dict maps client connection id to the max index received
+        # by the corresponding serverreceiver
+        self.max_recved_idx = [{}] * self.required
+
         self.str = (''.join(rng.choice(ascii_letters) for _ in range(16)))\
             .encode('ASCII')
         self.check = threading.Event()
@@ -151,32 +157,41 @@ class coordinate(object):
 
     def newconn(self, recv):
         # Called when receive new connections
-        self.recvs.append(recv)
+        # self.recvs.append(recv)
+        self.recvs[recv.i] = recv
         if self.ready is None:
             self.ready = recv
             recv.preferred = True
         self.refreshconn()
-        if len(self.recvs) + 2 >= self.required:
+        # if len(self.recvs) + 2 >= self.required:
+        if self.recvs.count(None) <= 2:
             self.check.clear()
-        logging.info("Running socket %d" % len(self.recvs))
+        # logging.info("Running socket %d" % len(self.recvs))
+        logging.info("Running socket %d" % (self.required - self.recvs.count(None)))
 
     def closeconn(self, conn):
         # Called when a connection is closed
         if self.ready is not None:
             if self.ready.closing:
-                if len(self.recvs) > 0:
-                    self.ready = self.recvs[0]
-                    self.recvs[0].preferred = True
+                # if len(self.recvs) > 0:
+                if not all(_ is None for _ in self.recvs):
+                   #  self.ready = self.recvs[0]
+                   #  self.recvs[0].preferred = True
+                    self.ready = [_ for _ in self.recvs if _ is not None][0]
+                    self.ready.preferred = True
                     self.refreshconn()
                 else:
                     self.ready = None
         try:
-            self.recvs.remove(conn)
+            # self.recvs.remove(conn)
+            self.recvs[conn.i] = None
         except ValueError:
             pass
-        if len(self.recvs) < self.required:
+        # if len(self.recvs) < self.required:
+        if any(_ is None for _ in self.recvs):
             self.check.set()
-        logging.info("Running socket %d" % len(self.recvs))
+        # logging.info("Running socket %d" % len(self.recvs))
+        logging.info("Running socket %d" % (self.required - self.recvs.count(None)))
 
     def reqconn(self):
         """Send DNS queries."""
@@ -241,12 +256,14 @@ class coordinate(object):
         return '.'.join(msg)
 
     def issufficient(self):
-        return len(self.recvs) >= self.required
+        # return len(self.recvs) >= self.required
+        return all(_ is not None for _ in self.recvs)
 
     def refreshconn(self):
         # TODO: better algorithm
         f = lambda r: 1.0 / (1 + r.latency ** 2)
-        next_conn = weighted_choice(self.recvs, f)
+        recvs_avail = list(filter(lambda _: _ is not None, self.recvs))
+        next_conn = weighted_choice(recvs_avail, f)
         next_conn.latency += 100  # Avoid repetition
         self.ready.preferred = False
         self.ready = next_conn
@@ -254,7 +271,8 @@ class coordinate(object):
 
     def register(self, clirecv):
         cli_id = None
-        if len(self.recvs) == 0:
+        # if len(self.recvs) == 0:
+        if all(_ is None for _ in self.recvs):
             return None
         while (cli_id is None) or (cli_id in self.clientreceivers) or (cli_id == "00"):
             a = list(string.ascii_letters)
@@ -265,7 +283,8 @@ class coordinate(object):
 
     def remove(self, cli_id):
         try:
-            if len(self.recvs) > 0:
+            # if len(self.recvs) > 0:
+            if any(_ is not None for _ in self.recvs):
                 self.ready.id_write(cli_id, CLOSECHAR, '000010')
             self.clientreceivers.pop(cli_id)
         except KeyError:
@@ -283,10 +302,12 @@ class coordinate(object):
 
     def server_check(self, server_id_list):
         '''check ready to use connections'''
-        for conn in self.recvs:
+        # for conn in self.recvs:
+        for conn in list(filter(lambda _: _ is not None, self.recvs)):
             if conn.idchar not in server_id_list:
-                self.recvs.remove(conn)
+                # self.recvs.remove(conn)
+                self.recvs[conn.i] = None
                 conn.close()
         self.refreshconn()
-        if len(self.recvs) < self.required:
+        if len(list(filter(lambda _: _ is not None, self.recvs))) < self.required:
             self.check.set()

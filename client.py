@@ -86,6 +86,7 @@ class clientreceiver(asyncore.dispatcher):
     def next_to_remote_buffer(self):
         self.to_remote_buffer_index += 1
         if self.to_remote_buffer_index == 1000000:
+            # TODO: raise exception or close connection
             self.to_remote_buffer_index = 100000
 
     def next_from_remote_buffer(self):
@@ -102,5 +103,6 @@ class clientreceiver(asyncore.dispatcher):
 
         self.from_remote_buffer_index += 1
         if self.from_remote_buffer_index == 1000000:
+            # TODO: raise exception or close connection
             self.from_remote_buffer_index = 100000
         return self.from_remote_buffer_index
