@@ -35,7 +35,6 @@ class servercontrol(asyncore.dispatcher):
             serverport = REAL_SERVERPORT
         self.bind((serverip, serverport))
         self.listen(backlog)
-        self.idchar = None
 
     def handle_accept(self):
         conn, addr = self.accept()
@@ -57,6 +56,7 @@ class serverreceiver(asyncore.dispatcher):
         self.cipher = None
         self.preferred = False
         self.closing = False
+        self.i = -1
         self.split = bytes(
             chr(27) +
             chr(28) +
@@ -70,7 +70,6 @@ class serverreceiver(asyncore.dispatcher):
         self.latency = 10000
         time.sleep(0.05)  # async
         self.begin_auth()
-
 
     def ping_recv(self, msg):
         """Parse ping (without flag) and send back when necessary."""
@@ -127,7 +126,8 @@ class serverreceiver(asyncore.dispatcher):
                         else:
                             if cli_id in self.ctl.clientreceivers:
                                 if b_data != b_close:
-                                    self.ctl.max_recved_idx[self.i][cli_id] = seq
+                                    self.ctl.max_recved_idx[
+                                        self.i][cli_id] = seq
                                     self.ctl.clientreceivers[
                                         cli_id].from_remote_buffer[seq] = b_data
                                 else:
@@ -161,19 +161,26 @@ class serverreceiver(asyncore.dispatcher):
                     self.close()
                 else:
                     # self.send(self.ctl.localcert.encrypt(pyotp.HOTP(self.ctl.localcert_sha1)) + self.splitchar)
-                    self.cipher = AESCipher(
-                        self.ctl.localcert.decrypt(self.read[512:768]), self.ctl.str)
+                    try:
+                        self.cipher = AESCipher(
+                            self.ctl.localcert.decrypt(self.read[512:768]), self.ctl.str)
+                    except ValueError:
+                        # TODO: figure out why
+                        logging.warning(
+                            "Authentication failed, socket closing")
+                        self.handle_close()
                     self.full = False
-                    self.idchar = self.read[768:770].decode('utf-8')
-                    self.i = int(self.idchar)
+                    idchar = self.read[768:770].decode('utf-8')
+                    self.i = int(idchar)
                     self.ctl.newconn(self)
                     logging.debug(
                         "Authentication succeed, connection established")
                     self.send(
                         self.cipher.encrypt(b"2AUTHENTICATED" + self.read[768:770] +
-                                            repr(self.ctl.max_recved_idx[self.i]).encode()
+                                            repr(
+                                                self.ctl.max_recved_idx[self.i]).encode()
                                             )
-                                            + self.split
+                        + self.split
                     )
             else:
                 if len(self.read) == 0:

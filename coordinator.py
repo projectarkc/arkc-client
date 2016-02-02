@@ -164,7 +164,8 @@ class coordinate(object):
         self.refreshconn()
         if self.recvs.count(None) <= 2:
             self.check.clear()
-        logging.info("Running socket %d" % (self.required - self.recvs.count(None)))
+        logging.info("Running socket %d" %
+                     (self.required - self.recvs.count(None)))
 
     def closeconn(self, conn):
         # Called when a connection is closed
@@ -182,7 +183,8 @@ class coordinate(object):
             pass
         if any(_ is None for _ in self.recvs):
             self.check.set()
-        logging.info("Running socket %d" % (self.required - self.recvs.count(None)))
+        logging.info("Running socket %d" %
+                     (self.required - self.recvs.count(None)))
 
     def reqconn(self):
         """Send DNS queries."""
@@ -278,15 +280,15 @@ class coordinate(object):
         except KeyError:
             pass
 
-    def server_check(self, server_id_list):
-        '''check ready to use connections'''
-        for conn in list(filter(lambda _: _ is not None, self.recvs)):
-            if conn.idchar not in server_id_list:
-                self.recvs[conn.i] = None
-                conn.close()
-        self.refreshconn()
-        if len(list(filter(lambda _: _ is not None, self.recvs))) < self.required:
-            self.check.set()
+    # def server_check(self, server_id_list):
+    #    '''check ready to use connections'''
+    #    for conn in list(filter(lambda _: _ is not None, self.recvs)):
+    #        if conn.idchar not in server_id_list:
+    #            self.recvs[conn.i] = None
+    #            conn.close()
+    #    self.refreshconn()
+    #    if len(list(filter(lambda _: _ is not None, self.recvs))) < self.required:
+    #        self.check.set()
 
     def received_confirm(self, cli_id, index):
         '''send confirmation'''
@@ -294,4 +296,3 @@ class coordinate(object):
         # Why does server not respond after removing this?
         # self.ready.id_write(cli_id, str(index), '000030')
         self.ready.id_write(cli_id, 'fuck', '000030')
-
