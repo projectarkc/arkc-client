@@ -33,7 +33,7 @@ class ClientReceiver(asyncore.dispatcher):
         self.idchar = self.control.register(self)
         if self.idchar is None:
             self.close()
-        self.from_remote_buffer = {}
+        self.from_remote_buffer_dict = {}
         self.from_remote_buffer_index = 100000
         self.to_remote_buffer = b''
         self.to_remote_buffer_index = 100000
@@ -47,7 +47,7 @@ class ClientReceiver(asyncore.dispatcher):
         self.to_remote_buffer += read
 
     def writable(self):
-        if self.from_remote_buffer_index in self.from_remote_buffer:
+        if self.from_remote_buffer_index in self.from_remote_buffer_dict:
             return True
         return False
 
@@ -55,7 +55,7 @@ class ClientReceiver(asyncore.dispatcher):
         i = 0
         while self.writable() and i <= 4:
             sent = self.send(
-                self.from_remote_buffer.pop(self.from_remote_buffer_index))
+                self.from_remote_buffer_dict.pop(self.from_remote_buffer_index))
             i += 1
         if self.next_from_remote_buffer() % self.control.required == 0:
             self.control.received_confirm(
@@ -77,8 +77,8 @@ class ClientReceiver(asyncore.dispatcher):
         if self.from_remote_buffer_index % 20 == 0:
             for i in range(self.from_remote_buffer_index - 20,
                            self.from_remote_buffer_index):
-                if i in self.from_remote_buffer:
-                    self.from_remote_buffer.pop(i)
+                if i in self.from_remote_buffer_dict:
+                    self.from_remote_buffer_dict.pop(i)
 
         self.from_remote_buffer_index += 1
         if self.from_remote_buffer_index == 1000000:

@@ -31,10 +31,15 @@ class Coordinate(object):
     def __init__(self, ctl_domain, clientpri, clientpri_sha1, serverpub,
                  clientpub_sha1, req_num, remote_host, remote_port, dns_servers,
                  debug_ip, swapcount, ptexec, obfs_level, ipv6, not_upnp):
+        # shared property, used in ServerReceiver
         self.serverpub = serverpub
         self.clientpri = clientpri
         self.clientpri_sha1 = clientpri_sha1
         self.clientpub_sha1 = clientpub_sha1
+        self.serverreceivers_dict = dict()
+        self.main_pw = (''.join(rng.choice(ascii_letters) for _ in range(16)))\
+            .encode('ASCII')
+        # end of shared property
         self.req_num = req_num
         self.remote_host = remote_host
         self.remote_port = remote_port
@@ -49,7 +54,6 @@ class Coordinate(object):
         self.ipv6 = ipv6
         self.ptexec = ptexec
         self.obfs_level = obfs_level
-        self.clientreceivers = {}
         self.ready = None
 
         # serverreceivers
@@ -58,45 +62,13 @@ class Coordinate(object):
         # by the corresponding serverreceiver
         self.max_recved_idx = [{}] * self.req_num
 
-        self.main_pw = (''.join(rng.choice(ascii_letters) for _ in range(16)))\
-            .encode('ASCII')
         self.check = threading.Event()
         self.check.set()
         req = threading.Thread(target=self.reqconn)
         req.setDaemon(True)
 
-        # Try to map ports via UPnP
-
         if not not_upnp:
-            try:
-                u = miniupnpc.UPnP()
-                u.discoverdelay = 200
-                logging.info("Scanning for UPnP devices")
-                if u.discover() > 0:
-                    logging.info("Device discovered")
-                    u.selectigd()
-                    if self.ipv6 == "" and self.ip != struct.unpack("!I", socket.inet_aton(u.externalipaddress()))[0]:
-                        logging.warning(
-                            "Mismatched external address, more than one layers of NAT? UPnP may not work.")
-                    r = u.getspecificportmapping(remote_port, 'TCP')
-                    if r is None:
-                        b = u.addportmapping(remote_port, 'TCP', u.lanaddr,
-                                             remote_port, 'ArkC Client port %u' % remote_port, '')
-                        if b:
-                            logging.info("Port mapping succeed")
-                            atexit.register(self.exit_handler, upnp_obj=u)
-                    elif r[0] == u.lanaddr and r[1] == remote_port:
-                        logging.info("Port mapping already existed.")
-                    else:
-                        logging.error("Remote port occupied in UPnP mapping")
-                    # TODO: implement the following function
-                    #    eport = eport + 1
-                    #    logging.warning("Original remote port used, switched to " + str(eport))
-                    #    r = u.getspecificportmapping(eport, 'TCP')
-                else:
-                    logging.error("No UPnP devices discovered")
-            except Exception:
-                logging.error("Error arose when initializing UPnP")
+            self.upnp_mapping()
 
         # obfs4 = level 1 and 2, meek (GAE) = level 3
         if 1 <= self.obfs_level <= 2:
@@ -116,75 +88,44 @@ class Coordinate(object):
 
         req.start()
 
+    def upnp_mapping(self):
+        # Try to map ports via UPnP
+        try:
+            u = miniupnpc.UPnP()
+            u.discoverdelay = 200
+            logging.info("Scanning for UPnP devices")
+            if u.discover() > 0:
+                logging.info("Device discovered")
+                u.selectigd()
+                if self.ipv6 == "" and self.ip != struct.unpack("!I", socket.inet_aton(u.externalipaddress()))[0]:
+                    logging.warning(
+                        "Mismatched external address, more than one layers of NAT? UPnP may not work.")
+                r = u.getspecificportmapping(self.remote_port, 'TCP')
+                if r is None:
+                    b = u.addportmapping(self.remote_port, 'TCP', u.lanaddr,
+                                         self.remote_port, 'ArkC Client port %u' % self.remote_port, '')
+                    if b:
+                        logging.info("Port mapping succeed")
+                        atexit.register(self.exit_handler, upnp_obj=u)
+                elif r[0] == u.lanaddr and r[1] == self.remote_port:
+                    logging.info("Port mapping already existed.")
+                else:
+                    logging.error("Remote port occupied in UPnP mapping")
+                # TODO: implement the following function
+                #    eport = eport + 1
+                #    logging.warning("Original remote port used, switched to " + str(eport))
+                #    r = u.getspecificportmapping(eport, 'TCP')
+            else:
+                logging.error("No UPnP devices discovered")
+        except Exception:
+            logging.error("Error arose when initializing UPnP")
+
     def exit_handler(self, upnp_obj):
         # Clean up UPnP
         try:
             upnp_obj.deleteportmapping(self.remote_port, 'TCP')
         except Exception:
             pass
-
-    def ptinit(self):
-        # Initialize obfs4 TODO: problem may exist
-        path = os.path.split(os.path.realpath(sys.argv[0]))[0]
-        with open(path + os.sep + "ptclient.py") as f:
-            code = compile(f.read(), "ptclient.py", 'exec')
-            globals = {
-                "SERVER_string": self.remote_host + ":" + str(self.remote_port),
-                "CERT_STR": self.certs_random,
-                "ptexec": self.ptexec + " -logLevel=ERROR",
-                "INITIATOR": self,
-                "LOCK": self.certcheck,
-                "IAT": self.obfs_level
-            }
-            exec(code, globals)
-        # Index of the resolver currently in use, move forward on failure
-        self.resolv_cursor = 0
-
-    def meekinit(self):
-        # Initialize MEEK
-        if self.remote_host == "":
-            self.remote_host = "0.0.0.0"
-        path = os.path.split(os.path.realpath(sys.argv[0]))[0]
-        with open(path + os.sep + "meekclient.py") as f:
-            code = compile(f.read(), "meekclient.py", 'exec')
-            globals = {
-                "SERVER_string": self.remote_host + ":" + str(self.remote_port),
-                "ptexec": self.ptexec + " --disable-tls"
-            }
-            exec(code, globals)
-        # Index of the resolver currently in use, move forward on failure
-        self.resolv_cursor = 0
-
-    def newconn(self, recv):
-        # Called when receive new connections
-        self.recvs[recv.i] = recv
-        if self.ready is None:
-            self.ready = recv
-            recv.preferred = True
-        self.refreshconn()
-        if self.recvs.count(None) <= 2:
-            self.check.clear()
-        logging.info("Running socket %d" %
-                     (self.req_num - self.recvs.count(None)))
-
-    def closeconn(self, conn):
-        # Called when a connection is closed
-        if self.ready is not None:
-            if self.ready.closing:
-                if not all(_ is None for _ in self.recvs):
-                    self.ready = [_ for _ in self.recvs if _ is not None][0]
-                    self.ready.preferred = True
-                    self.refreshconn()
-                else:
-                    self.ready = None
-        try:
-            self.recvs[conn.i] = None
-        except ValueError:
-            pass
-        if any(_ is None for _ in self.recvs):
-            self.check.set()
-        logging.info("Running socket %d" %
-                     (self.req_num - self.recvs.count(None)))
 
     def reqconn(self):
         """Send DNS queries."""
@@ -261,22 +202,53 @@ class Coordinate(object):
         self.ready = next_conn
         next_conn.preferred = True
 
+    def newconn(self, recv):
+        # Called when receive new connections
+        self.recvs[recv.i] = recv
+        if self.ready is None:
+            self.ready = recv
+            recv.preferred = True
+        self.refreshconn()
+        if self.recvs.count(None) <= 2:
+            self.check.clear()
+        logging.info("Running socket %d" %
+                     (self.req_num - self.recvs.count(None)))
+
+    def closeconn(self, conn):
+        # Called when a connection is closed
+        if self.ready is not None:
+            if self.ready.closing:
+                if not all(_ is None for _ in self.recvs):
+                    self.ready = [_ for _ in self.recvs if _ is not None][0]
+                    self.ready.preferred = True
+                    self.refreshconn()
+                else:
+                    self.ready = None
+        try:
+            self.recvs[conn.i] = None
+        except ValueError:
+            pass
+        if any(_ is None for _ in self.recvs):
+            self.check.set()
+        logging.info("Running socket %d" %
+                     (self.req_num - self.recvs.count(None)))
+
     def register(self, clirecv):
         cli_id = None
         if all(_ is None for _ in self.recvs):
             return None
-        while (cli_id is None) or (cli_id in self.clientreceivers) or (cli_id == "00"):
+        while (cli_id is None) or (cli_id in self.serverreceivers_dict) or (cli_id == "00"):
             a = list(string.ascii_letters)
             random.shuffle(a)
             cli_id = ''.join(a[:2])
-        self.clientreceivers[cli_id] = clirecv
+        self.serverreceivers_dict[cli_id] = clirecv
         return cli_id
 
     def remove(self, cli_id):
         try:
             if any(_ is not None for _ in self.recvs):
                 self.ready.id_write(cli_id, CLOSECHAR, '000010')
-            self.clientreceivers.pop(cli_id)
+            self.serverreceivers_dict.pop(cli_id)
         except KeyError:
             pass
 
@@ -296,3 +268,35 @@ class Coordinate(object):
         # Why does server not respond after removing this?
         # self.ready.id_write(cli_id, str(index), '000030')
         self.ready.id_write(cli_id, 'fuck', '000030')
+
+    def ptinit(self):
+        # Initialize obfs4 TODO: problem may exist
+        path = os.path.split(os.path.realpath(sys.argv[0]))[0]
+        with open(path + os.sep + "ptclient.py") as f:
+            code = compile(f.read(), "ptclient.py", 'exec')
+            globals = {
+                "SERVER_string": self.remote_host + ":" + str(self.remote_port),
+                "CERT_STR": self.certs_random,
+                "ptexec": self.ptexec + " -logLevel=ERROR",
+                "INITIATOR": self,
+                "LOCK": self.certcheck,
+                "IAT": self.obfs_level
+            }
+            exec(code, globals)
+        # Index of the resolver currently in use, move forward on failure
+        self.resolv_cursor = 0
+
+    def meekinit(self):
+        # Initialize MEEK
+        if self.remote_host == "":
+            self.remote_host = "0.0.0.0"
+        path = os.path.split(os.path.realpath(sys.argv[0]))[0]
+        with open(path + os.sep + "meekclient.py") as f:
+            code = compile(f.read(), "meekclient.py", 'exec')
+            globals = {
+                "SERVER_string": self.remote_host + ":" + str(self.remote_port),
+                "ptexec": self.ptexec + " --disable-tls"
+            }
+            exec(code, globals)
+        # Index of the resolver currently in use, move forward on failure
+        self.resolv_cursor = 0
