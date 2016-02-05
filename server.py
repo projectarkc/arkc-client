@@ -16,7 +16,7 @@ REAL_SERVERPORT = 55000
 SEG_SIZE = 4080     # 4096(total) - 1(type) - 2(id) - 6(index) - 7(splitchar)
 
 
-class servercontrol(asyncore.dispatcher):
+class ServerControl(asyncore.dispatcher):
 
     '''listen at the required port'''
 
@@ -39,13 +39,13 @@ class servercontrol(asyncore.dispatcher):
     def handle_accept(self):
         conn, addr = self.accept()
         logging.info('Serv_recv_Accept from %s' % str(addr))
-        serverreceiver(conn, self.ctl)
+        ServerReceiver(conn, self.ctl)
 
     def getrecv(self):
         return self.ctl.offerconn()
 
 
-class serverreceiver(asyncore.dispatcher):
+class ServerReceiver(asyncore.dispatcher):
 
     '''represent each connection with arkc-server'''
 
@@ -60,8 +60,8 @@ class serverreceiver(asyncore.dispatcher):
         self.split = bytes(
             chr(27) +
             chr(28) +
-            "%X" % struct.unpack('B', self.ctl.str[-2:-1])[0] +
-            "%X" % struct.unpack('B', self.ctl.str[-3:-2])[0] +
+            "%X" % struct.unpack('B', self.ctl.main_pw[-2:-1])[0] +
+            "%X" % struct.unpack('B', self.ctl.main_pw[-3:-2])[0] +
             chr(31),
             "UTF-8"
         )
@@ -154,16 +154,16 @@ class serverreceiver(asyncore.dispatcher):
             self.read += self.recv(770)
             if len(self.read) >= 770:
                 self.read = self.read[:770]
-                blank = self.read[:512]
-                # TODO: fix an error in int(blank,16)
-                if not self.ctl.remotepub.verify(self.ctl.str, (int(blank, 16), None)):
+                signature = self.read[:512]
+                # TODO: fix an error in int(signature,16)
+                if not self.ctl.serverpub.verify(self.ctl.main_pw, (int(signature, 16), None)):
                     logging.warning("Authentication failed, socket closing")
                     self.close()
                 else:
                     # self.send(self.ctl.localcert.encrypt(pyotp.HOTP(self.ctl.localcert_sha1)) + self.splitchar)
                     try:
                         self.cipher = AESCipher(
-                            self.ctl.localcert.decrypt(self.read[512:768]), self.ctl.str)
+                            self.ctl.localcert.decrypt(self.read[512:768]), self.ctl.main_pw)
                     except ValueError:
                         # TODO: figure out why
                         logging.warning(

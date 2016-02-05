@@ -10,9 +10,9 @@ import json
 import sys
 
 from common import certloader
-from coordinator import coordinate
-from server import servercontrol
-from client import clientcontrol
+from coordinator import Coordinate
+from server import ServerControl
+from client import ClientControl
 
 # Const used in the client.
 
@@ -96,8 +96,8 @@ The programs is distributed under GNU General Public License Version 2.
 
         # Load certificates
         try:
-            remotecert_data = open(data["remote_cert"], "r").read()
-            remotecert = certloader(remotecert_data).importKey()
+            serverpub_data = open(data["remote_cert"], "r").read()
+            serverpub = certloader(serverpub_data).importKey()
         except KeyError as e:
             logging.error(
                 e.tostring() + "is not found in the config file. Quitting.")
@@ -108,10 +108,10 @@ The programs is distributed under GNU General Public License Version 2.
             quit()
 
         try:
-            localpri_data = open(data["local_cert"], "r").read()
-            localpri = certloader(localpri_data).importKey()
-            localpri_sha1 = certloader(localpri_data).getSHA1()
-            if not localpri.has_private():
+            clientpri_data = open(data["local_cert"], "r").read()
+            clientpri = certloader(clientpri_data).importKey()
+            clientpri_sha1 = certloader(clientpri_data).getSHA1()
+            if not clientpri.has_private():
                 print(
                     "Fatal error, no private key included in local certificate.")
         except KeyError as e:
@@ -124,8 +124,8 @@ The programs is distributed under GNU General Public License Version 2.
             quit()
 
         try:
-            localpub_data = open(data["local_cert_pub"], "r").read()
-            localpub_sha1 = certloader(localpub_data).getSHA1()
+            clientpub_data = open(data["local_cert_pub"], "r").read()
+            clientpub_sha1 = certloader(clientpub_data).getSHA1()
         except KeyError as e:
             logging.error(
                 e.tostring() + "is not found in the config file. Quitting.")
@@ -157,12 +157,12 @@ The programs is distributed under GNU General Public License Version 2.
 
     # Start the main event loop
     try:
-        ctl = coordinate(
+        ctl = Coordinate(
             data["control_domain"],
-            localpri,
-            localpri_sha1,
-            remotecert,
-            localpub_sha1,
+            clientpri,
+            clientpri_sha1,
+            serverpub,
+            clientpub_sha1,
             data["number"],
             data["remote_host"],
             data["remote_port"],
@@ -174,13 +174,13 @@ The programs is distributed under GNU General Public License Version 2.
             options.ipv6,
             options.pn
         )
-        sctl = servercontrol(
+        sctl = ServerControl(
             data["remote_host"],
             data["remote_port"],
             ctl,
             pt=bool(data["obfs_level"])
         )
-        cctl = clientcontrol(
+        cctl = ClientControl(
             ctl,
             data["local_host"],
             data["local_port"]

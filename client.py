@@ -5,7 +5,7 @@ import asyncore
 # Need to switch to asyncio
 
 
-class clientcontrol(asyncore.dispatcher):
+class ClientControl(asyncore.dispatcher):
 
     """ a standard client service dispatcher """
 
@@ -20,10 +20,10 @@ class clientcontrol(asyncore.dispatcher):
     def handle_accept(self):
         conn, addr = self.accept()
         logging.info('Client_recv_Accept from %s' % str(addr))
-        clientreceiver(conn, self.control)
+        ClientReceiver(conn, self.control)
 
 
-class clientreceiver(asyncore.dispatcher):
+class ClientReceiver(asyncore.dispatcher):
 
     '''represent each connection with the client (e.g. browser)'''
 

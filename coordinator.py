@@ -24,18 +24,18 @@ CLOSECHAR = chr(4) * 5
 rng = random.SystemRandom()
 
 
-class coordinate(object):
+class Coordinate(object):
 
     '''Request connections and deal with part of authentication'''
 
-    def __init__(self, ctl_domain, localcert, localcert_sha1, remotecert,
-                 localpub, required, remote_host, remote_port, dns_servers,
+    def __init__(self, ctl_domain, clientpri, clientpri_sha1, serverpub,
+                 clientpub_sha1, req_num, remote_host, remote_port, dns_servers,
                  debug_ip, swapcount, ptexec, obfs_level, ipv6, not_upnp):
-        self.remotepub = remotecert
-        self.localcert = localcert
-        self.localcert_sha1 = localcert_sha1
-        self.authdata = localpub
-        self.required = required
+        self.serverpub = serverpub
+        self.clientpri = clientpri
+        self.clientpri_sha1 = clientpri_sha1
+        self.clientpub_sha1 = clientpub_sha1
+        self.req_num = req_num
         self.remote_host = remote_host
         self.remote_port = remote_port
         self.dns_servers = dns_servers
@@ -53,12 +53,12 @@ class coordinate(object):
         self.ready = None
 
         # serverreceivers
-        self.recvs = [None] * self.required
+        self.recvs = [None] * self.req_num
         # each dict maps client connection id to the max index received
         # by the corresponding serverreceiver
-        self.max_recved_idx = [{}] * self.required
+        self.max_recved_idx = [{}] * self.req_num
 
-        self.str = (''.join(rng.choice(ascii_letters) for _ in range(16)))\
+        self.main_pw = (''.join(rng.choice(ascii_letters) for _ in range(16)))\
             .encode('ASCII')
         self.check = threading.Event()
         self.check.set()
@@ -165,7 +165,7 @@ class coordinate(object):
         if self.recvs.count(None) <= 2:
             self.check.clear()
         logging.info("Running socket %d" %
-                     (self.required - self.recvs.count(None)))
+                     (self.req_num - self.recvs.count(None)))
 
     def closeconn(self, conn):
         # Called when a connection is closed
@@ -184,7 +184,7 @@ class coordinate(object):
         if any(_ is None for _ in self.recvs):
             self.check.set()
         logging.info("Running socket %d" %
-                     (self.required - self.recvs.count(None)))
+                     (self.req_num - self.recvs.count(None)))
 
     def reqconn(self):
         """Send DNS queries."""
@@ -211,7 +211,7 @@ class coordinate(object):
 
         Message format:
             (
-                required_connection_number (HEX, 2 bytes) +
+                req_num_connection_number (HEX, 2 bytes) +
                     used_remote_listening_port (HEX, 4 bytes) +
                     sha1(cert_pub) ,
                 pyotp.TOTP(pri_sha1 + ip_in_hex_form + salt),
@@ -223,10 +223,10 @@ class coordinate(object):
             )
         """
         msg = [""]
-        number_in_hex = "%02X" % min((self.required), 255)
+        number_in_hex = "%02X" % min((self.req_num), 255)
         msg[0] += number_in_hex
         msg[0] += "%04X" % self.remote_port
-        msg[0] += self.authdata
+        msg[0] += self.clientpub_sha1
         if self.ipv6 == "":
             myip = int2base(self.ip)
         else:
@@ -235,9 +235,9 @@ class coordinate(object):
         salt = binascii.hexlify(os.urandom(16)).decode("ASCII")
         h = hashlib.sha256()
         h.update(
-            (self.localcert_sha1 + myip + salt + number_in_hex).encode('utf-8'))
+            (self.clientpri_sha1 + myip + salt + number_in_hex).encode('utf-8'))
         msg.append(pyotp.TOTP(bytes(h.hexdigest(), "UTF-8")).now())
-        msg.append(binascii.hexlify(self.str).decode("ASCII"))
+        msg.append(binascii.hexlify(self.main_pw).decode("ASCII"))
         msg.append(myip)
         msg.append(salt)
         if 1 <= self.obfs_level <= 2:
@@ -287,7 +287,7 @@ class coordinate(object):
     #            self.recvs[conn.i] = None
     #            conn.close()
     #    self.refreshconn()
-    #    if len(list(filter(lambda _: _ is not None, self.recvs))) < self.required:
+    #    if len(list(filter(lambda _: _ is not None, self.recvs))) < self.req_num:
     #        self.check.set()
 
     def received_confirm(self, cli_id, index):
