@@ -270,7 +270,8 @@ class Coordinate(object):
         # TODO: remove this method
         # Why does server not respond after removing this?
         # self.ready.id_write(cli_id, str(index), '000030')
-        self.ready.id_write(cli_id, 'fuck', '000030')
+        #self.ready.id_write(cli_id, 'fuck', '000030')
+        pass
 
     def ptinit(self):
         # Initialize obfs4 TODO: problem may exist

@@ -161,10 +161,9 @@ class ServerReceiver(asyncore.dispatcher):
                     logging.warning("Authentication failed, socket closing")
                     self.close()
                 else:
-                    # self.send(self.ctl.localcert.encrypt(pyotp.HOTP(self.ctl.localcert_sha1)) + self.splitchar)
                     try:
                         self.cipher = AESCipher(
-                            self.ctl.localcert.decrypt(self.read[512:768]), self.ctl.main_pw)
+                            self.ctl.clientpri.decrypt(self.read[512:768]), self.ctl.main_pw)
                     except ValueError:
                         # TODO: figure out why
                         logging.warning(

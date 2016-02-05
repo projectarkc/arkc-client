@@ -57,7 +57,7 @@ class ClientReceiver(asyncore.dispatcher):
             sent = self.send(
                 self.from_remote_buffer_dict.pop(self.from_remote_buffer_index))
             i += 1
-        if self.next_from_remote_buffer() % self.control.required == 0:
+        if self.next_from_remote_buffer() % self.control.req_num == 0:
             self.control.received_confirm(
                 self.idchar, self.from_remote_buffer_index)
         logging.debug('%04i to client ' % sent + self.idchar)
