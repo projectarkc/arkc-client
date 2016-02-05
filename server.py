@@ -124,17 +124,17 @@ class ServerReceiver(asyncore.dispatcher):
                             # self.ctl.server_check(id_list)
                             # TODO: Experimental function
                         else:
-                            if cli_id in self.ctl.serverreceivers_dict:
+                            if cli_id in self.ctl.clientreceivers_dict:
                                 if b_data != b_close:
                                     self.ctl.max_recved_idx[
                                         self.i][cli_id] = seq
-                                    self.ctl.serverreceivers_dict[
+                                    self.ctl.clientreceivers_dict[
                                         cli_id].from_remote_buffer_dict[seq] = b_data
                                 else:
                                     for _ in self.ctl.max_recved_idx:
                                         if _ is not None:
                                             _.pop(cli_id, None)
-                                    self.ctl.serverreceivers_dict[
+                                    self.ctl.clientreceivers_dict[
                                         cli_id].close()
                                 read_count += len(b_data)
                             # else:
@@ -200,13 +200,13 @@ class ServerReceiver(asyncore.dispatcher):
 
     def writable(self):
         if self.preferred:
-            for cli_id in self.ctl.serverreceivers_dict:
-                if self.ctl.serverreceivers_dict[cli_id] is None:
+            for cli_id in self.ctl.clientreceivers_dict:
+                if self.ctl.clientreceivers_dict[cli_id] is None:
                     logging.warning(
                         "Client receiver %s NoneType error" % cli_id)
-                    del self.ctl.serverreceivers_dict[cli_id]
+                    del self.ctl.clientreceivers_dict[cli_id]
                 else:
-                    if len(self.ctl.serverreceivers_dict[cli_id].to_remote_buffer) > 0:
+                    if len(self.ctl.clientreceivers_dict[cli_id].to_remote_buffer) > 0:
                         return True
         else:
             return False
@@ -216,8 +216,8 @@ class ServerReceiver(asyncore.dispatcher):
         if self.cipher is not None:
             if self.ctl.ready == self:
                 written = 0
-                for cli_id in self.ctl.serverreceivers_dict:
-                    if self.ctl.serverreceivers_dict[cli_id].to_remote_buffer:
+                for cli_id in self.ctl.clientreceivers_dict:
+                    if self.ctl.clientreceivers_dict[cli_id].to_remote_buffer:
                         self.id_write(cli_id)
                         written += 1
                     if written >= self.ctl.swapcount:
@@ -240,11 +240,11 @@ class ServerReceiver(asyncore.dispatcher):
         b_id = bytes(cli_id, "UTF-8")
         if buf is None:
             b_idx = bytes(
-                str(self.ctl.serverreceivers_dict[cli_id].to_remote_buffer_index), 'utf-8')
-            buf = self.ctl.serverreceivers_dict[
+                str(self.ctl.clientreceivers_dict[cli_id].to_remote_buffer_index), 'utf-8')
+            buf = self.ctl.clientreceivers_dict[
                 cli_id].to_remote_buffer[:SEG_SIZE]
-            self.ctl.serverreceivers_dict[cli_id].next_to_remote_buffer()
-            self.ctl.serverreceivers_dict[cli_id].to_remote_buffer = self.ctl.serverreceivers_dict[
+            self.ctl.clientreceivers_dict[cli_id].next_to_remote_buffer()
+            self.ctl.clientreceivers_dict[cli_id].to_remote_buffer = self.ctl.clientreceivers_dict[
                 cli_id].to_remote_buffer[len(buf):]
         else:
             buf = bytes(buf, "utf-8")

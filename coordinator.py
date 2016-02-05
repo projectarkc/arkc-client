@@ -7,7 +7,6 @@ import string
 import binascii
 import hashlib
 import dnslib
-import base64
 import atexit
 import struct
 import socket
@@ -15,7 +14,7 @@ import miniupnpc
 from time import sleep
 from string import ascii_letters
 
-from common import weighted_choice, get_ip, ip6_to_integer, urlsafe_b64_short_encode, int2base
+from common import weighted_choice, get_ip, urlsafe_b64_short_encode, int2base
 
 import pyotp
 
@@ -31,15 +30,15 @@ class Coordinate(object):
     def __init__(self, ctl_domain, clientpri, clientpri_sha1, serverpub,
                  clientpub_sha1, req_num, remote_host, remote_port, dns_servers,
                  debug_ip, swapcount, ptexec, obfs_level, ipv6, not_upnp):
-        # shared property, used in ServerReceiver
+        # shared properties, used in ServerReceiver
         self.serverpub = serverpub
         self.clientpri = clientpri
         self.clientpri_sha1 = clientpri_sha1
         self.clientpub_sha1 = clientpub_sha1
-        self.serverreceivers_dict = dict()
+        self.clientreceivers_dict = dict()
         self.main_pw = (''.join(rng.choice(ascii_letters) for _ in range(16)))\
             .encode('ASCII')
-        # end of shared property
+        # end of shared properties
         self.req_num = req_num
         self.remote_host = remote_host
         self.remote_port = remote_port
@@ -54,14 +53,16 @@ class Coordinate(object):
         self.ipv6 = ipv6
         self.ptexec = ptexec
         self.obfs_level = obfs_level
-        self.ready = None
 
-        # serverreceivers
-        self.recvs = [None] * self.req_num
+        self.ready = None  # used to store the next ServerReceiver to use
+        self.serverreceivers_pool = [None] * self.req_num
         # each dict maps client connection id to the max index received
         # by the corresponding serverreceiver
+
+        # TODO: please clarify or change its name
         self.max_recved_idx = [{}] * self.req_num
 
+        # lock the method to request connections
         self.check = threading.Event()
         self.check.set()
         req = threading.Thread(target=self.reqconn)
@@ -190,12 +191,13 @@ class Coordinate(object):
         return '.'.join(msg)
 
     def issufficient(self):
-        return all(_ is not None for _ in self.recvs)
+        return all(_ is not None for _ in self.serverreceivers_pool)
 
     def refreshconn(self):
         # TODO: better algorithm
         f = lambda r: 1.0 / (1 + r.latency ** 2)
-        recvs_avail = list(filter(lambda _: _ is not None, self.recvs))
+        recvs_avail = list(
+            filter(lambda _: _ is not None, self.serverreceivers_pool))
         next_conn = weighted_choice(recvs_avail, f)
         next_conn.latency += 100  # Avoid repetition
         self.ready.preferred = False
@@ -204,62 +206,63 @@ class Coordinate(object):
 
     def newconn(self, recv):
         # Called when receive new connections
-        self.recvs[recv.i] = recv
+        self.serverreceivers_pool[recv.i] = recv
         if self.ready is None:
             self.ready = recv
             recv.preferred = True
         self.refreshconn()
-        if self.recvs.count(None) <= 2:
+        if self.serverreceivers_pool.count(None) <= 2:
             self.check.clear()
         logging.info("Running socket %d" %
-                     (self.req_num - self.recvs.count(None)))
+                     (self.req_num - self.serverreceivers_pool.count(None)))
 
     def closeconn(self, conn):
         # Called when a connection is closed
         if self.ready is not None:
             if self.ready.closing:
-                if not all(_ is None for _ in self.recvs):
-                    self.ready = [_ for _ in self.recvs if _ is not None][0]
+                if not all(_ is None for _ in self.serverreceivers_pool):
+                    self.ready = [
+                        _ for _ in self.serverreceivers_pool if _ is not None][0]
                     self.ready.preferred = True
                     self.refreshconn()
                 else:
                     self.ready = None
         try:
-            self.recvs[conn.i] = None
+            self.serverreceivers_pool[conn.i] = None
         except ValueError:
             pass
-        if any(_ is None for _ in self.recvs):
+        if any(_ is None for _ in self.serverreceivers_pool):
             self.check.set()
         logging.info("Running socket %d" %
-                     (self.req_num - self.recvs.count(None)))
+                     (self.req_num - self.serverreceivers_pool.count(None)))
 
     def register(self, clirecv):
         cli_id = None
-        if all(_ is None for _ in self.recvs):
+        if all(_ is None for _ in self.serverreceivers_pool):
             return None
-        while (cli_id is None) or (cli_id in self.serverreceivers_dict) or (cli_id == "00"):
+        while (cli_id is None) or (cli_id in self.clientreceivers_dict) or (cli_id == "00"):
             a = list(string.ascii_letters)
             random.shuffle(a)
             cli_id = ''.join(a[:2])
-        self.serverreceivers_dict[cli_id] = clirecv
+        self.clientreceivers_dict[cli_id] = clirecv
         return cli_id
 
     def remove(self, cli_id):
         try:
-            if any(_ is not None for _ in self.recvs):
+            if any(_ is not None for _ in self.serverreceivers_pool):
                 self.ready.id_write(cli_id, CLOSECHAR, '000010')
-            self.serverreceivers_dict.pop(cli_id)
+            self.clientreceivers_dict.pop(cli_id)
         except KeyError:
             pass
 
     # def server_check(self, server_id_list):
     #    '''check ready to use connections'''
-    #    for conn in list(filter(lambda _: _ is not None, self.recvs)):
+    #    for conn in list(filter(lambda _: _ is not None, self.serverreceivers_pool)):
     #        if conn.idchar not in server_id_list:
-    #            self.recvs[conn.i] = None
+    #            self.serverreceivers_pool[conn.i] = None
     #            conn.close()
     #    self.refreshconn()
-    #    if len(list(filter(lambda _: _ is not None, self.recvs))) < self.req_num:
+    #    if len(list(filter(lambda _: _ is not None, self.serverreceivers_pool))) < self.req_num:
     #        self.check.set()
 
     def received_confirm(self, cli_id, index):
