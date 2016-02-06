@@ -267,11 +267,7 @@ class Coordinate(object):
 
     def received_confirm(self, cli_id, index):
         '''send confirmation'''
-        # TODO: remove this method
-        # Why does server not respond after removing this?
-        # self.ready.id_write(cli_id, str(index), '000030')
-        #self.ready.id_write(cli_id, 'fuck', '000030')
-        pass
+        self.ready.id_write(cli_id, str(index), '000030')
 
     def ptinit(self):
         # Initialize obfs4 TODO: problem may exist
