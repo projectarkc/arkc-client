@@ -130,6 +130,8 @@ class ServerReceiver(asyncore.dispatcher):
                                         self.i][cli_id] = seq
                                     self.ctl.clientreceivers_dict[
                                         cli_id].from_remote_buffer_dict[seq] = b_data
+                                    self.ctl.clientreceivers_dict[
+                                        cli_id].retransmission_check()
                                 else:
                                     for _ in self.ctl.max_recved_idx:
                                         if _ is not None:

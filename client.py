@@ -37,6 +37,7 @@ class ClientReceiver(asyncore.dispatcher):
         self.from_remote_buffer_index = 100000
         self.to_remote_buffer = b''
         self.to_remote_buffer_index = 100000
+        self.retransmit_lock = False
 
     def handle_connect(self):
         pass
@@ -47,12 +48,11 @@ class ClientReceiver(asyncore.dispatcher):
         self.to_remote_buffer += read
 
     def writable(self):
-        if self.from_remote_buffer_index in self.from_remote_buffer_dict:
-            return True
-        return False
-
+        return self.from_remote_buffer_index in self.from_remote_buffer_dict
+        
     def handle_write(self):
         i = 0
+        self.retransmit_lock = False
         while self.writable() and i <= 4:
             sent = self.send(
                 self.from_remote_buffer_dict.pop(self.from_remote_buffer_index))
@@ -65,6 +65,15 @@ class ClientReceiver(asyncore.dispatcher):
     def handle_close(self):
         self.control.remove(self.idchar)
         self.close()
+
+    def retransmission_check(self):
+        if not self.writable() and self.retransmit_lock and
+        all(_ in self.from_remote_buffer_dict
+            for _ in range(self.from_remote_buffer_index + 1,
+                           self.from_remote_buffer_index + self.control.req_num + 1)):
+            self.control.retransmit(
+                self.idchar, self.from_remote_buffer_index)
+            self.retransmit_lock =True
 
     def next_to_remote_buffer(self):
         self.to_remote_buffer_index += 1

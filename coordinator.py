@@ -269,6 +269,11 @@ class Coordinate(object):
         '''send confirmation'''
         self.ready.id_write(cli_id, str(index), '000030')
 
+    def retransmit(self, cli_id, seqs):
+        '''called when asking retransmission'''
+        if len(self.recvs) > 0:
+            self.ready.id_write(cli_id, str(seqs), '020')
+
     def ptinit(self):
         # Initialize obfs4 TODO: problem may exist
         path = os.path.split(os.path.realpath(sys.argv[0]))[0]
