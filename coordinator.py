@@ -38,7 +38,18 @@ class Coordinate(object):
         self.clientreceivers_dict = dict()
         self.main_pw = (''.join(rng.choice(ascii_letters) for _ in range(16)))\
             .encode('ASCII')
+        self.serverreceivers_pool = [None] * self.req_num
+        # each dict maps client connection id to the max index received
+        # by the corresponding serverreceiver
+
+        # each entry as dict: conn_id -> queue, each queue is (index, data)
+        # pairs
+        self.server_send_buf_pool = [{}] * self.req_num
+        self.dumped_sent_idx = [{}] * self.req_num
+
+        self.max_recved_idx = [{}] * self.req_num
         # end of shared properties
+
         self.req_num = req_num
         self.remote_host = remote_host
         self.remote_port = remote_port
@@ -55,12 +66,6 @@ class Coordinate(object):
         self.obfs_level = obfs_level
 
         self.ready = None  # used to store the next ServerReceiver to use
-        self.serverreceivers_pool = [None] * self.req_num
-        # each dict maps client connection id to the max index received
-        # by the corresponding serverreceiver
-
-        # TODO: please clarify or change its name
-        self.max_recved_idx = [{}] * self.req_num
 
         # lock the method to request connections
         self.check = threading.Event()

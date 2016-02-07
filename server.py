@@ -119,6 +119,9 @@ class ServerReceiver(asyncore.dispatcher):
                                 self.closing = True
                                 self.ctl.closeconn(self)
                                 self.close()
+                            elif seq == 30:
+                                # TODO: confirmation message
+                                pass
               #               elif seq == 50:
               #                   id_list = b_data.decode("UTF-8").split(',')
                             # self.ctl.server_check(id_list)
@@ -126,14 +129,14 @@ class ServerReceiver(asyncore.dispatcher):
                         else:
                             if cli_id in self.ctl.clientreceivers_dict:
                                 if b_data != b_close:
-                                    self.ctl.max_recved_idx[
+                                    self.ctl.server_recv_max_idx[
                                         self.i][cli_id] = seq
                                     self.ctl.clientreceivers_dict[
                                         cli_id].from_remote_buffer_dict[seq] = b_data
                                     self.ctl.clientreceivers_dict[
                                         cli_id].retransmission_check()
                                 else:
-                                    for _ in self.ctl.max_recved_idx:
+                                    for _ in self.ctl.server_recv_max_idx:
                                         if _ is not None:
                                             _.pop(cli_id, None)
                                     self.ctl.clientreceivers_dict[
@@ -154,9 +157,8 @@ class ServerReceiver(asyncore.dispatcher):
         # Deal with the beginning authentication
         self.read = b''
         try:
-            self.read += self.recv(770)
-            if len(self.read) >= 770:
-                self.read = self.read[:770]
+            self.read += self.recv(2048)
+            if self.split in self.read:
                 signature = self.read[:512]
                 # TODO: fix an error in int(signature,16)
                 if not self.ctl.serverpub.verify(self.ctl.main_pw, (int(signature, 16), None)):
@@ -177,13 +179,16 @@ class ServerReceiver(asyncore.dispatcher):
                     self.ctl.newconn(self)
                     logging.debug(
                         "Authentication succeed, connection established")
+                    self.send_legacy(
+                        eval(self.read[770:].encode('utf-8')))
                     self.send(
                         self.cipher.encrypt(b"2AUTHENTICATED" + self.read[768:770] +
                                             repr(
-                                                self.ctl.max_recved_idx[self.i]).encode()
+                                                self.ctl.server_recv_max_idx[self.i]).encode()
                                             )
                         + self.split
                     )
+                    self.send_legacy()
             else:
                 if len(self.read) == 0:
                     self.no_data_count += 1
@@ -198,6 +203,9 @@ class ServerReceiver(asyncore.dispatcher):
             logging.error(
                 "Authentication failed, due to error, socket closing")
             self.close()
+
+    def send_legacy(self, idx_list):
+        pass
 
     def writable(self):
         if self.preferred:
@@ -247,10 +255,13 @@ class ServerReceiver(asyncore.dispatcher):
             self.ctl.clientreceivers_dict[cli_id].next_to_remote_buffer()
             self.ctl.clientreceivers_dict[cli_id].to_remote_buffer = self.ctl.clientreceivers_dict[
                 cli_id].to_remote_buffer[len(buf):]
+            if cli_id not in self.ctl.server_send_buf_pool[self.i]:
+                self.ctl.server_send_buf_pool[self.i][cli_id] = []
         else:
             buf = bytes(buf, "utf-8")
         self.send(self.cipher.encrypt(b"0" + b_id + b_idx + buf) +
                   self.split)
+        self.ctl.server_send_buf_dict[self.i][cli_id].append((buf, b_idx))
         return len(buf)
 
     def id_write(self, cli_id, lastcontents=None, seq=None):
@@ -266,3 +277,6 @@ class ServerReceiver(asyncore.dispatcher):
 
         except KeyError:
             pass
+
+    def update_max_idx(self, max_index_dict):
+        pass
