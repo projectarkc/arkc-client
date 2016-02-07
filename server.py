@@ -119,16 +119,16 @@ class ServerReceiver(asyncore.dispatcher):
                                 self.closing = True
                                 self.ctl.closeconn(self)
                                 self.close()
-                            elif seq == 30:
-                                # TODO: confirmation message
-                                pass
               #               elif seq == 50:
               #                   id_list = b_data.decode("UTF-8").split(',')
                             # self.ctl.server_check(id_list)
                             # TODO: Experimental function
                         else:
                             if cli_id in self.ctl.clientreceivers_dict:
-                                if b_data != b_close:
+                                if seq == 30:
+                                    self.update_max_idx(cli_id,
+                                                        int(b_data.encode('utf-8')))
+                                elif b_data != b_close:
                                     self.ctl.server_recv_max_idx[
                                         self.i][cli_id] = seq
                                     self.ctl.clientreceivers_dict[
@@ -205,7 +205,17 @@ class ServerReceiver(asyncore.dispatcher):
             self.close()
 
     def send_legacy(self, idx_list):
-        pass
+        buf = self.ctl.server_send_buf_pool[self.i]
+        for cli_id in idx_list:
+            try:
+                queue = buf[cli_id]
+                while len(queue) and queue[0][0] <= idx_list[cli_id]:
+                    queue.popleft()
+                if len(queue):
+                    for idx, data in queue:
+                        self.encrypt_and_send(cli_id, data, idx)
+            except Exception:
+                pass
 
     def writable(self):
         if self.preferred:
@@ -278,5 +288,10 @@ class ServerReceiver(asyncore.dispatcher):
         except KeyError:
             pass
 
-    def update_max_idx(self, max_index_dict):
-        pass
+    def update_max_idx(self, cli_id, seq):
+        try:
+            queue = self.ctl.server_send_buf_pool[self.i][cli_id]
+            while len(queue) and queue[0][0] <= seq:
+                queue.popleft()
+        except Exception:
+            pass

@@ -38,9 +38,9 @@ class Coordinate(object):
         self.clientreceivers_dict = dict()
         self.main_pw = (''.join(rng.choice(ascii_letters) for _ in range(16)))\
             .encode('ASCII')
-        self.serverreceivers_pool = [None] * self.req_num
         # each dict maps client connection id to the max index received
         # by the corresponding serverreceiver
+        self.serverreceivers_pool = [None] * self.req_num
 
         # each entry as dict: conn_id -> queue, each queue is (index, data)
         # pairs
