@@ -182,7 +182,7 @@ class ServerReceiver(asyncore.dispatcher):
                             + self.split
                         )
                         self.send_legacy(
-                            eval(self.read[770:].lstrip(self.split).decode('utf-8')))
+                            eval(self.read[770:].rstrip(self.split).decode('utf-8')))
                     except ValueError:
                         # TODO: figure out why
                         logging.warning(
