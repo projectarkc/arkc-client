@@ -52,6 +52,7 @@ class ServerReceiver(asyncore.dispatcher):
     def __init__(self, conn, ctl):
         self.ctl = ctl
         asyncore.dispatcher.__init__(self, conn)
+        self.read = b''
         self.from_remote_buffer_raw = b''
         self.cipher = None
         self.preferred = False
@@ -155,7 +156,6 @@ class ServerReceiver(asyncore.dispatcher):
 
     def begin_auth(self):
         # Deal with the beginning authentication
-        self.read = b''
         try:
             self.read += self.recv(2048)
             if self.split in self.read:
@@ -168,27 +168,26 @@ class ServerReceiver(asyncore.dispatcher):
                     try:
                         self.cipher = AESCipher(
                             self.ctl.clientpri.decrypt(self.read[512:768]), self.ctl.main_pw)
+                        self.full = False
+                        idchar = self.read[768:770].decode('utf-8')
+                        self.i = int(idchar)
+                        self.ctl.newconn(self)
+                        logging.debug(
+                            "Authentication succeed, connection established")
+                        self.send(
+                            self.cipher.encrypt(b"2AUTHENTICATED" + self.read[768:770] +
+                                                repr(
+                                                self.ctl.server_recv_max_idx[self.i]).encode()
+                                                )
+                            + self.split
+                        )
+                        self.send_legacy(
+                            eval(self.read[770:].lstrip(self.split).decode('utf-8')))
                     except ValueError:
                         # TODO: figure out why
                         logging.warning(
                             "Authentication failed, socket closing")
                         self.handle_close()
-                    self.full = False
-                    idchar = self.read[768:770].decode('utf-8')
-                    self.i = int(idchar)
-                    self.ctl.newconn(self)
-                    logging.debug(
-                        "Authentication succeed, connection established")
-                    self.send_legacy(
-                        eval(self.read[770:].encode('utf-8')))
-                    self.send(
-                        self.cipher.encrypt(b"2AUTHENTICATED" + self.read[768:770] +
-                                            repr(
-                                                self.ctl.server_recv_max_idx[self.i]).encode()
-                                            )
-                        + self.split
-                    )
-                    self.send_legacy()
             else:
                 if len(self.read) == 0:
                     self.no_data_count += 1
@@ -271,7 +270,7 @@ class ServerReceiver(asyncore.dispatcher):
             buf = bytes(buf, "utf-8")
         self.send(self.cipher.encrypt(b"0" + b_id + b_idx + buf) +
                   self.split)
-        self.ctl.server_send_buf_dict[self.i][cli_id].append((buf, b_idx))
+        self.ctl.server_send_buf_pool[self.i][cli_id].append((buf, b_idx))
         return len(buf)
 
     def id_write(self, cli_id, lastcontents=None, seq=None):

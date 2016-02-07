@@ -30,6 +30,21 @@ class Coordinate(object):
     def __init__(self, ctl_domain, clientpri, clientpri_sha1, serverpub,
                  clientpub_sha1, req_num, remote_host, remote_port, dns_servers,
                  debug_ip, swapcount, ptexec, obfs_level, ipv6, not_upnp):
+        self.req_num = req_num
+        self.remote_host = remote_host
+        self.remote_port = remote_port
+        self.dns_servers = dns_servers
+        random.shuffle(self.dns_servers)
+        self.dns_count = 0
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.swapcount = swapcount
+        self.ctl_domain = ctl_domain
+        if ipv6 == "":
+            self.ip = get_ip(debug_ip)
+        self.ipv6 = ipv6
+        self.ptexec = ptexec
+        self.obfs_level = obfs_level
+
         # shared properties, used in ServerReceiver
         self.serverpub = serverpub
         self.clientpri = clientpri
@@ -47,23 +62,8 @@ class Coordinate(object):
         self.server_send_buf_pool = [{}] * self.req_num
         self.dumped_sent_idx = [{}] * self.req_num
 
-        self.max_recved_idx = [{}] * self.req_num
+        self.server_recv_max_idx = [{}] * self.req_num
         # end of shared properties
-
-        self.req_num = req_num
-        self.remote_host = remote_host
-        self.remote_port = remote_port
-        self.dns_servers = dns_servers
-        random.shuffle(self.dns_servers)
-        self.dns_count = 0
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.swapcount = swapcount
-        self.ctl_domain = ctl_domain
-        if ipv6 == "":
-            self.ip = get_ip(debug_ip)
-        self.ipv6 = ipv6
-        self.ptexec = ptexec
-        self.obfs_level = obfs_level
 
         self.ready = None  # used to store the next ServerReceiver to use
 

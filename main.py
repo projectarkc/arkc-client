@@ -33,7 +33,7 @@ if __name__ == '__main__':
         parser.add_argument(
             "-vv", dest="vv", action="store_true", help="show debug logs")
         parser.add_argument('-c', '--config', dest="config",
-                            help="You must specify a configuration files. By default ./config.json is used.", default='config.json')
+                            help="You must specify a configuration files. By default ./config.json is used.")
         parser.add_argument('-fs', '--frequent-swap', dest="fs", action="store_true",
                             help="Use frequent connection swapping")
         parser.add_argument('-pn', '--public-addr', dest="pn", action="store_true",
@@ -47,6 +47,9 @@ The programs is distributed under GNU General Public License Version 2.
 
         options = parser.parse_args()
 
+        if options.config is None:
+            logging.fatal("Config file must be specified.")
+
         data = {}
 
         # Load json configuration file
@@ -55,12 +58,12 @@ The programs is distributed under GNU General Public License Version 2.
             data = json.load(data_file)
             data_file.close()
         except Exception as err:
-            logging.error(
+            logging.fatal(
                 "Fatal error while loading configuration file.\n" + err)
             quit()
 
         if "control_domain" not in data:
-            logging.error("missing control domain")
+            logging.fatal("missing control domain")
             quit()
 
         # Apply default values
@@ -99,7 +102,7 @@ The programs is distributed under GNU General Public License Version 2.
             serverpub_data = open(data["remote_cert"], "r").read()
             serverpub = certloader(serverpub_data).importKey()
         except KeyError as e:
-            logging.error(
+            logging.fatal(
                 e.tostring() + "is not found in the config file. Quitting.")
             quit()
         except Exception as err:
@@ -115,7 +118,7 @@ The programs is distributed under GNU General Public License Version 2.
                 print(
                     "Fatal error, no private key included in local certificate.")
         except KeyError as e:
-            logging.error(
+            logging.fatal(
                 e.tostring() + "is not found in the config file. Quitting.")
             quit()
         except Exception as err:
@@ -127,7 +130,7 @@ The programs is distributed under GNU General Public License Version 2.
             clientpub_data = open(data["local_cert_pub"], "r").read()
             clientpub_sha1 = certloader(clientpub_data).getSHA1()
         except KeyError as e:
-            logging.error(
+            logging.fatal(
                 e.tostring() + "is not found in the config file. Quitting.")
             quit()
         except Exception as err:
@@ -188,7 +191,7 @@ The programs is distributed under GNU General Public License Version 2.
 
     except KeyError as e:
         print(e)
-        logging.error("Bad config file. Quitting.")
+        logging.fatal("Bad config file. Quitting.")
         quit()
 
     except Exception as e:
