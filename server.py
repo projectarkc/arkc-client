@@ -4,8 +4,8 @@ import logging
 import time
 import struct
 
-from common import AESCipher
-from common import get_timestamp, parse_timestamp
+from arkcclient.common import AESCipher
+from arkcclient.common import get_timestamp, parse_timestamp
 from _io import BlockingIOError
 
 # Need to switch to asyncio

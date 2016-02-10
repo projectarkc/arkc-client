@@ -2,8 +2,6 @@ from __future__ import print_function, unicode_literals, division, absolute_impo
 
 import random as _random
 
-from pyotp.otp import OTP
-from pyotp.totp import TOTP
 from . import utils
 
 VERSION = '1.4.2'

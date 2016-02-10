@@ -3,11 +3,12 @@ from __future__ import print_function, unicode_literals, division, absolute_impo
 import datetime
 import time
 
-from pyotp import utils
-from pyotp.otp import OTP
+from . import utils
+from arkcclient.pyotp.otp import OTP
 
 
 class TOTP(OTP):
+
     def __init__(self, *args, **kwargs):
         """
         @option options [Integer] interval (30) the time interval in seconds
@@ -42,7 +43,7 @@ class TOTP(OTP):
         """
         if for_time is None:
             for_time = datetime.datetime.now()
-        
+
         if valid_window:
             for i in range(-valid_window, valid_window + 1):
                 if utils.strings_equal(str(otp), str(self.at(for_time, i))):

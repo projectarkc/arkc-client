@@ -5,7 +5,8 @@ import hashlib
 import hmac
 
 
-class OTP(object):
+class OTP():
+
     def __init__(self, s, digits=6, digest=hashlib.sha1):
         """
         @param [String] secret in the form of base32
@@ -35,9 +36,9 @@ class OTP(object):
 
         hmac_hash = bytearray(hmac_hash)
         offset = hmac_hash[-1] & 0xf
-        code = ((hmac_hash[offset] & 0x7f) << 24 | 
-                (hmac_hash[offset + 1] & 0xff) << 16 | 
-                (hmac_hash[offset + 2] & 0xff) << 8 | 
+        code = ((hmac_hash[offset] & 0x7f) << 24 |
+                (hmac_hash[offset + 1] & 0xff) << 16 |
+                (hmac_hash[offset + 2] & 0xff) << 8 |
                 (hmac_hash[offset + 3] & 0xff))
         str_code = str(code % 10 ** self.digits)
         while len(str_code) < self.digits:

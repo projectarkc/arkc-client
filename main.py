@@ -9,10 +9,10 @@ import logging
 import json
 import sys
 
-from common import certloader
-from coordinator import Coordinate
-from server import ServerControl
-from client import ClientControl
+from arkcclient.common import certloader
+from arkcclient.coordinator import Coordinate
+from arkcclient.server import ServerControl
+from arkcclient.client import ClientControl
 
 # Const used in the client.
 
