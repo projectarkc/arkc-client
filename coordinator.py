@@ -60,7 +60,6 @@ class Coordinate(object):
         # each entry as dict: conn_id -> queue, each queue is (index, data)
         # pairs
         self.server_send_buf_pool = [{}] * self.req_num
-        self.dumped_sent_idx = [{}] * self.req_num
 
         self.server_recv_max_idx = [{}] * self.req_num
         # end of shared properties
@@ -256,7 +255,14 @@ class Coordinate(object):
         try:
             if any(_ is not None for _ in self.serverreceivers_pool):
                 self.ready.id_write(cli_id, CLOSECHAR, '000010')
+        except Exception:
+            pass
+        try:
             self.clientreceivers_dict.pop(cli_id)
+            for buf in self.server_send_buf_pool:
+                buf.pop(cli_id)
+            for idxlist in self.server_recv_max_idx:
+                idxlist.pop(cli_id)
         except KeyError:
             pass
 
