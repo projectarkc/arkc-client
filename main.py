@@ -24,7 +24,8 @@ DEFAULT_REQUIRED = 3
 DEFAULT_DNS_SERVERS = [["8.8.8.8", 53]]
 DEFAULT_OBFS4_EXECADDR = "obfs4proxy"
 
-if __name__ == '__main__':
+
+def main():
     parser = argparse.ArgumentParser(description="ArkC Client")
     try:
         # Load arguments
@@ -202,3 +203,6 @@ The programs is distributed under GNU General Public License Version 2.
         asyncore.loop(use_poll=1)
     except KeyboardInterrupt:
         pass
+
+if __name__ == '__main__':
+    main()
