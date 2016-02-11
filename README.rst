@@ -135,7 +135,7 @@ The client-end software adapted part of the pyotp library created by
 Mark Percival m@mdp.im. His code is reused under Python Port copyright,
 license attached.
 
-File ptclient.py and meekclient.py is based on ptproxy by Dingyuan Wang.
+File arkcclient/ptclient.py is based on ptproxy by Dingyuan Wang.
 Code reused and edited under MIT license, attached in file.
 
 License

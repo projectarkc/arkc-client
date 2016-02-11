@@ -65,7 +65,7 @@ setup(
     package_data=pkg_data,
     install_requires=required,
     entry_points=entry,
-    classifiers=categoriesi,
+    classifiers=categories,
     long_description=long_description,
 )
 
