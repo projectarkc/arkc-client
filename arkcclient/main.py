@@ -11,7 +11,7 @@ import sys
 import random
 import os.path
 
-sys.path.insert(1, os.path.dirname(sys.path[0]))
+sys.path.insert(0, os.path.dirname(__file__))
 
 from common import certloader
 from coordinator import Coordinate
