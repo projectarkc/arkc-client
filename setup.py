@@ -3,8 +3,8 @@ import sys
 from setuptools import setup
 
 
-#with codecs.open('README.rst', encoding='utf-8') as f:
-#    long_description = f.read()
+with codecs.open('README.rst', encoding='utf-8') as f:
+    long_description = f.read()
 
 if str(sys.version_info.major) == '2':
     pkg_name = 'arkcserver'
@@ -55,7 +55,7 @@ else:
 
 setup(
     name=pkg_name,
-    version="0.2-beta4.post1",
+    version="0.2.0",
     license='https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt',
     description="A lightweight proxy designed to be proof to IP blocking measures",
     author='Noah, Teba',
@@ -65,7 +65,7 @@ setup(
     package_data=pkg_data,
     install_requires=required,
     entry_points=entry,
-    classifiers=categories
-#    long_description=long_description,
+    classifiers=categoriesi,
+    long_description=long_description,
 )
 
