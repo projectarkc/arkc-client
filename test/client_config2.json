@@ -1,0 +1,14 @@
+{
+	"local_host":"0.0.0.0",
+	"local_cert":"testfiles/client",
+	"remote_cert":"testfiles/server.pub",
+	"local_cert_pub":"testfiles/client.pub",
+	"number":5,
+	"control_domain":"testing.arkc.org",
+	"dns_servers": [
+			["127.0.0.1", 53]
+	],
+	"debug_ip":"127.0.0.1",
+	"obfs_level":3,
+	"pt_exec":"meek-server"
+}
