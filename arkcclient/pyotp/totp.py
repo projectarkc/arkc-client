@@ -4,7 +4,7 @@ import datetime
 import time
 
 from . import utils
-from arkcclient.pyotp.otp import OTP
+from .otp import OTP
 
 
 class TOTP(OTP):

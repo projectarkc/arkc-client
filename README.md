@@ -1,31 +1,49 @@
-#ArkC-client
+#ArkC-Client V0.2
 
-ArkC is a lightweight proxy based on Python 3 and PyCrypto. It is designed to be proof to IP blocking measures.
+ArkC is a lightweight proxy designed to be proof to IP blocking measures and offer high proxy speed via multi-connection transmission and swapping connections.
 
-ArkC-Client is the client-side utility. It may require NAT configuration if the client is behind a router.
+ArkC-Client is the client-side utility. In a LAN environment, it either works with UPnP-enabled routers or requires NAT configuration if the client is behind a router.
 
 ##Setup and Requirement
 
-Running ArkC-Client requires Python 3 and PyCrypto.
+For Windows users, please use our Windows executable in release page.
 
-For Debian or Ubuntu users:
+For users with python3 pip development environment (Note: We don't recommend using python 2):
     
 ```
-sudo apt-get install python3 python3-pip python3-dev python3-psutil obfs4proxy
-sudo pip3 install -r requirements.txt
+sudo pip3 install arkcclient
 ```
 
-NAT configuration may be necessary to make the client receives requests from the server, so that a connection may start.
+To install python3 and pip3 with python.h:
+
+Debian/Ubuntu users
+```
+sudo apt-get install python3 python3-pip python3-dev
+```
+
+Fedora users
+```
+yum install python3 python3-devel python3-pip
+```
+
+You may also install ArkC via source.
+
+To get ArkC Client work, you must satisfy ONE OF the following conditions (unless you are the expert):
+1) connect to public Internet directly
+2) connect to the Internet via a UPnP-enabled router, in a single-layer LAN
+3) router(s) on your route to the public Internet are properly configured with NAT to allow your server to connect to your client's "remote_port" directly
 
 ##Usage
 
 Run 
 
 ```
-python3 main.py [-h] [-v|-vv] -c <Path of the config Json file, default = config.json>
+arkcclient [-h] [-v|-vv] [-pn] -c <Path of the config Json file>
 ```
 
-In this version, any private certificate should be in the form of PEM without encryption, while any public certificate should be in the form of ssh-rsa. Note that ssh-rsa files should not include extra blank lines because they are used for hash.
+[-pn] is used to disable UPnP.
+
+In this version, any private certificate should be in the form of PEM without encryption, while any public certificate should be in the form of ssh-rsa. Generate a key pair with ssh-keygen on GNU/Linux.
 
 For the configuration file, you can find an example here:
 
@@ -43,6 +61,8 @@ For the configuration file, you can find an example here:
     "obfs_level":0
 }
 ```
+
+NOTE: NO COMMENTS ARE ALLOWED IN JSON FORMAT.
 
 For a full list of settings:
 

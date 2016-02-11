@@ -14,9 +14,9 @@ import miniupnpc
 from time import sleep
 from string import ascii_letters
 
-from arkcclient.common import weighted_choice, get_ip, urlsafe_b64_short_encode, int2base
+from common import weighted_choice, get_ip, urlsafe_b64_short_encode, int2base
 
-from arkcclient.pyotp.totp import TOTP
+from pyotp.totp import TOTP
 
 CLOSECHAR = chr(4) * 5
 

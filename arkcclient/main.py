@@ -9,10 +9,10 @@ import logging
 import json
 import sys
 
-from arkcclient.common import certloader
-from arkcclient.coordinator import Coordinate
-from arkcclient.server import ServerControl
-from arkcclient.client import ClientControl
+from common import certloader
+from coordinator import Coordinate
+from server import ServerControl
+from client import ClientControl
 
 # Const used in the client.
 
@@ -26,30 +26,27 @@ DEFAULT_OBFS4_EXECADDR = "obfs4proxy"
 
 
 def main():
-    parser = argparse.ArgumentParser(description="ArkC Client")
+    parser = argparse.ArgumentParser(description=None)
     try:
         # Load arguments
         parser.add_argument(
             "-v", dest="v", action="store_true", help="show detailed logs")
         parser.add_argument(
             "-vv", dest="vv", action="store_true", help="show debug logs")
-        parser.add_argument('-c', '--config', dest="config",
-                            help="You must specify a configuration files. By default ./config.json is used.")
+        parser.add_argument('-c', '--config', dest="config", required=True,
+                            help="Specify a configuration files, REQUIRED for ArkC Client to start")
         parser.add_argument('-fs', '--frequent-swap', dest="fs", action="store_true",
                             help="Use frequent connection swapping")
         parser.add_argument('-pn', '--public-addr', dest="pn", action="store_true",
                             help="Disable UPnP when you have public network IP address (or NAT has been manually configured)")
 
-        parser.add_argument("-v6", dest="ipv6", default="")
-        print(
-            """ArkC Client V0.1.2,  by ArkC Technology.
+        parser.add_argument("-v6", dest="ipv6", default="",
+                            help="Enable this option to use IPv6 address (only use it if you have one)")
+        print("""ArkC Client V0.1.2,  by ArkC Technology.
 The programs is distributed under GNU General Public License Version 2.
 """)
 
         options = parser.parse_args()
-
-        if options.config is None:
-            logging.fatal("Config file must be specified.")
 
         data = {}
 
