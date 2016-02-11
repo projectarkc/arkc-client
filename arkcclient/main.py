@@ -112,7 +112,7 @@ The programs is distributed under GNU General Public License Version 2.
 
         try:
             clientpri_data = open(data["local_cert"], "r").read()
-            clientpri_data = clientpri_data.strip(' ').strip('\n').strip(' ')
+            clientpri_data = clientpri_data.strip(' ').lstrip('\n')
             clientpri = certloader(clientpri_data).importKey()
             clientpri_sha1 = certloader(clientpri_data).getSHA1()
             print("Using private key with SHA1: " + clientpri_sha1 +
@@ -131,7 +131,7 @@ The programs is distributed under GNU General Public License Version 2.
 
         try:
             clientpub_data = open(data["local_cert_pub"], "r").read()
-            clientpub_data = clientpub_data.strip(' ').strip('\n').strip(' ')
+            clientpub_data = clientpub_data.strip(' ').lstrip('\n')
             clientpub_sha1 = certloader(clientpub_data).getSHA1()
         except KeyError as e:
             logging.fatal(
