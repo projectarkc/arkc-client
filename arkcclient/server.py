@@ -27,7 +27,6 @@ class ServerControl(asyncore.dispatcher):
             self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         else:
             self.create_socket(socket.AF_INET6, socket.SOCK_STREAM)
-        # TODO: support IPv6
         self.set_reuse_addr()
 
         if pt:
@@ -75,11 +74,9 @@ class ServerReceiver(asyncore.dispatcher):
     def ping_recv(self, msg):
         """Parse ping (without flag) and send back when necessary."""
         seq = int(msg[0])
-        #logging.debug("recv ping%d" % seq)
         if seq == 0:
             raw_packet = "1" + "1" + msg[1:] + get_timestamp()
             to_write = self.cipher.encrypt(raw_packet) + self.split
-            #logging.debug("send ping1")
             self.send(to_write)
         else:
             time1 = parse_timestamp(msg[1:])

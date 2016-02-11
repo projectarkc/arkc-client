@@ -77,7 +77,7 @@ The programs is distributed under GNU General Public License Version 2.
         if "remote_port" not in data:
             data["remote_port"] = random.randint(20000, 60000)
             logging.info(
-                "Using random port " + data["remote_port"] + " as remote listening port")
+                "Using random port " + str(data["remote_port"]) + " as remote listening port")
 
         if "number" not in data:
             data["number"] = DEFAULT_REQUIRED
@@ -115,6 +115,8 @@ The programs is distributed under GNU General Public License Version 2.
             clientpri_data = clientpri_data.strip(' ').strip('\n').strip(' ')
             clientpri = certloader(clientpri_data).importKey()
             clientpri_sha1 = certloader(clientpri_data).getSHA1()
+            print("Using private key with SHA1: " + clientpri_sha1 +
+                  ". Please make sure it is identical the string in server-side config.")
             if not clientpri.has_private():
                 print(
                     "Fatal error, no private key included in local certificate.")
@@ -188,7 +190,7 @@ The programs is distributed under GNU General Public License Version 2.
         cctl = ClientControl(
             ctl,
             data["local_host"],
-            ctl.remote_port
+            data["local_port"]
         )
 
     except KeyError as e:
@@ -199,6 +201,11 @@ The programs is distributed under GNU General Public License Version 2.
     except Exception as e:
         print ("An error occurred: \n")
         print(e)
+
+    logging.info("Listening to local services at " +
+                 data["local_host"] + ":" + str(data["local_port"]))
+    logging.info("Listening to remote server at " +
+                 data["remote_host"] + ":" + str(ctl.remote_port))
 
     try:
         asyncore.loop(use_poll=1)
