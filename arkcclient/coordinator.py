@@ -73,7 +73,7 @@ class Coordinate(object):
         req.setDaemon(True)
 
         if not not_upnp:
-            self.upnp_mapping()
+            self.upnp_start()
 
         # obfs4 = level 1 and 2, meek (GAE) = level 3
         if 1 <= self.obfs_level <= 2:
@@ -93,7 +93,7 @@ class Coordinate(object):
 
         req.start()
 
-    def upnp_discover(self):
+    def upnp_start(self):
         try:
             u = miniupnpc.UPnP()
             u.discoverdelay = 200
