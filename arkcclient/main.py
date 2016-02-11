@@ -9,6 +9,9 @@ import logging
 import json
 import sys
 import random
+import os.path
+
+sys.path.insert(1, os.path.dirname(sys.path[0]))
 
 from common import certloader
 from coordinator import Coordinate
