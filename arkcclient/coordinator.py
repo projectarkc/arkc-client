@@ -32,7 +32,6 @@ class Coordinate(object):
                  debug_ip, swapcount, ptexec, obfs_level, ipv6, not_upnp):
         self.req_num = req_num
         self.remote_host = remote_host
-        self.remote_port = remote_port
         self.dns_servers = dns_servers
         random.shuffle(self.dns_servers)
         self.dns_count = 0
@@ -46,6 +45,7 @@ class Coordinate(object):
         self.obfs_level = obfs_level
 
         # shared properties, used in ServerReceiver
+        self.remote_port = remote_port
         self.serverpub = serverpub
         self.clientpri = clientpri
         self.clientpri_sha1 = clientpri_sha1
@@ -93,8 +93,7 @@ class Coordinate(object):
 
         req.start()
 
-    def upnp_mapping(self):
-        # Try to map ports via UPnP
+    def upnp_discover(self):
         try:
             u = miniupnpc.UPnP()
             u.discoverdelay = 200
@@ -105,23 +104,33 @@ class Coordinate(object):
                 if self.ipv6 == "" and self.ip != struct.unpack("!I", socket.inet_aton(u.externalipaddress()))[0]:
                     logging.warning(
                         "Mismatched external address, more than one layers of NAT? UPnP may not work.")
-                r = u.getspecificportmapping(self.remote_port, 'TCP')
-                if r is None:
-                    b = u.addportmapping(self.remote_port, 'TCP', u.lanaddr,
-                                         self.remote_port, 'ArkC Client port %u' % self.remote_port, '')
-                    if b:
-                        logging.info("Port mapping succeed")
-                        atexit.register(self.exit_handler, upnp_obj=u)
-                elif r[0] == u.lanaddr and r[1] == self.remote_port:
-                    logging.info("Port mapping already existed.")
-                else:
-                    logging.error("Remote port occupied in UPnP mapping")
-                # TODO: implement the following function
-                #    eport = eport + 1
-                #    logging.warning("Original remote port used, switched to " + str(eport))
-                #    r = u.getspecificportmapping(eport, 'TCP')
+                self.upnp_mapping(u)
             else:
                 logging.error("No UPnP devices discovered")
+        except Exception:
+            logging.error("Error arose in UPnP discovery")
+
+    def upnp_mapping(self, u):
+        # Try to map ports via UPnP
+        try:
+            r = u.getspecificportmapping(self.remote_port, 'TCP')
+            if r is None:
+                b = u.addportmapping(self.remote_port, 'TCP', u.lanaddr,
+                                     self.remote_port, 'ArkC Client port %u' % self.remote_port, '')
+                if b:
+                    logging.info("Port mapping succeed")
+                    atexit.register(self.exit_handler, upnp_obj=u)
+            elif r[0] == u.lanaddr and r[1] == self.remote_port:
+                logging.info("Port mapping already existed.")
+            else:
+                logging.warning(
+                    "Remote port " + str(self.remote_port) + " occupied in UPnP mapping")
+                if self.remote_port <= 60000:
+                    self.remote_port += 1
+                logging.warning(
+                    "Original remote port used. Retrying with port switched to " + str(self.remote_port))
+                self.upnp_mapping(u)
+
         except Exception:
             logging.error("Error arose when initializing UPnP")
 

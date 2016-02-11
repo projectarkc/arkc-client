@@ -8,6 +8,7 @@ import argparse
 import logging
 import json
 import sys
+import random
 
 from common import certloader
 from coordinator import Coordinate
@@ -19,7 +20,6 @@ from client import ClientControl
 DEFAULT_LOCAL_HOST = "127.0.0.1"
 DEFAULT_REMOTE_HOST = ''
 DEFAULT_LOCAL_PORT = 8001
-DEFAULT_REMOTE_PORT = 8000
 DEFAULT_REQUIRED = 3
 DEFAULT_DNS_SERVERS = [["8.8.8.8", 53]]
 DEFAULT_OBFS4_EXECADDR = "obfs4proxy"
@@ -75,7 +75,9 @@ The programs is distributed under GNU General Public License Version 2.
             data["remote_host"] = DEFAULT_REMOTE_HOST
 
         if "remote_port" not in data:
-            data["remote_port"] = DEFAULT_REMOTE_PORT
+            data["remote_port"] = random.randint(20000, 60000)
+            logging.info(
+                "Using random port " + data["remote_port"] + " as remote listening port")
 
         if "number" not in data:
             data["number"] = DEFAULT_REQUIRED
@@ -179,14 +181,14 @@ The programs is distributed under GNU General Public License Version 2.
         )
         sctl = ServerControl(
             data["remote_host"],
-            data["remote_port"],
+            ctl.remote_port,
             ctl,
             pt=bool(data["obfs_level"])
         )
         cctl = ClientControl(
             ctl,
             data["local_host"],
-            data["local_port"]
+            ctl.remote_port
         )
 
     except KeyError as e:

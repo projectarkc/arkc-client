@@ -49,7 +49,6 @@ For the configuration file, you can find an example here:
 
 ```
 {
-    "remote_control_host":"example.com",
     "local_cert":"client.pem",
     "remote_cert":"server.pub",
     "local_cert_pub":"client.pub",
@@ -57,8 +56,7 @@ For the configuration file, you can find an example here:
     "dns_servers": [
             ["8.8.8.8", 53],
             ["127.0.0.1", 9000]
-        ],
-    "obfs_level":0
+         ]
 }
 ```
 
@@ -71,7 +69,7 @@ For a full list of settings:
 | local_host            | str, proxy listening addr| "127.0.0.1"       |
 | local_port            | integer, proxy port      | 8001              |
 | remote_host           | str, listening host      | "0.0.0.0"         |
-| remote_port           | integer, listening port  | 8000              |
+| remote_port           | integer, listening port  | random between 20000 and 60000 |
 | number                | integer, how many conn. (max. 100)  | 3                 |
 | local_cert            | str, path of client pri  | REQUIRED          |
 | local_cert_pub        | str, path of client pub  | REQUIRED          |
