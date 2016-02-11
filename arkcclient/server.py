@@ -161,7 +161,13 @@ class ServerReceiver(asyncore.dispatcher):
             if self.split in self.read:
                 signature = self.read[:512]
                 # TODO: fix an error in int(signature,16)
-                if not self.ctl.serverpub.verify(self.ctl.main_pw, (int(signature, 16), None)):
+                try:
+                    verify = self.ctl.serverpub.verify(
+                        self.ctl.main_pw, (int(signature, 16), None))
+                except ValueError:
+                    logging.debug("ValueError captured at server.py line 165")
+                    verify = False
+                if not verify:
                     logging.warning("Authentication failed, socket closing")
                     self.close()
                 else:

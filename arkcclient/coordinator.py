@@ -191,7 +191,7 @@ class Coordinate(object):
         h = hashlib.sha256()
         h.update(
             (self.clientpri_sha1 + myip + salt + number_in_hex).encode('utf-8'))
-        msg.append(pyotp.TOTP(bytes(h.hexdigest(), "UTF-8")).now())
+        msg.append(TOTP(bytes(h.hexdigest(), "UTF-8")).now())
         msg.append(binascii.hexlify(self.main_pw).decode("ASCII"))
         msg.append(myip)
         msg.append(salt)
