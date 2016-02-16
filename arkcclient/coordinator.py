@@ -15,6 +15,7 @@ from time import sleep
 from string import ascii_letters
 
 from common import weighted_choice, get_ip, urlsafe_b64_short_encode, int2base
+from meekclient import main as meekexec
 
 from pyotp.totp import TOTP
 
@@ -309,19 +310,13 @@ class Coordinate(object):
             }
             exec(code, globals)
         # Index of the resolver currently in use, move forward on failure
-        self.resolv_cursor = 0
+        #self.resolv_cursor = 0
 
     def meekinit(self):
         # Initialize MEEK
         if self.remote_host == "":
             self.remote_host = "0.0.0.0"
-        path = os.path.split(os.path.realpath(sys.argv[0]))[0]
-        with open(path + os.sep + "meekclient.py") as f:
-            code = compile(f.read(), "meekclient.py", 'exec')
-            globals = {
-                "SERVER_string": self.remote_host + ":" + str(self.remote_port),
-                "ptexec": self.ptexec + " --disable-tls"
-            }
-            exec(code, globals)
+        meekexec(
+            self.ptexec + " --disable-tls", self.remote_host + ":" + str(self.remote_port))
         # Index of the resolver currently in use, move forward on failure
-        self.resolv_cursor = 0
+        #self.resolv_cursor = 0

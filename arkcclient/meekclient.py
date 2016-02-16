@@ -22,13 +22,12 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-
 import os
-import time
 import shlex
 import threading
 import subprocess
 import tempfile
+import time
 
 
 def exit_handler():
@@ -37,26 +36,17 @@ def exit_handler():
 try:
     DEVNULL = subprocess.DEVNULL
 except AttributeError:
-    # Python 3.2
+    # Python 3.2 or earlier
     DEVNULL = open(os.devnull, 'wb')
+
+logtime = lambda: time.strftime('%Y-%m-%d %H:%M:%S')
 
 realserverport = 55000
 
-
-CFG = {
-    "role": "server",
-    "state": tempfile.gettempdir(),
-    "local": "127.0.0.1:" + str(realserverport),
-    "ptexec": ptexec,
-    "ptname": "meek",
-    "ptargs": "",
-    "ptserveropt": "",
-    "ptproxy": ""
-}
+CFG = dict()
 
 PT_PROC = None
 PTREADY = threading.Event()
-CFG["server"] = SERVER_string
 
 TRANSPORT_VERSIONS = ('1',)
 
@@ -64,8 +54,6 @@ startupinfo = None
 if os.name == 'nt':
     startupinfo = subprocess.STARTUPINFO()
     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-
-logtime = lambda: time.strftime('%Y-%m-%d %H:%M:%S')
 
 
 class PTConnectFailed(Exception):
@@ -138,7 +126,7 @@ def parseptline(iterable):
 
 def runpt():
     global CFG, PTREADY
-    while CFG['_run']:
+    if CFG['_run']:
         print(logtime(), 'Starting PT...')
         proc = checkproc()
         # If error then die
@@ -151,15 +139,29 @@ def runpt():
             while out:
                 print(
                     logtime(), out.decode('utf_8', errors='replace').rstrip('\n'))
-        except BrokenPipeError:
+        except OSError:
             pass
         PTREADY.clear()
         print(logtime(), 'PT died.')
 
-try:
-    CFG['_run'] = True
-    runpt()
-finally:
-    CFG['_run'] = False
-    if PT_PROC:
-        PT_PROC.kill()
+
+def main(ptexec, SERVER_string):
+    global CFG
+    CFG = {
+        "role": "server",
+        "state": tempfile.gettempdir(),
+        "local": "127.0.0.1:" + str(realserverport),
+        "ptexec": ptexec,
+        "ptname": "meek",
+        "ptargs": "",
+        "ptserveropt": "",
+        "ptproxy": "",
+        "server": SERVER_string
+    }
+    try:
+        CFG['_run'] = True
+        runpt()
+    finally:
+        CFG['_run'] = False
+        if PT_PROC:
+            PT_PROC.kill()
