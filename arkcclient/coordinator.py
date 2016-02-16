@@ -1,7 +1,6 @@
 import threading
 import logging
 import os
-import sys
 import random
 import string
 import binascii
@@ -297,7 +296,7 @@ class Coordinate(object):
 
     def ptinit(self):
         # Initialize obfs4 TODO: problem may exist
-        path = os.path.split(os.path.realpath(sys.argv[0]))[0]
+        path = os.path.dirname(os.path.abspath(__file__))
         with open(path + os.sep + "ptclient.py") as f:
             code = compile(f.read(), "ptclient.py", 'exec')
             globals = {
