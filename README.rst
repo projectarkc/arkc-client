@@ -9,10 +9,19 @@ ArkC-Client is the client-side utility. In a LAN environment, it either
 works with UPnP-enabled routers or requires NAT configuration if the
 client is behind a router.
 
+What is ArkC?
+-------------
+
+ArkC allows users to enjoy free web browsing without worrying about censorship measures like IP blacklists. For VPS owners they are better equipped to share their VPS to people around them, or share online, the proxy hosted on their VPS.
+
+For a more detailed description, please visit our website and read our page `Understand ArkC <https://arkc.org/understand-arkc/>`__. 中文版本的介绍在这一页面 `ArkC的原理 <https://arkc.org/understand_arkc_zh_cn/>`__。
+
 Setup and Requirement
 ---------------------
 
-For Windows users, please use our Windows executable in release page.
+For a probably more detailed guide: `Deployment and Installation <https://arkc.org/12-2/deployment-and-installation/>`__. 对于安装与部署的中文说明在`部署与安装ArkC <https://arkc.org/12-2/deployment_install_zh_cn/>`__这一页面。
+
+For Windows users, you are recommended to use our Windows executable in the Github `release page <https://github.com/projectarkc/arkc-client/releases/latest>`__. Installing pycrypto and miniupnpc often involves configuration of compilers.
 
 For users with python3 pip development environment (Note: We don't
 recommend using python 2):
@@ -42,10 +51,16 @@ conditions (unless you are the expert): 1) connect to public Internet
 directly 2) connect to the Internet via a UPnP-enabled router, in a
 single-layer LAN 3) router(s) on your route to the public Internet are
 properly configured with NAT to allow your server to connect to your
-client's "remote\_port" directly
+client's "remote\_port" directly.
+
+If you need to use portable proxy function, like MEEK (required to integrate with GAE) or obfs4proxy, please follow the above link to arkc.org.
 
 Usage
 -----
+
+For detailed documentation, please visit our `Documentation page <https://arkc.org/documentation/>`__.
+
+中文版本的使用文档，请参见`如何使用ArkC <https://arkc.org/documentation_zh_cn/>`__。
 
 Run
 
@@ -120,13 +135,20 @@ If obfs\_level is set to 3, MEEK will be used to transmit all data via a
 pre-configured MEEK service at the server side. By default it passes
 through Google App Engine.
 
-Build on Windows
-----------------
+Build on Windows into executable
+--------------------------------
 
 ::
 
     pip install pyinstaller
     pyinstaller [--onefile] main.py
+
+Questions | 使用或安装时遇到问题
+-------------------------------
+
+Go to our `FAQ page <https://arkc.org/faq/>`__.
+
+常见问题请参考`FAQ <https://arkc.org/faq_zh_cn/>`__。
 
 Acknowledgements
 ----------------

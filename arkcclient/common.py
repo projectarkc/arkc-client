@@ -1,4 +1,5 @@
 from Crypto.Cipher import AES
+from Crypto.PublicKey import RSA
 from requests import get
 import socket
 import struct
@@ -10,14 +11,36 @@ import base64
 from hashlib import sha1
 from time import time
 
+# For the ugly hack to introduce pycrypto v2.7a1
+from Crypto.Util.number import long_to_bytes
+from Crypto.Util.py3compat import bord, bchr, b
+import binascii
+
 logging.getLogger("requests").setLevel(logging.DEBUG)
 
-try:
-    from Crypto.PublicKey import RSA
-except Exception as e:
-    print("Library Crypto (pycrypto) is not installed. Fatal error.")
-    quit()
 # TODO:Need to switch to PKCS for better security
+
+
+def generate_RSA(pridir, pubdir):
+    key = RSA.generate(2048)
+    with open(pridir, 'wb') as content_file:
+        content_file.write(key.exportKey('PEM'))
+    print("Private key written to home directory " + pridir)
+    with open(pubdir, 'wb') as content_file:
+        # Ugly hack to introduce pycrypto v2.7a1
+        # Original: .exportKey('OpenSSH')
+        eb = long_to_bytes(key.e)
+        nb = long_to_bytes(key.n)
+        if bord(eb[0]) & 0x80:
+            eb = bchr(0x00) + eb
+        if bord(nb[0]) & 0x80:
+            nb = bchr(0x00) + nb
+        keyparts = [b('ssh-rsa'), eb, nb]
+        keystring = b('').join(
+            [struct.pack(">I", len(kp)) + kp for kp in keyparts])
+        content_file.write(b('ssh-rsa ') + binascii.b2a_base64(keystring)[:-1])
+    print("Public key written to home directory " + pubdir)
+    return sha1(key.exportKey('PEM')).hexdigest()
 
 
 def urlsafe_b64_short_encode(value):
@@ -36,7 +59,7 @@ def int2base(num, base=36, numerals="0123456789abcdefghijklmnopqrstuvwxyz"):
         return "0"
 
     if num < 0:
-        return '-' + baseN((-1) * num, base, numerals)
+        return '-' + int2base((-1) * num, base, numerals)
 
     if not 2 <= base <= len(numerals):
         raise ValueError('Base must be between 2-%d' % len(numerals))

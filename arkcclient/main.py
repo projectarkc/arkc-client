@@ -13,7 +13,7 @@ import os.path
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from common import certloader
+from common import certloader, generate_RSA
 from coordinator import Coordinate
 from server import ServerControl
 from client import ClientControl
@@ -36,7 +36,9 @@ def main():
             "-v", dest="v", action="store_true", help="show detailed logs")
         parser.add_argument(
             "-vv", dest="vv", action="store_true", help="show debug logs")
-        parser.add_argument('-c', '--config', dest="config", required=True,
+        parser.add_argument('-kg', '--keygen', dest="kg", action="store_true",
+                            help="Generate a key string and quit, overriding other options")
+        parser.add_argument('-c', '--config', dest="config", default=None,
                             help="Specify a configuration files, REQUIRED for ArkC Client to start")
         parser.add_argument('-fs', '--frequent-swap', dest="fs", action="store_true",
                             help="Use frequent connection swapping")
@@ -50,6 +52,20 @@ The programs is distributed under GNU General Public License Version 2.
 """)
 
         options = parser.parse_args()
+
+        if options.kg:
+            print("Generating 2048 bit RSA key.")
+            print("Writing to home directory " + os.path.expanduser('~'))
+            pri_sha1 = generate_RSA(os.path.expanduser(
+                '~' + os.sep + 'arkc_pri.asc'), os.path.expanduser('~' + os.sep + 'arkc_pub.asc'))
+            print("SHA1 of the private key is " + pri_sha1)
+            print(
+                "Please save the above settings to client and server side config files.")
+            quit()
+        elif options.config is None:
+            logging.fatal("Config file (-c or --config) must be specified.\n")
+            parser.print_help()
+            quit()
 
         data = {}
 
@@ -99,6 +115,9 @@ The programs is distributed under GNU General Public License Version 2.
 
         if "obfs_level" not in data:
             data["obfs_level"] = 0
+        elif 1 <= int(data["obfs_level"]) <= 2:
+            logging.error(
+                "Support for obfs4proxy is experimental with known bugs. Run this mode at your own risk.")
 
         # Load certificates
         try:
@@ -161,7 +180,7 @@ The programs is distributed under GNU General Public License Version 2.
         else:
             swapfq = 8
 
-    except Exception as e:
+    except IOError as e:
         print ("An error occurred: \n")
         print(e)
 
