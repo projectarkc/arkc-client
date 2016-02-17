@@ -10,6 +10,7 @@ import json
 import sys
 import random
 import os.path
+import requests
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -38,6 +39,8 @@ def main():
             "-vv", dest="vv", action="store_true", help="show debug logs")
         parser.add_argument('-kg', '--keygen', dest="kg", action="store_true",
                             help="Generate a key string and quit, overriding other options")
+        parser.add_argument('--get-meek', dest="dlmeek", action="store_true",
+                            help="Download meek to home directory, overriding normal options")
         parser.add_argument('-c', '--config', dest="config", default=None,
                             help="Specify a configuration files, REQUIRED for ArkC Client to start")
         parser.add_argument('-fs', '--frequent-swap', dest="fs", action="store_true",
@@ -61,6 +64,35 @@ The programs is distributed under GNU General Public License Version 2.
             print("SHA1 of the private key is " + pri_sha1)
             print(
                 "Please save the above settings to client and server side config files.")
+            quit()
+        elif options.dlmeek:
+            if sys.platform == 'linux2':
+                link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-server"
+                localfile = os.path.expanduser('~') + os.sep + "meek-server"
+            elif sys.platform == 'win32':
+                link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-server.exe"
+                localfile = os.path.expanduser(
+                    '~') + os.sep + "meek-server.exe"
+            else:
+                print(
+                    "MEEK for ArkC has no compiled executable for your OS platform. Please compile and install from source.")
+                print(
+                    "Get source at https://github.com/projectarkc/meek/tree/master/meek-server")
+                quit()
+            print(
+                "Downloading meek plugin (meek-server) from github to your home directory.")
+            meekfile = requests.get(link, stream=True)
+            if meekfile.status_code == '200':
+                print("Saving to " + localfile)
+            else:
+                print("Error downloading.")
+                quit()
+            with open(localfile, 'wb') as f:
+                for chunk in meekfile.iter_content(chunk_size=1024):
+                    if chunk:
+                        f.write(chunk)
+            print("Download complete.\nYou may change obfs_level and update pt_exec to " +
+                  localfile + " to use meek.")
             quit()
         elif options.config is None:
             logging.fatal("Config file (-c or --config) must be specified.\n")
