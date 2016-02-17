@@ -9,7 +9,8 @@ import logging
 import json
 import sys
 import random
-import os.path
+import os
+import stat
 import requests
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -91,6 +92,10 @@ The programs is distributed under GNU General Public License Version 2.
                 for chunk in meekfile.iter_content(chunk_size=1024):
                     if chunk:
                         f.write(chunk)
+            if sys.platform == 'linux2':
+                st = os.stat(localfile)
+                os.chmod(localfile, st.st_mode | stat.S_IEXEC)
+                print("File made executable.")
             print("Download complete.\nYou may change obfs_level and update pt_exec to " +
                   localfile + " to use meek.")
             quit()
