@@ -19,7 +19,7 @@ For a more detailed description, please visit our website and read our page `Und
 Setup and Requirement
 ---------------------
 
-For a probably more detailed guide: `Deployment and Installation <https://arkc.org/12-2/deployment-and-installation/>`__. 对于安装与部署的中文说明在`部署与安装ArkC <https://arkc.org/12-2/deployment_install_zh_cn/>`__这一页面。
+For a probably more detailed guide: `Deployment and Installation <https://arkc.org/12-2/deployment-and-installation/>`__. 对于安装与部署的中文说明在 `部署与安装ArkC <https://arkc.org/12-2/deployment_install_zh_cn/>`__这一页面。
 
 For Windows users, you are recommended to use our Windows executable in the Github `release page <https://github.com/projectarkc/arkc-client/releases/latest>`__. Installing pycrypto and miniupnpc often involves configuration of compilers.
 
@@ -60,7 +60,7 @@ Usage
 
 For detailed documentation, please visit our `Documentation page <https://arkc.org/documentation/>`__.
 
-中文版本的使用文档，请参见`如何使用ArkC <https://arkc.org/documentation_zh_cn/>`__。
+中文版本的使用文档，请参见 `如何使用ArkC <https://arkc.org/documentation_zh_cn/>`__。
 
 Run
 
@@ -148,7 +148,7 @@ Questions | 使用或安装时遇到问题
 
 Go to our `FAQ page <https://arkc.org/faq/>`__.
 
-常见问题请参考`FAQ <https://arkc.org/faq_zh_cn/>`__。
+常见问题请参考 `FAQ <https://arkc.org/faq_zh_cn/>`__。
 
 Acknowledgements
 ----------------
