@@ -73,8 +73,8 @@ class Coordinate(object):
         req.setDaemon(True)
 
         if not not_upnp:
-            self.upnp_start()
-
+            if not self.upnp_start():
+                self.tcp_punching()
         # obfs4 = level 1 and 2, meek (GAE) = level 3
         if 1 <= self.obfs_level <= 2:
             self.certs_send = None
@@ -103,13 +103,32 @@ class Coordinate(object):
                 u.selectigd()
                 if self.ipv6 == "" and self.ip != struct.unpack("!I", socket.inet_aton(u.externalipaddress()))[0]:
                     logging.warning(
-                        "Mismatched external address, more than one layers of NAT? UPnP may not work.")
+                        "Mismatched external address, more than one layers of NAT? UPnP may not work.");
+                    return 0
                 self.upnp_mapping(u)
             else:
                 logging.error("No UPnP devices discovered")
         except Exception:
             logging.error("Error arose in UPnP discovery")
-
+    def tcp_punching(self):
+        t="tcppunching"+self.ctl_domain
+        A_query=dnslib.DNSRecord.question(t,"A")
+        TXT_query=dnslib.DNSRecord.question(t,"TXT")
+        self.sock.sendto(A_query.pack(),(
+                    self.dns_servers[self.dns_count][0],
+                    self.dns_servers[self.dns_count][1]
+                ))
+        punching_ip,addr=self.sock.recvfrom(512)
+        punching_ip=str(dnslib.DNSRecord.parse(punching_ip).q.qname)
+        self.sock.sendto(TXT_query.pack(),(
+                    self.dns_servers[self.dns_count][0],
+                    self.dns_servers[self.dns_count][1]
+                ))
+        punching_port,addr=self.sock.recvfrom(512)
+        punching_port=str(dnslib.DNSRecord.parse(punching_port).q.qname)
+        punch_addr=(punching_ip,punching_port)
+        self.sock.bind(("127.0.0.1",50000))
+        self.sock.send
     def upnp_mapping(self, u):
         # Try to map ports via UPnP
         try:
