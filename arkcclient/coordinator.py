@@ -127,8 +127,16 @@ class Coordinate(object):
         punching_port,addr=self.sock.recvfrom(512)
         punching_port=str(dnslib.DNSRecord.parse(punching_port).q.qname)
         punch_addr=(punching_ip,punching_port)
-        self.sock.bind(("127.0.0.1",50000))
-        self.sock.send
+        self.sock_t = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock_t.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+        self.sock_t.bind(("127.0.0.1",50000))
+        self.sock_t.connect(punch_addr)
+        auth_str=""
+        self.sock_t.send(auth_str)
+        ip_str=self.sock_t.recv(512)
+        ip_str=ip_str.split(",")
+        conn_ip=(ip_str[0],int(ip_str[1]))
+
     def upnp_mapping(self, u):
         # Try to map ports via UPnP
         try:
