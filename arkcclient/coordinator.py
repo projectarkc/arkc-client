@@ -72,8 +72,10 @@ class Coordinate(object):
         req = threading.Thread(target=self.reqconn)
         req.setDaemon(True)
 
+        self.upnp_status=1
         if not not_upnp:
             if not self.upnp_start():
+                self.upnp_status=0
                 self.tcp_punching()
         # obfs4 = level 1 and 2, meek (GAE) = level 3
         if 1 <= self.obfs_level <= 2:
@@ -111,7 +113,7 @@ class Coordinate(object):
         except Exception:
             logging.error("Error arose in UPnP discovery")
     def tcp_punching(self):
-        t="tcppunching"+self.ctl_domain
+        t="tcppunching"+"."+self.ctl_domain
         A_query=dnslib.DNSRecord.question(t,"A")
         TXT_query=dnslib.DNSRecord.question(t,"TXT")
         self.sock.sendto(A_query.pack(),(
@@ -119,24 +121,27 @@ class Coordinate(object):
                     self.dns_servers[self.dns_count][1]
                 ))
         punching_ip,addr=self.sock.recvfrom(512)
-        punching_ip=str(dnslib.DNSRecord.parse(punching_ip).q.qname)
+        ans=str(dnslib.DNSRecord.parse(punching_ip).auth[0].rdata).split(".")
+        punching_ip=ans[0]+"."+ans[1]+"."+ans[2]+"."+ans[3]
         self.sock.sendto(TXT_query.pack(),(
                     self.dns_servers[self.dns_count][0],
                     self.dns_servers[self.dns_count][1]
                 ))
         punching_port,addr=self.sock.recvfrom(512)
-        punching_port=str(dnslib.DNSRecord.parse(punching_port).q.qname)
+        punching_port=str(dnslib.DNSRecord.parse(punching_port).auth[0].rdata).split(".")[0]
         punch_addr=(punching_ip,punching_port)
         self.sock_t = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock_t.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         self.sock_t.bind(("127.0.0.1",50000))
         self.sock_t.connect(punch_addr)
-        auth_str=""
+        auth_str=self.auth_string()
         self.sock_t.send(auth_str)
         ip_str=self.sock_t.recv(512)
         ip_str=ip_str.split(",")
         conn_ip=(ip_str[0],int(ip_str[1]))
 
+    def auth_string(self):
+        pass
     def upnp_mapping(self, u):
         # Try to map ports via UPnP
         try:
@@ -228,6 +233,7 @@ class Coordinate(object):
         elif self.obfs_level == 3:
             msg.append(
                 ''.join([random.choice(ascii_letters) for _ in range(5)]))
+        msg.append(self.upnp_status)
         return '.'.join(msg)
 
     def issufficient(self):
