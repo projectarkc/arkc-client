@@ -76,7 +76,6 @@ class Coordinate(object):
         if not not_upnp:
             if not self.upnp_start():
                 self.upnp_status=0
-                self.tcp_punching()
         # obfs4 = level 1 and 2, meek (GAE) = level 3
         if 1 <= self.obfs_level <= 2:
             self.certs_send = None
@@ -128,17 +127,18 @@ class Coordinate(object):
                 ))
         punching_port,addr=self.sock.recvfrom(512)
         punching_port=dnslib.DNSRecord.parse(punching_port).auth[0].rdata.split(" ")[3]
-        punch_addr=(punching_ip,punching_port)
+        punching_addr=(punching_ip,punching_port)
         self.sock_t = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock_t.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
         self.sock_t.bind(("127.0.0.1",50000))
-        self.sock_t.connect(punch_addr)
+        self.sock_t.connect(punching_addr)
         auth_str=self.auth_string()
         self.sock_t.send(auth_str)
         ip_str=self.sock_t.recv(512)
         ip_str=ip_str.split(",")
         conn_ip=(ip_str[0],int(ip_str[1]))
-
+    def tcp_punching_server(self):
+        pass
     def auth_string(self):
         pass
     def upnp_mapping(self, u):
@@ -186,6 +186,10 @@ class Coordinate(object):
                     self.dns_servers[self.dns_count][1]
                 )
             )
+            if not self.upnp_status:
+                self.tcp_punching()
+            else:
+                self.tcp_punching_server()
             self.dns_count += 1
             if self.dns_count == len(self.dns_servers):
                 self.dns_count = 0
