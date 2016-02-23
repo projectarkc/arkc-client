@@ -121,13 +121,14 @@ class Coordinate(object):
                     self.dns_servers[self.dns_count][1]
                 ))
         punching_ip,addr=self.sock.recvfrom(512)
-        punching_ip=str(dnslib.DNSRecord.parse(punching_ip).auth[0].rdata).split(" ")[0]
+        ans=str(dnslib.DNSRecord.parse(punching_ip).auth[0].rdata).split(".")
+        punching_ip=ans[0]+"."+ans[1]+"."+ans[2]+"."+ans[3]
         self.sock.sendto(TXT_query.pack(),(
                     self.dns_servers[self.dns_count][0],
                     self.dns_servers[self.dns_count][1]
                 ))
         punching_port,addr=self.sock.recvfrom(512)
-        punching_port=dnslib.DNSRecord.parse(punching_port).auth[0].rdata.split(" ")[3]
+        punching_port=str(dnslib.DNSRecord.parse(punching_port).auth[0].rdata).split(".")[0]
         punch_addr=(punching_ip,punching_port)
         self.sock_t = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock_t.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
@@ -226,13 +227,13 @@ class Coordinate(object):
         msg.append(binascii.hexlify(self.main_pw).decode("ASCII"))
         msg.append(myip)
         msg.append(salt)
-        msg.append(self.upnp_status)
         if 1 <= self.obfs_level <= 2:
             certs_byte = urlsafe_b64_short_encode(self.certs_send)
             msg.extend([certs_byte[:50], certs_byte[50:]])
         elif self.obfs_level == 3:
             msg.append(
                 ''.join([random.choice(ascii_letters) for _ in range(5)]))
+        msg.append(self.upnp_status)
         return '.'.join(msg)
 
     def issufficient(self):
