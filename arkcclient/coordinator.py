@@ -72,10 +72,18 @@ class Coordinate(object):
         req = threading.Thread(target=self.reqconn)
         req.setDaemon(True)
 
-        self.upnp_status=1
+        # traversal_status:
+        # 1 = traversal is done
+        # 2 = traversal not needed
+        # 0 = static traversal not established
         if not not_upnp:
             if not self.upnp_start():
-                self.upnp_status=0
+                self.traversal_status = 0
+            else:
+                self.traversal_status = 1
+        else:
+            self.traversal_status = 2
+
         # obfs4 = level 1 and 2, meek (GAE) = level 3
         if 1 <= self.obfs_level <= 2:
             self.certs_send = None
@@ -95,6 +103,7 @@ class Coordinate(object):
         req.start()
 
     def upnp_start(self):
+        # return True = success, False = fail
         try:
             u = miniupnpc.UPnP()
             u.discoverdelay = 200
@@ -104,43 +113,42 @@ class Coordinate(object):
                 u.selectigd()
                 if self.ipv6 == "" and self.ip != struct.unpack("!I", socket.inet_aton(u.externalipaddress()))[0]:
                     logging.warning(
-                        "Mismatched external address, more than one layers of NAT? UPnP may not work.");
-                    return 0
-                self.upnp_mapping(u)
+                        "Mismatched external address, more than one layers of NAT? UPnP may not work.")
+                    return False
+                return self.upnp_mapping(u)
             else:
                 logging.error("No UPnP devices discovered")
         except Exception:
             logging.error("Error arose in UPnP discovery")
-    def tcp_punching(self):
-        t="tcppunching"+"."+self.ctl_domain
-        A_query=dnslib.DNSRecord.question(t,"A")
-        TXT_query=dnslib.DNSRecord.question(t,"TXT")
-        self.sock.sendto(A_query.pack(),(
-                    self.dns_servers[self.dns_count][0],
-                    self.dns_servers[self.dns_count][1]
-                ))
-        punching_ip,addr=self.sock.recvfrom(512)
-        punching_ip=str(dnslib.DNSRecord.parse(punching_ip).auth[0].rdata).split(" ")[0]
-        self.sock.sendto(TXT_query.pack(),(
-                    self.dns_servers[self.dns_count][0],
-                    self.dns_servers[self.dns_count][1]
-                ))
-        punching_port,addr=self.sock.recvfrom(512)
-        punching_port=dnslib.DNSRecord.parse(punching_port).auth[0].rdata.split(" ")[3]
-        punching_addr=(punching_ip,punching_port)
+
+    def tcp_punching(self, domain, addr, tcp=False):
+        # TODO: implement tcp option
+        A_query = dnslib.DNSRecord(
+            q=dnslib.DNSQuestion(domain, dnslib.QTYPE.A))
+        TXT_query = dnslib.DNSRecord(
+            q=dnslib.DNSQuestion(domain, dnslib.QTYPE.TXT))
+        A_rec = dnslib.DNSRecord.parse(A_query.send(addr[0], addr[1]))
+        punching_ip = A_rec.short()
+        TXT_rec = dnslib.DNSRecord.parse(TXT_query.send(addr[0], addr[1]))
+        punching_port = int(TXT_rec.short())
+        punching_addr = (punching_ip, punching_port)
+        # Should the rest be done in another thread? Avoid blocking.
         self.sock_t = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock_t.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-        self.sock_t.bind(("127.0.0.1",50000))
+        self.sock_t.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.sock_t.bind(("127.0.0.1", 50000))
         self.sock_t.connect(punching_addr)
-        auth_str=self.auth_string()
+        auth_str = self.auth_string()
         self.sock_t.send(auth_str)
-        ip_str=self.sock_t.recv(512)
-        ip_str=ip_str.split(",")
-        conn_ip=(ip_str[0],int(ip_str[1]))
+        ip_str = self.sock_t.recv(512)
+        ip_str = ip_str.split(",")
+        conn_ip = (ip_str[0], int(ip_str[1]))
+
     def tcp_punching_server(self):
         pass
+
     def auth_string(self):
         pass
+
     def upnp_mapping(self, u):
         # Try to map ports via UPnP
         try:
@@ -151,8 +159,10 @@ class Coordinate(object):
                 if b:
                     logging.info("Port mapping succeed")
                     atexit.register(self.exit_handler, upnp_obj=u)
+                    return True
             elif r[0] == u.lanaddr and r[1] == self.remote_port:
                 logging.info("Port mapping already existed.")
+                return True
             else:
                 logging.warning(
                     "Remote port " + str(self.remote_port) + " occupied in UPnP mapping")
@@ -161,9 +171,10 @@ class Coordinate(object):
                 logging.warning(
                     "Original remote port used. Retrying with port switched to " + str(self.remote_port))
                 self.upnp_mapping(u)
-
         except Exception:
             logging.error("Error arose when initializing UPnP")
+        finally:
+            return False
 
     def exit_handler(self, upnp_obj):
         # Clean up UPnP
@@ -178,17 +189,25 @@ class Coordinate(object):
             # Start the request when the client needs connections
             self.check.wait()
             requestdata = self.generatereq()
-            d = dnslib.DNSRecord.question(requestdata + "." + self.ctl_domain)
-            self.sock.sendto(
-                d.pack(),
-                (
+
+            if self.traversal_status == 0:
+                self.tcp_punching(requestdata + "." + self.ctl_domain, (
                     self.dns_servers[self.dns_count][0],
                     self.dns_servers[self.dns_count][1]
-                )
-            )
-            if not self.upnp_status:
-                self.tcp_punching()
+                ))
             else:
+                d = dnslib.DNSRecord.question(
+                    requestdata + "." + self.ctl_domain)
+                # TODO: rewrite with dnslib, DNSRecord.send() and add TCP
+                # support
+                self.sock.sendto(
+                    d.pack(),
+                    (
+                        self.dns_servers[self.dns_count][0],
+                        self.dns_servers[self.dns_count][1]
+                    )
+                )
+            if self.traversal_status > 0:
                 self.tcp_punching_server()
             self.dns_count += 1
             if self.dns_count == len(self.dns_servers):
@@ -230,7 +249,7 @@ class Coordinate(object):
         msg.append(binascii.hexlify(self.main_pw).decode("ASCII"))
         msg.append(myip)
         msg.append(salt)
-        msg.append(self.upnp_status)
+        msg.append(self.traversal_status)
         if 1 <= self.obfs_level <= 2:
             certs_byte = urlsafe_b64_short_encode(self.certs_send)
             msg.extend([certs_byte[:50], certs_byte[50:]])
