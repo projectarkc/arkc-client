@@ -29,7 +29,8 @@ class Coordinate(object):
 
     def __init__(self, ctl_domain, clientpri, clientpri_sha1, serverpub,
                  clientpub_sha1, req_num, remote_host, remote_port, dns_servers,
-                 debug_ip, swapcount, ptexec, obfs_level, ipv6, not_upnp):
+                 debug_ip, swapcount, ptexec, obfs_level, ipv6, not_upnp, tcp):
+        self.tcp = tcp
         self.req_num = req_num
         self.remote_host = remote_host
         self.dns_servers = dns_servers
@@ -193,20 +194,20 @@ class Coordinate(object):
             if self.traversal_status == 0:
                 self.tcp_punching(requestdata + "." + self.ctl_domain, (
                     self.dns_servers[self.dns_count][0],
-                    self.dns_servers[self.dns_count][1]
+                    self.dns_servers[self.dns_count][1],
+                    self.tcp, 1
                 ))
             else:
-                d = dnslib.DNSRecord.question(
-                    requestdata + "." + self.ctl_domain)
+                d = dnslib.DNSRecord(dnslib.DNSQuestion(
+                    q=requestdata + "." + self.ctl_domain))
                 # TODO: rewrite with dnslib, DNSRecord.send() and add TCP
                 # support
-                self.sock.sendto(
-                    d.pack(),
-                    (
-                        self.dns_servers[self.dns_count][0],
-                        self.dns_servers[self.dns_count][1]
-                    )
-                )
+                try:
+                    d.send(self.dns_servers[self.dns_count][0],
+                           self.dns_servers[self.dns_count][1],
+                           self.tcp, 0.001)
+                except:
+                    pass
             if self.traversal_status > 0:
                 self.tcp_punching_server()
             self.dns_count += 1

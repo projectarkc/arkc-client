@@ -38,6 +38,8 @@ def main():
             "-v", dest="v", action="store_true", help="show detailed logs")
         parser.add_argument(
             "-vv", dest="vv", action="store_true", help="show debug logs")
+        parser.add_argument(
+            "-tcp", dest="tcp", action="store_true", help="use TCP DNS query")
         parser.add_argument('-kg', '--keygen', dest="kg", action="store_true",
                             help="Generate a key string and quit, overriding other options")
         parser.add_argument('--get-meek', dest="dlmeek", action="store_true",
@@ -238,7 +240,8 @@ The programs is distributed under GNU General Public License Version 2.
             data["pt_exec"],
             data["obfs_level"],
             options.ipv6,
-            options.pn
+            options.pn,
+            options.tcp
         )
         sctl = ServerControl(
             data["remote_host"],
