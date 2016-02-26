@@ -62,7 +62,7 @@ The programs is distributed under GNU General Public License Version 2.
         options = parser.parse_args()
         if options.version:
             print("ArkC Client Version " + VERSION)
-            quit()
+            sys.exit()
         elif options.kg:
             print("Generating 2048 bit RSA key.")
             print("Writing to home directory " + os.path.expanduser('~'))
@@ -71,7 +71,7 @@ The programs is distributed under GNU General Public License Version 2.
             print("SHA1 of the private key is " + pri_sha1)
             print(
                 "Please save the above settings to client and server side config files.")
-            quit()
+            sys.exit()
         elif options.dlmeek:
             if sys.platform == 'linux2':
                 link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-server"
@@ -85,7 +85,7 @@ The programs is distributed under GNU General Public License Version 2.
                     "MEEK for ArkC has no compiled executable for your OS platform. Please compile and install from source.")
                 print(
                     "Get source at https://github.com/projectarkc/meek/tree/master/meek-server")
-                quit()
+                sys.exit()
             print(
                 "Downloading meek plugin (meek-server) from github to your home directory.")
             meekfile = requests.get(link, stream=True)
@@ -93,7 +93,7 @@ The programs is distributed under GNU General Public License Version 2.
                 print("Saving to " + localfile)
             else:
                 print("Error downloading.")
-                quit()
+                sys.exit()
             with open(localfile, 'wb') as f:
                 for chunk in meekfile.iter_content(chunk_size=1024):
                     if chunk:
@@ -104,11 +104,11 @@ The programs is distributed under GNU General Public License Version 2.
                 print("File made executable.")
             print("Download complete.\nYou may change obfs_level and update pt_exec to " +
                   localfile + " to use meek.")
-            quit()
+            sys.exit()
         elif options.config is None:
             logging.fatal("Config file (-c or --config) must be specified.\n")
             parser.print_help()
-            quit()
+            sys.exit()
 
         data = {}
 
@@ -120,11 +120,11 @@ The programs is distributed under GNU General Public License Version 2.
         except Exception as err:
             logging.fatal(
                 "Fatal error while loading configuration file.\n" + err)
-            quit()
+            sys.exit()
 
         if "control_domain" not in data:
             logging.fatal("missing control domain")
-            quit()
+            sys.exit()
 
         # Apply default values
         if "local_host" not in data:
@@ -169,11 +169,11 @@ The programs is distributed under GNU General Public License Version 2.
         except KeyError as e:
             logging.fatal(
                 e.tostring() + "is not found in the config file. Quitting.")
-            quit()
+            sys.exit()
         except Exception as err:
             print ("Fatal error while loading remote host certificate.")
             print (err)
-            quit()
+            sys.exit()
 
         try:
             clientpri_data = open(data["local_cert"], "r").read()
@@ -188,11 +188,11 @@ The programs is distributed under GNU General Public License Version 2.
         except KeyError as e:
             logging.fatal(
                 e.tostring() + "is not found in the config file. Quitting.")
-            quit()
+            sys.exit()
         except Exception as err:
             print ("Fatal error while loading local certificate.")
             print (err)
-            quit()
+            sys.exit()
 
         try:
             clientpub_data = open(data["local_cert_pub"], "r").read()
@@ -201,11 +201,11 @@ The programs is distributed under GNU General Public License Version 2.
         except KeyError as e:
             logging.fatal(
                 e.tostring() + "is not found in the config file. Quitting.")
-            quit()
+            sys.exit()
         except Exception as err:
             print ("Fatal error while calculating SHA1 digest.")
             print (err)
-            quit()
+            sys.exit()
 
         # TODO: make it more elegant
         if options.vv:
@@ -261,7 +261,7 @@ The programs is distributed under GNU General Public License Version 2.
     except KeyError as e:
         print(e)
         logging.fatal("Bad config file. Quitting.")
-        quit()
+        sys.exit()
 
     except Exception as e:
         print ("An error occurred: \n")
