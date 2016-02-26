@@ -29,6 +29,8 @@ DEFAULT_REQUIRED = 3
 DEFAULT_DNS_SERVERS = [["8.8.8.8", 53]]
 DEFAULT_OBFS4_EXECADDR = "obfs4proxy"
 
+VERSION = "0.2.1"
+
 
 def main():
     parser = argparse.ArgumentParser(description=None)
@@ -38,6 +40,8 @@ def main():
             "-v", dest="v", action="store_true", help="show detailed logs")
         parser.add_argument(
             "-vv", dest="vv", action="store_true", help="show debug logs")
+        parser.add_argument(
+            "--version", dest="version", action="store_true", help="show version number")
         parser.add_argument('-kg', '--keygen', dest="kg", action="store_true",
                             help="Generate a key string and quit, overriding other options")
         parser.add_argument('--get-meek', dest="dlmeek", action="store_true",
@@ -51,13 +55,15 @@ def main():
 
         parser.add_argument("-v6", dest="ipv6", default="",
                             help="Enable this option to use IPv6 address (only use it if you have one)")
-        print("""ArkC Client V0.1.2,  by ArkC Technology.
+        print("""ArkC Client V0.2,  by ArkC Technology.
 The programs is distributed under GNU General Public License Version 2.
 """)
 
         options = parser.parse_args()
-
-        if options.kg:
+        if options.version:
+            print("ArkC Client Version " + VERSION)
+            quit()
+        elif options.kg:
             print("Generating 2048 bit RSA key.")
             print("Writing to home directory " + os.path.expanduser('~'))
             pri_sha1 = generate_RSA(os.path.expanduser(
