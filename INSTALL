@@ -1,1 +1,51 @@
-Please see guide at https://arkc.org/12-2/deployment-and-installation/.
+Requirements:
+
+To get ArkC Client work, you must satisfy ONE OF the following conditions (unless you are the expert):
+
+Connect to public Internet directly.
+Connect to the Internet via a UPnP-enabled router, in a single-layer LAN.
+Router(s) on your route to the public Internet are properly configured with NAT to allow your server to connect to your client¡¯s ¡°remote_port¡± directly.
+Python development environment:
+
+For linux users, a python3 pip development environment is required.(Note:We don¡¯t recommend using python 2)
+
+DEBIAN/UBUNTU USERS:
+
+sudo apt-get install python python-pip python-dev
+
+FEDORA USERS:
+
+sudo yum python python-pip python-devel
+
+For windows users, see Installation.
+
+Site-packages:
+
+Pip will install them automatically.
+
+pycrypto
+dnslib
+requests
+miniupnpc
+Installation
+
+Windows
+
+For Windows users, you are recommended to use our Windows executable in the Github release page.
+Installing pycrypto and miniupnpc often involves configuration of compilers.
+
+Linux
+
+With python development environment:
+
+sudo pip3 install arkcclient
+
+You may also install via source.
+
+Generate keys for client side with
+
+arkcclient -kg
+
+If you need to use portable proxy function, like MEEK (required to integrate with GAE), use
+
+arkcclient --get-meek
