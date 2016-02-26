@@ -52,6 +52,7 @@ class Coordinate(object):
         self.clientpri_sha1 = clientpri_sha1
         self.clientpub_sha1 = clientpub_sha1
         self.clientreceivers_dict = dict()
+        self.punching_server_port=50009
         self.main_pw = (''.join(rng.choice(ascii_letters) for _ in range(16)))\
             .encode('ASCII')
         # each dict maps client connection id to the max index received
@@ -129,9 +130,9 @@ class Coordinate(object):
         TXT_query = dnslib.DNSRecord(
             q=dnslib.DNSQuestion(domain, dnslib.QTYPE.TXT))
         A_rec = dnslib.DNSRecord.parse(A_query.send(addr[0], addr[1]))
-        punching_ip = A_rec.short()
+        punching_ip = A_rec.short().split(' ')[0]
         TXT_rec = dnslib.DNSRecord.parse(TXT_query.send(addr[0], addr[1]))
-        punching_port = int(TXT_rec.short())
+        punching_port = int((TXT_rec.short()).split(' ')[3])
         punching_addr = (punching_ip, punching_port)
         # Should the rest be done in another thread? Avoid blocking.
         self.sock_t = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -145,11 +146,28 @@ class Coordinate(object):
         conn_ip = (ip_str[0], int(ip_str[1]))
 
     def tcp_punching_server(self):
-        pass
-
+        self.sock_t=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.bind(("127.0.0.1",self.punching_server_port))
+        self.sock_t.listen(1)
+        while 1:
+            conn,addr=self.sock_t.accept()
+            auth_string=conn.recv(512)
+            self.authenticate(auth_string)
     def auth_string(self):
         pass
 
+    def authenticate(self,auth_string):
+        pass
+    def server_alive(self):
+        while 1:
+            req=dnslib.DNSRecord.question(
+                "testing.arkc.org"
+            )
+            self.sock.sendto(req.pack(),(
+                    self.dns_servers[self.dns_count][0],
+                    self.dns_servers[self.dns_count][1]
+                ))
+            sleep(10)
     def upnp_mapping(self, u):
         # Try to map ports via UPnP
         try:
@@ -209,7 +227,10 @@ class Coordinate(object):
                 except:
                     pass
             if self.traversal_status > 0:
-                self.tcp_punching_server()
+                punching_server=threading.Thread(target=self.tcp_punching_server)
+                punching_server_alive=threading.Thread(target=self.server_alive)
+                punching_server.start()
+                punching_server_alive.start()
             self.dns_count += 1
             if self.dns_count == len(self.dns_servers):
                 self.dns_count = 0
