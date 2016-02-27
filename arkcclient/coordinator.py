@@ -134,38 +134,24 @@ class Coordinate(object):
         TXT_rec = dnslib.DNSRecord.parse(TXT_query.send(addr[0], addr[1]))
         punching_port = int((TXT_rec.short()).split(' ')[3])
         punching_addr = (punching_ip, punching_port)
-        # Should the rest be done in another thread? Avoid blocking.
-        self.sock_t = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock_t.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock_t.bind(("127.0.0.1", 50000))
-        self.sock_t.connect(punching_addr)
-        auth_str = self.auth_string()
-        self.sock_t.send(auth_str)
-        ip_str = self.sock_t.recv(512)
-        ip_str = ip_str.split(",")
-        conn_ip = (ip_str[0], int(ip_str[1]))
+        self.punching_server_addr=punching_addr
 
     def tcp_punching_server(self):
         self.sock_t=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.bind(("127.0.0.1",self.punching_server_port))
+        self.sock_t.bind(("127.0.0.1",self.punching_server_port))
         self.sock_t.listen(1)
         while 1:
             conn,addr=self.sock_t.accept()
             auth_string=conn.recv(512)
             self.authenticate(auth_string)
-    def auth_string(self):
-        pass
 
     def authenticate(self,auth_string):
         pass
     def server_alive(self):
         while 1:
-            req=dnslib.DNSRecord.question(
-                "testing.arkc.org"
-            )
-            self.sock.sendto(req.pack(),(
+            self.sock.sendto("testing.arkc.org",(
                     self.dns_servers[self.dns_count][0],
-                    self.dns_servers[self.dns_count][1]
+                    20446
                 ))
             sleep(10)
     def upnp_mapping(self, u):

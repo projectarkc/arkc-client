@@ -245,7 +245,7 @@ The programs is distributed under GNU General Public License Version 2.
         )
         sctl = ServerControl(
             data["remote_host"],
-            ctl.remote_port,
+            data["remote_port"],
             ctl,
             pt=bool(data["obfs_level"])
         )

@@ -33,6 +33,10 @@ class ServerControl(asyncore.dispatcher):
             serverip = "127.0.0.1"
             serverport = REAL_SERVERPORT
         self.bind((serverip, serverport))
+        if self.ctl.traversal_status>0:
+            self.connect(self.ctl.punching_server_addr)
+            auth_str=self.auth_str()
+            self.send(auth_str)
         self.listen(backlog)
 
     def handle_accept(self):
@@ -43,7 +47,8 @@ class ServerControl(asyncore.dispatcher):
     def getrecv(self):
         return self.ctl.offerconn()
 
-
+    def suth_str(self):
+        pass
 class ServerReceiver(asyncore.dispatcher):
 
     '''represent each connection with arkc-server'''
