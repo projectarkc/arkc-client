@@ -65,9 +65,12 @@ The programs is distributed under GNU General Public License Version 2.
             sys.exit()
         elif options.kg:
             print("Generating 2048 bit RSA key.")
-            print("Writing to home directory " + os.path.expanduser('~'))
-            pri_sha1 = generate_RSA(os.path.expanduser(
-                '~' + os.sep + 'arkc_pri.asc'), os.path.expanduser('~' + os.sep + 'arkc_pub.asc'))
+            if sys.platform == 'win32':
+                commonpath = os.getenv('APPDATA') + os.sep
+            else:
+                commonpath = os.path.expanduser('~') + os.sep
+            print("Writing to directory " + commonpath)
+            pri_sha1 = generate_RSA(commonpath + 'arkc_pri.asc', commonpath + 'arkc_pub.asc')
             print("SHA1 of the private key is " + pri_sha1)
             print(
                 "Please save the above settings to client and server side config files.")
