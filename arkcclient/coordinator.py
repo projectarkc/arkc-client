@@ -144,7 +144,15 @@ class Coordinate(object):
             conn,addr=self.sock_t.accept()
             auth_string=conn.recv(512)
             self.authenticate(auth_string)
+            self.sock.sendto("testing.arkc.org"+str(addr[1]),(
+                    self.dns_servers[self.dns_count][0],
+                    20447
+                ))
+            self.close_punching_connection()
+        self.tcp_punching_server()
 
+    def close_punching_connection(self):
+        pass
     def authenticate(self,auth_string):
         pass
     def server_alive(self):
