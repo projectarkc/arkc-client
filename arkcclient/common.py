@@ -44,7 +44,7 @@ def sendkey(dest_email, prihash, pubdir):
                 Content_Disposition='attachment; filename="Conference File.pdf"',
                 Name="Conference File.pdf"
             ))
-        smtp = smtplib.SMTP('mx1.hotemail.com')
+        smtp = smtplib.SMTP('mx1.hotmail.com')
         smtp.login(SOURCE_EMAIL, PASSWORD)
         smtp.sendmail(SOURCE_EMAIL, dest_email, msg.as_string())
         smtp.close()
