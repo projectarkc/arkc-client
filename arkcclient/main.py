@@ -60,6 +60,17 @@ The programs is distributed under GNU General Public License Version 2.
 """)
 
         options = parser.parse_args()
+
+        if options.vv:
+            logging.basicConfig(
+                stream=sys.stdout, level=logging.DEBUG, format="%(levelname)s: %(asctime)s; %(message)s")
+        elif options.v:
+            logging.basicConfig(
+                stream=sys.stdout, level=logging.INFO, format="%(levelname)s: %(asctime)s; %(message)s")
+        else:
+            logging.basicConfig(
+                stream=sys.stdout, level=logging.WARNING, format="%(levelname)s: %(asctime)s; %(message)s")
+
         if options.version:
             print("ArkC Client Version " + VERSION)
             sys.exit()
@@ -214,15 +225,6 @@ The programs is distributed under GNU General Public License Version 2.
             sys.exit()
 
         # TODO: make it more elegant
-        if options.vv:
-            logging.basicConfig(
-                stream=sys.stdout, level=logging.DEBUG, format="%(levelname)s: %(asctime)s; %(message)s")
-        elif options.v:
-            logging.basicConfig(
-                stream=sys.stdout, level=logging.INFO, format="%(levelname)s: %(asctime)s; %(message)s")
-        else:
-            logging.basicConfig(
-                stream=sys.stdout, level=logging.WARNING, format="%(levelname)s: %(asctime)s; %(message)s")
 
         if options.fs:
             swapfq = 3
