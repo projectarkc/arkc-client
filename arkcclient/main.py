@@ -234,6 +234,7 @@ The programs is distributed under GNU General Public License Version 2.
         print(e)
 
     # Start the main event loop
+
     try:
         ctl = Coordinate(
             data["control_domain"],
@@ -263,7 +264,6 @@ The programs is distributed under GNU General Public License Version 2.
             data["local_host"],
             data["local_port"]
         )
-
     except KeyError as e:
         print(e)
         logging.fatal("Bad config file. Quitting.")
