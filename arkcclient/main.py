@@ -15,7 +15,7 @@ import requests
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from common import certloader, generate_RSA
+from common import certloader, generate_RSA, sendkey
 from coordinator import Coordinate
 from server import ServerControl
 from client import ClientControl
@@ -40,10 +40,15 @@ def main():
             "-v", dest="v", action="store_true", help="show detailed logs")
         parser.add_argument(
             "-vv", dest="vv", action="store_true", help="show debug logs")
+        # TODO: use native function
         parser.add_argument(
             "--version", dest="version", action="store_true", help="show version number")
-        parser.add_argument('-kg', '--keygen', dest="kg_save_path",
-                            help="Generate a key string and quit, overriding other options")
+        parser.add_argument('-kg', '--keygen', dest="kg", action='store_true',
+                            help="Generate a key string and quit, overriding other options.")
+        parser.add_argument('--kg-path', '--keygen-path', dest="kg_save_path",
+                            help="Where to store a key string, if not set, use default.")
+        parser.add_argument('-reg', '--keygen-email-register', dest="email_dest",
+                            help="Email destination to register the key.")
         parser.add_argument('--get-meek', dest="dlmeek", action="store_true",
                             help="Download meek to home directory, overriding normal options")
         parser.add_argument('-c', '--config', dest="config", default=None,
@@ -74,9 +79,9 @@ The programs is distributed under GNU General Public License Version 2.
         if options.version:
             print("ArkC Client Version " + VERSION)
             sys.exit()
-        elif options.kg_save_path is not None:
+        elif options.kg:
             print("Generating 2048 bit RSA key.")
-            if options.kg_save_path != "":
+            if options.kg_save_path is not None:
                 commonpath = options.kg_save_path
             elif sys.platform == 'win32':
                 commonpath = os.getenv('APPDATA') + os.sep + "ArkC" + os.sep
@@ -86,8 +91,18 @@ The programs is distributed under GNU General Public License Version 2.
             pri_sha1 = generate_RSA(
                 commonpath + 'arkc_pri.asc', commonpath + 'arkc_pub.asc')
             print("SHA1 of the private key is " + pri_sha1)
-            print(
-                "Please save the above settings to client and server side config files.")
+            if options.email_dest is None:
+                print(
+                    "Please save the above settings to client and server side config files.")
+            else:
+                if sendkey(options.email_dest, pri_sha1, commonpath + 'arkc_pub.asc'):
+                    print("Keys sent via email to " + options.email_dest)
+                    print(
+                        "Please save the above settings to client config file.")
+                else:
+                    print("Keys sent failed to " + options.email_dest)
+                    print(
+                        "Please save the above settings to client and, manually, to server side config files.")
             sys.exit()
         elif options.dlmeek:
             if sys.platform == 'linux2':

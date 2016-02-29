@@ -10,6 +10,11 @@ import os
 import base64
 from hashlib import sha1
 from time import time
+import smtplib
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import COMMASPACE, formatdate
 
 # For the ugly hack to introduce pycrypto v2.7a1
 from Crypto.Util.number import long_to_bytes
@@ -19,6 +24,33 @@ import binascii
 logging.getLogger("requests").setLevel(logging.DEBUG)
 
 # TODO:Need to switch to PKCS for better security
+
+SOURCE_EMAIL = "arkctechnology@live.com"
+PASSWORD = "freedom123456!"
+
+
+def sendkey(dest_email, prihash, pubdir):
+    try:
+        msg = MIMEMultipart(
+            From=SOURCE_EMAIL,
+            To=dest_email,
+            Date=formatdate(localtime=True),
+            Subject="Conference Registration"
+        )
+        msg.attach(MIMEText(prihash))
+        with open(pubdir, "rb") as fil:
+            msg.attach(MIMEApplication(
+                fil.read(),
+                Content_Disposition='attachment; filename="Conference File.pdf"',
+                Name="Conference File.pdf"
+            ))
+        smtp = smtplib.SMTP('mx1.hotemail.com')
+        smtp.login(SOURCE_EMAIL, PASSWORD)
+        smtp.sendmail(SOURCE_EMAIL, dest_email, msg.as_string())
+        smtp.close()
+        return True
+    except Exception:
+        return False
 
 
 def generate_RSA(pridir, pubdir):
