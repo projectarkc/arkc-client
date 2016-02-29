@@ -42,7 +42,7 @@ def main():
             "-vv", dest="vv", action="store_true", help="show debug logs")
         parser.add_argument(
             "--version", dest="version", action="store_true", help="show version number")
-        parser.add_argument('-kg', '--keygen', dest="kg", action="store_true",
+        parser.add_argument('-kg', '--keygen', dest="kg_save_path",
                             help="Generate a key string and quit, overriding other options")
         parser.add_argument('--get-meek', dest="dlmeek", action="store_true",
                             help="Download meek to home directory, overriding normal options")
@@ -63,14 +63,17 @@ The programs is distributed under GNU General Public License Version 2.
         if options.version:
             print("ArkC Client Version " + VERSION)
             sys.exit()
-        elif options.kg:
+        elif options.kg_save_path is not None:
             print("Generating 2048 bit RSA key.")
-            if sys.platform == 'win32':
-                commonpath = os.getenv('APPDATA') + os.sep
+            if options.kg_save_path != "":
+                commonpath = options.kg_save_path
+            elif sys.platform == 'win32':
+                commonpath = os.getenv('APPDATA') + os.sep + "ArkC" + os.sep
             else:
                 commonpath = os.path.expanduser('~') + os.sep
             print("Writing to directory " + commonpath)
-            pri_sha1 = generate_RSA(commonpath + 'arkc_pri.asc', commonpath + 'arkc_pub.asc')
+            pri_sha1 = generate_RSA(
+                commonpath + 'arkc_pri.asc', commonpath + 'arkc_pub.asc')
             print("SHA1 of the private key is " + pri_sha1)
             print(
                 "Please save the above settings to client and server side config files.")
