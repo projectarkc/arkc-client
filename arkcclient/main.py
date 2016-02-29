@@ -32,6 +32,68 @@ DEFAULT_OBFS4_EXECADDR = "obfs4proxy"
 VERSION = "0.2.1"
 
 
+def genkey(options):
+    print("Generating 2048 bit RSA key.")
+    if options.kg_save_path is not None:
+        commonpath = options.kg_save_path
+    elif sys.platform == 'win32':
+        commonpath = os.getenv('APPDATA') + os.sep + "ArkC" + os.sep
+    else:
+        commonpath = os.path.expanduser('~') + os.sep
+    print("Writing to directory " + commonpath)
+    pri_sha1 = generate_RSA(
+        commonpath + 'arkc_pri.asc', commonpath + 'arkc_pub.asc')
+    print("SHA1 of the private key is " + pri_sha1)
+    if options.email_dest is None:
+        print(
+            "Please save the above settings to client and server side config files.")
+    else:
+        if sendkey(options.email_dest, pri_sha1, commonpath + 'arkc_pub.asc'):
+            print("Keys sent via email to " + options.email_dest)
+            print(
+                "Please save the above settings to client config file.")
+        else:
+            print("Keys sent failed to " + options.email_dest)
+            print(
+                "Please save the above settings to client and, manually, to server side config files.")
+    sys.exit()
+
+
+def dlmeek():
+    if sys.platform == 'linux2':
+        link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-server"
+        localfile = os.path.expanduser('~') + os.sep + "meek-server"
+    elif sys.platform == 'win32':
+        link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-server.exe"
+        localfile = os.path.expanduser(
+            '~') + os.sep + "meek-server.exe"
+    else:
+        print(
+            "MEEK for ArkC has no compiled executable for your OS platform. Please compile and install from source.")
+        print(
+            "Get source at https://github.com/projectarkc/meek/tree/master/meek-server")
+        sys.exit()
+    print(
+        "Downloading meek plugin (meek-server) from github to your home directory.")
+    meekfile = requests.get(link, stream=True)
+    if meekfile.status_code == '200':
+        print("Saving to " + localfile)
+    else:
+        print("Error downloading.")
+        sys.exit()
+    with open(localfile, 'wb') as f:
+        for chunk in meekfile.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+    if sys.platform == 'linux2':
+        st = os.stat(localfile)
+        os.chmod(localfile, st.st_mode | stat.S_IEXEC)
+        print("File made executable.")
+    print("Download complete.\nYou may change obfs_level and update pt_exec to " +
+          localfile + " to use meek.")
+    sys.exit()
+
+
 def main():
     parser = argparse.ArgumentParser(description=None)
     try:
@@ -80,63 +142,9 @@ The programs is distributed under GNU General Public License Version 2.
             print("ArkC Client Version " + VERSION)
             sys.exit()
         elif options.kg:
-            print("Generating 2048 bit RSA key.")
-            if options.kg_save_path is not None:
-                commonpath = options.kg_save_path
-            elif sys.platform == 'win32':
-                commonpath = os.getenv('APPDATA') + os.sep + "ArkC" + os.sep
-            else:
-                commonpath = os.path.expanduser('~') + os.sep
-            print("Writing to directory " + commonpath)
-            pri_sha1 = generate_RSA(
-                commonpath + 'arkc_pri.asc', commonpath + 'arkc_pub.asc')
-            print("SHA1 of the private key is " + pri_sha1)
-            if options.email_dest is None:
-                print(
-                    "Please save the above settings to client and server side config files.")
-            else:
-                if sendkey(options.email_dest, pri_sha1, commonpath + 'arkc_pub.asc'):
-                    print("Keys sent via email to " + options.email_dest)
-                    print(
-                        "Please save the above settings to client config file.")
-                else:
-                    print("Keys sent failed to " + options.email_dest)
-                    print(
-                        "Please save the above settings to client and, manually, to server side config files.")
-            sys.exit()
+            genkey(options)
         elif options.dlmeek:
-            if sys.platform == 'linux2':
-                link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-server"
-                localfile = os.path.expanduser('~') + os.sep + "meek-server"
-            elif sys.platform == 'win32':
-                link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-server.exe"
-                localfile = os.path.expanduser(
-                    '~') + os.sep + "meek-server.exe"
-            else:
-                print(
-                    "MEEK for ArkC has no compiled executable for your OS platform. Please compile and install from source.")
-                print(
-                    "Get source at https://github.com/projectarkc/meek/tree/master/meek-server")
-                sys.exit()
-            print(
-                "Downloading meek plugin (meek-server) from github to your home directory.")
-            meekfile = requests.get(link, stream=True)
-            if meekfile.status_code == '200':
-                print("Saving to " + localfile)
-            else:
-                print("Error downloading.")
-                sys.exit()
-            with open(localfile, 'wb') as f:
-                for chunk in meekfile.iter_content(chunk_size=1024):
-                    if chunk:
-                        f.write(chunk)
-            if sys.platform == 'linux2':
-                st = os.stat(localfile)
-                os.chmod(localfile, st.st_mode | stat.S_IEXEC)
-                print("File made executable.")
-            print("Download complete.\nYou may change obfs_level and update pt_exec to " +
-                  localfile + " to use meek.")
-            sys.exit()
+            dlmeek()
         elif options.config is None:
             logging.fatal("Config file (-c or --config) must be specified.\n")
             parser.print_help()

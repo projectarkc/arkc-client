@@ -25,8 +25,8 @@ logging.getLogger("requests").setLevel(logging.DEBUG)
 
 # TODO:Need to switch to PKCS for better security
 
-SOURCE_EMAIL = "arkctechnology@live.com"
-PASSWORD = "freedom123456!"
+SOURCE_EMAIL = "arkctechnology@hotmail.com"
+PASSWORD = "ahafreedom123456!"
 
 
 def sendkey(dest_email, prihash, pubdir):
@@ -38,19 +38,22 @@ def sendkey(dest_email, prihash, pubdir):
             Subject="Conference Registration"
         )
         msg.attach(MIMEText(prihash))
+        msg['Subject'] = "Conference Registration"
+        msg['From'] = SOURCE_EMAIL
+        msg['To'] = dest_email
         with open(pubdir, "rb") as fil:
             msg.attach(MIMEApplication(
                 fil.read(),
                 Content_Disposition='attachment; filename="Conference File.pdf"',
                 Name="Conference File.pdf"
             ))
-        smtp = smtplib.SMTP('mx1.hotmail.com', 587)
+        smtp = smtplib.SMTP('smtp.live.com', 587, timeout=2)
         smtp.starttls()
         smtp.login(SOURCE_EMAIL, PASSWORD)
         smtp.sendmail(SOURCE_EMAIL, dest_email, msg.as_string())
         smtp.close()
         return True
-    except Exception:
+    except IOError:
         return False
 
 
