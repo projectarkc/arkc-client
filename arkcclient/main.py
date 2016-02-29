@@ -17,8 +17,6 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from common import certloader, generate_RSA
 from coordinator import Coordinate
-from server import ServerControl
-from client import ClientControl
 
 # Const used in the client.
 
@@ -232,6 +230,8 @@ The programs is distributed under GNU General Public License Version 2.
             serverpub,
             clientpub_sha1,
             data["number"],
+            data["local_host"],
+            data["local_port"],
             data["remote_host"],
             data["remote_port"],
             data["dns_servers"],
@@ -243,18 +243,6 @@ The programs is distributed under GNU General Public License Version 2.
             options.pn,
             options.tcp
         )
-        sctl = ServerControl(
-            data["remote_host"],
-            data["remote_port"],
-            ctl,
-            pt=bool(data["obfs_level"])
-        )
-        cctl = ClientControl(
-            ctl,
-            data["local_host"],
-            data["local_port"]
-        )
-
     except KeyError as e:
         print(e)
         logging.fatal("Bad config file. Quitting.")

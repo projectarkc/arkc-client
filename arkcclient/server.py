@@ -22,6 +22,7 @@ class ServerControl(asyncore.dispatcher):
 
     def __init__(self, serverip, serverport, ctl, pt=False, backlog=5):
         self.ctl = ctl
+        self.backlog = backlog
         asyncore.dispatcher.__init__(self)
         if ctl.ipv6 == "":
             self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -30,14 +31,18 @@ class ServerControl(asyncore.dispatcher):
         self.set_reuse_addr()
 
         if pt:
+            # TODO: implement or test pt related traversal
             serverip = "127.0.0.1"
             serverport = REAL_SERVERPORT
         self.bind((serverip, serverport))
-        if self.ctl.traversal_status>0:
+
+    def startlisten(self):
+        # wrong code, TODO: edit
+        if self.ctl.traversal_status == 0:
             self.connect(self.ctl.punching_server_addr)
-            auth_str=self.auth_str()
+            auth_str = self.auth_str()
             self.send(auth_str)
-        self.listen(backlog)
+        self.listen(self.sbacklog)
 
     def handle_accept(self):
         conn, addr = self.accept()
@@ -49,6 +54,8 @@ class ServerControl(asyncore.dispatcher):
 
     def suth_str(self):
         pass
+
+
 class ServerReceiver(asyncore.dispatcher):
 
     '''represent each connection with arkc-server'''

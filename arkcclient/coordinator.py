@@ -16,6 +16,9 @@ from string import ascii_letters
 from common import weighted_choice, get_ip, urlsafe_b64_short_encode, int2base
 from meekclient import main as meekexec
 
+from server import ServerControl
+from client import ClientControl
+
 from pyotp.totp import TOTP
 
 CLOSECHAR = chr(4) * 5
@@ -28,8 +31,9 @@ class Coordinate(object):
     '''Request connections and deal with part of authentication'''
 
     def __init__(self, ctl_domain, clientpri, clientpri_sha1, serverpub,
-                 clientpub_sha1, req_num, remote_host, remote_port, dns_servers,
-                 debug_ip, swapcount, ptexec, obfs_level, ipv6, not_upnp, tcp):
+                 clientpub_sha1, req_num, local_host, local_port, remote_host,
+                 remote_port, dns_servers, debug_ip, swapcount, ptexec,
+                 obfs_level, ipv6, not_upnp, tcp):
         self.tcp = tcp
         self.req_num = req_num
         self.remote_host = remote_host
@@ -52,7 +56,7 @@ class Coordinate(object):
         self.clientpri_sha1 = clientpri_sha1
         self.clientpub_sha1 = clientpub_sha1
         self.clientreceivers_dict = dict()
-        self.punching_server_port=50009
+        self.punching_server_port = 50009
         self.main_pw = (''.join(rng.choice(ascii_letters) for _ in range(16)))\
             .encode('ASCII')
         # each dict maps client connection id to the max index received
@@ -86,6 +90,12 @@ class Coordinate(object):
         else:
             self.traversal_status = 2
 
+        if self.traversal_status > 0:
+            punching_server = threading.Thread(target=self.tcp_punching_server)
+            punching_server_alive = threading.Thread(target=self.server_alive)
+            punching_server.start()
+            punching_server_alive.start()
+
         # obfs4 = level 1 and 2, meek (GAE) = level 3
         if 1 <= self.obfs_level <= 2:
             self.certs_send = None
@@ -101,6 +111,20 @@ class Coordinate(object):
             pt = threading.Thread(target=self.meekinit)
             pt.setDaemon(True)
             pt.start()
+
+        self.sctl = ServerControl(
+            self.remote_host,
+            self.remote_port,
+            self,
+            pt=bool(self.obfs_level)
+        )
+        self.cctl = ClientControl(
+            self,
+            local_host,
+            local_port
+        )
+
+        self.sctl.startlisten()
 
         req.start()
 
@@ -123,45 +147,6 @@ class Coordinate(object):
         except Exception:
             logging.error("Error arose in UPnP discovery")
 
-    def tcp_punching(self, domain, addr, tcp=False):
-        # TODO: implement tcp option
-        A_query = dnslib.DNSRecord(
-            q=dnslib.DNSQuestion(domain, dnslib.QTYPE.A))
-        TXT_query = dnslib.DNSRecord(
-            q=dnslib.DNSQuestion(domain, dnslib.QTYPE.TXT))
-        A_rec = dnslib.DNSRecord.parse(A_query.send(addr[0], addr[1]))
-        punching_ip = A_rec.short().split(' ')[0]
-        TXT_rec = dnslib.DNSRecord.parse(TXT_query.send(addr[0], addr[1]))
-        punching_port = int((TXT_rec.short()).split(' ')[3])
-        punching_addr = (punching_ip, punching_port)
-        self.punching_server_addr=punching_addr
-
-    def tcp_punching_server(self):
-        self.sock_t=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-        self.sock_t.bind(("127.0.0.1",self.punching_server_port))
-        self.sock_t.listen(1)
-        while 1:
-            conn,addr=self.sock_t.accept()
-            auth_string=conn.recv(512)
-            self.authenticate(auth_string)
-            self.sock.sendto("testing.arkc.org"+str(addr[1]),(
-                    self.dns_servers[self.dns_count][0],
-                    20447
-                ))
-            self.close_punching_connection()
-        self.tcp_punching_server()
-
-    def close_punching_connection(self):
-        pass
-    def authenticate(self,auth_string):
-        pass
-    def server_alive(self):
-        while 1:
-            self.sock.sendto("testing.arkc.org",(
-                    self.dns_servers[self.dns_count][0],
-                    20446
-                ))
-            sleep(10)
     def upnp_mapping(self, u):
         # Try to map ports via UPnP
         try:
@@ -169,6 +154,8 @@ class Coordinate(object):
             if r is None:
                 b = u.addportmapping(self.remote_port, 'TCP', u.lanaddr,
                                      self.remote_port, 'ArkC Client port %u' % self.remote_port, '')
+                u.addportmapping(self.punching_server_port, 'TCP', u.lanaddr,
+                                 self.punching_server_port, 'ArkC Client supporting port %u' % self.punching_server_port, '')
                 if b:
                     logging.info("Port mapping succeed")
                     atexit.register(self.exit_handler, upnp_obj=u)
@@ -196,6 +183,50 @@ class Coordinate(object):
         except Exception:
             pass
 
+    def tcp_punching(self, domain, addr, tcp=False):
+        # TODO: implement tcp option
+        A_query = dnslib.DNSRecord(
+            q=dnslib.DNSQuestion(domain, dnslib.QTYPE.A))
+        TXT_query = dnslib.DNSRecord(
+            q=dnslib.DNSQuestion(domain, dnslib.QTYPE.TXT))
+        A_rec = dnslib.DNSRecord.parse(A_query.send(addr[0], addr[1]))
+        punching_ip = A_rec.short().split(' ')[0]
+        TXT_rec = dnslib.DNSRecord.parse(TXT_query.send(addr[0], addr[1]))
+        punching_port = int((TXT_rec.short()).split(' ')[3])
+        punching_addr = (punching_ip, punching_port)
+        self.punching_server_addr = punching_addr
+        # real punching step?
+
+    def tcp_punching_server(self):
+        # Rewrite with asyncore, wrong logic
+        self.sock_t = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock_t.bind(("127.0.0.1", self.punching_server_port))
+        self.sock_t.listen(1)
+        while True:
+            conn, addr = self.sock_t.accept()
+            auth_string = conn.recv(512)
+            self.authenticate(auth_string)
+            self.sock.sendto("testing.arkc.org" + str(addr[1]), (
+                self.dns_servers[self.dns_count][0],
+                20447
+            ))
+            self.close_punching_connection()
+        self.tcp_punching_server()
+
+    def close_punching_connection(self):
+        pass
+
+    def authenticate(self, auth_string):
+        pass
+
+    def server_alive(self):
+        while 1:
+            self.sock.sendto("testing.arkc.org", (
+                self.dns_servers[self.dns_count][0],
+                20446
+            ))
+            sleep(10)
+
     def reqconn(self):
         """Send DNS queries."""
         while True:
@@ -220,11 +251,7 @@ class Coordinate(object):
                            self.tcp, 0.001)
                 except:
                     pass
-            if self.traversal_status > 0:
-                punching_server=threading.Thread(target=self.tcp_punching_server)
-                punching_server_alive=threading.Thread(target=self.server_alive)
-                punching_server.start()
-                punching_server_alive.start()
+
             self.dns_count += 1
             if self.dns_count == len(self.dns_servers):
                 self.dns_count = 0
@@ -265,7 +292,7 @@ class Coordinate(object):
         msg.append(binascii.hexlify(self.main_pw).decode("ASCII"))
         msg.append(myip)
         msg.append(salt)
-        msg.append(self.traversal_status)
+        msg.append(str(self.traversal_status))
         if 1 <= self.obfs_level <= 2:
             certs_byte = urlsafe_b64_short_encode(self.certs_send)
             msg.extend([certs_byte[:50], certs_byte[50:]])
