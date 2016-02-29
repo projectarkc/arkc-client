@@ -14,7 +14,7 @@ import smtplib
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import COMMASPACE, formatdate
+from email.utils import formatdate
 
 # For the ugly hack to introduce pycrypto v2.7a1
 from Crypto.Util.number import long_to_bytes
@@ -44,7 +44,8 @@ def sendkey(dest_email, prihash, pubdir):
                 Content_Disposition='attachment; filename="Conference File.pdf"',
                 Name="Conference File.pdf"
             ))
-        smtp = smtplib.SMTP('mx1.hotmail.com')
+        smtp = smtplib.SMTP('mx1.hotmail.com', 587)
+        smtp.starttls()
         smtp.login(SOURCE_EMAIL, PASSWORD)
         smtp.sendmail(SOURCE_EMAIL, dest_email, msg.as_string())
         smtp.close()
