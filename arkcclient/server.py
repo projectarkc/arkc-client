@@ -7,7 +7,7 @@ import struct
 from common import AESCipher
 from common import get_timestamp, parse_timestamp
 from _io import BlockingIOError
-
+from time import sleep
 # Need to switch to asyncio
 
 MAX_HANDLE = 100
@@ -36,14 +36,6 @@ class ServerControl(asyncore.dispatcher):
             serverport = REAL_SERVERPORT
         self.bind((serverip, serverport))
 
-    def startlisten(self):
-        # wrong code, TODO: edit
-        if self.ctl.traversal_status == 0:
-            self.connect(self.ctl.punching_server_addr)
-            auth_str = self.auth_str()
-            self.send(auth_str)
-        self.listen(self.sbacklog)
-
     def handle_accept(self):
         conn, addr = self.accept()
         logging.info('Serv_recv_Accept from %s' % str(addr))
@@ -52,10 +44,49 @@ class ServerControl(asyncore.dispatcher):
     def getrecv(self):
         return self.ctl.offerconn()
 
-    def suth_str(self):
-        pass
+class punching_server(asyncore.dispatcher):
 
+    def __init__(self,ctl):
+        self.ctl=ctl
+        self.client_matching={} # A client-server matching with client's address as key and server's address as value
+        asyncore.dispatcher.__init__(self)
+        self.create_socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.bind(("127.0.0.1",ctl.punching_server_port))
+        self.listen(6)
 
+    def handle_accept(self):
+        conn, self.cli_addr=self.accept()
+        data=conn.recv(512)
+        self.source=self.match_client(data)
+        while 1:
+            if self.diy_writable():
+                break
+            sleep(1)
+        self.handle_write()
+
+    def match_client(self,data):
+        pass  #TODO: recieve authentication strings from client and server, then match them in client_matching, at last return 0 if
+               #its from client or 1 if its from server
+
+    def handle_write(self):
+        if self.source:
+            for cli,ser in self.client_matching.items():
+                if ser==self.cli_addr:
+                    send_addr=cli
+                    self.client_matching.pop(cli)
+                    break
+            self.send(send_addr)
+        else:
+            self.send(self.client_matching[self.cli_addr])
+
+    def writable(self):
+        return False
+
+    def diy_writable(self):
+        if self.source:
+            return (self.cli_addr in self.client_matching.values())
+        else:
+            return (self.cli_addr in self.client_matching.keys())
 class ServerReceiver(asyncore.dispatcher):
 
     '''represent each connection with arkc-server'''

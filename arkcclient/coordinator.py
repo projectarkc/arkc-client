@@ -190,9 +190,9 @@ class Coordinate(object):
         TXT_query = dnslib.DNSRecord(
             q=dnslib.DNSQuestion(domain, dnslib.QTYPE.TXT))
         A_rec = dnslib.DNSRecord.parse(A_query.send(addr[0], addr[1]))
-        punching_ip = A_rec.short().split(' ')[0]
+        punching_ip = A_rec.short()
         TXT_rec = dnslib.DNSRecord.parse(TXT_query.send(addr[0], addr[1]))
-        punching_port = int((TXT_rec.short()).split(' ')[3])
+        punching_port = int((TXT_rec.short()))
         punching_addr = (punching_ip, punching_port)
         self.punching_server_addr = punching_addr
         # real punching step?
