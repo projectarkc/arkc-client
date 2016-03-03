@@ -3,6 +3,7 @@ import asyncore
 import logging
 import time
 import struct
+import threading
 
 from common import AESCipher
 from common import get_timestamp, parse_timestamp
@@ -72,12 +73,13 @@ class punching_server(asyncore.dispatcher):
         if self.source:
             for cli,ser in self.client_matching.items():
                 if ser==self.cli_addr:
-                    send_addr=cli
+                    send_addr=str(cli[0])+ ' ' + str(cli[1])
                     self.client_matching.pop(cli)
                     break
             self.send(send_addr)
         else:
-            self.send(self.client_matching[self.cli_addr])
+            send_addr=self.client_matching[self.cli_addr]
+            self.send(str(send_addr[0]+' '+str(send_addr[1])))
 
     def writable(self):
         return False
@@ -87,6 +89,34 @@ class punching_server(asyncore.dispatcher):
             return (self.cli_addr in self.client_matching.values())
         else:
             return (self.cli_addr in self.client_matching.keys())
+
+class tcp_punching_connect(asyncore.dispatcher):
+
+    def __init__(self,addr,binding_port,ctl):
+        self.remote_addr=addr
+        self.port=binding_port
+        self.ctl=ctl
+        asyncore.dispatcher.__init__(self)
+        self.create_socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.set_reuse_addr()
+        self.bind("127.0.0.1",self.port)
+        self.connect(self.remote_addr)
+
+    def handle_connect(self):
+        str=self.auth_string
+        self.send(str)
+        data=self.recv(512)
+        addr=(data[0],int(data[1]))
+        threading.Thread(target=tcp_punching_send(addr,self.port)).start()
+    def auth_string(self):
+        pass
+
+def tcp_punching_send(addr,port):
+    s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    s.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+    s.bind(("127.0.0.1",port))
+    while 1:
+        pass            #TODO: keep sending packages to Arkc server
 class ServerReceiver(asyncore.dispatcher):
 
     '''represent each connection with arkc-server'''
