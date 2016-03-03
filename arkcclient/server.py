@@ -105,7 +105,7 @@ class tcp_punching_connect(asyncore.dispatcher):
     def handle_connect(self):
         str=self.auth_string
         self.send(str)
-        data=self.recv(512)
+        data=self.recv(512).split(' ')
         addr=(data[0],int(data[1]))
         threading.Thread(target=tcp_punching_send(addr,self.port)).start()
     def auth_string(self):
