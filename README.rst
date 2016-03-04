@@ -16,6 +16,18 @@ ArkC allows users to enjoy free web browsing without worrying about censorship m
 
 For a more detailed description, please visit our website and read our page `Understand ArkC <https://arkc.org/understand-arkc/>`__. 中文版本的介绍在这一页面 `ArkC的原理 <https://arkc.org/understand_arkc_zh_cn/>`__。
 
+This is what it tries to do by default:
+
+.. image:: https://arkc.org/wp-content/uploads/2016/02/ArkC.png
+   :height: 300px
+
+And making it a little bit more complicated, e.g. set obfs_level to 3 or use a socks proxy:
+
+.. image:: https://arkc.org/wp-content/uploads/2016/02/ArkCProxy-1.png
+   :height: 400px
+
+Note, "anonymous_proxy" can be anything you set!
+
 Setup and Requirement
 ---------------------
 
