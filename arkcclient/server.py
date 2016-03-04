@@ -4,7 +4,6 @@ import logging
 import time
 import struct
 
-
 from common import AESCipher
 from common import get_timestamp, parse_timestamp
 from _io import BlockingIOError
@@ -13,11 +12,10 @@ from _io import BlockingIOError
 MAX_HANDLE = 100
 CLOSECHAR = chr(4) * 5
 REAL_SERVERPORT = 55000
-SEG_SIZE = 4080     # 4096(total) - 1(type) - 2(id) - 6(index) - 7(splitchar)
+SEG_SIZE = 4080  # 4096(total) - 1(type) - 2(id) - 6(index) - 7(splitchar)
 
 
 class ServerControl(asyncore.dispatcher):
-
     '''listen at the required port'''
 
     def __init__(self, serverip, serverport, ctl, pt=False, backlog=5):
@@ -38,6 +36,8 @@ class ServerControl(asyncore.dispatcher):
 
     def handle_accept(self):
         conn, addr = self.accept()
+        if self.ctl.traversal_status == 0:
+            self.ctl.tcp_punching_connection.p.join()
         logging.info('Serv_recv_Accept from %s' % str(addr))
         ServerReceiver(conn, self.ctl)
 
@@ -46,7 +46,6 @@ class ServerControl(asyncore.dispatcher):
 
 
 class ServerReceiver(asyncore.dispatcher):
-
     '''represent each connection with arkc-server'''
 
     def __init__(self, conn, ctl):
@@ -113,15 +112,14 @@ class ServerReceiver(asyncore.dispatcher):
                             cli_id = None
                         if cli_id == "00":
                             if b_data == b_close:
-
                                 logging.debug("closing connection")
                                 self.closing = True
                                 self.ctl.closeconn(self)
                                 self.close()
-              #               elif seq == 50:
-              #                   id_list = b_data.decode("UTF-8").split(',')
-                            # self.ctl.server_check(id_list)
-                            # TODO: Experimental function
+                                #               elif seq == 50:
+                                #                   id_list = b_data.decode("UTF-8").split(',')
+                                # self.ctl.server_check(id_list)
+                                # TODO: Experimental function
                         else:
                             if cli_id in self.ctl.clientreceivers_dict:
                                 if seq == 30:
@@ -141,8 +139,8 @@ class ServerReceiver(asyncore.dispatcher):
                                     self.ctl.clientreceivers_dict[
                                         cli_id].close()
                                 read_count += len(b_data)
-                            # else:
-                            #    self.encrypt_and_send(cli_id, CLOSECHAR)
+                                # else:
+                                #    self.encrypt_and_send(cli_id, CLOSECHAR)
                     else:
                         # strip off type (always 1)
                         self.ping_recv(b_dec[1:].decode("UTF-8"))
@@ -181,7 +179,7 @@ class ServerReceiver(asyncore.dispatcher):
                         self.send(
                             self.cipher.encrypt(b"2AUTHENTICATED" + self.read[768:770] +
                                                 repr(
-                                                self.ctl.server_recv_max_idx[self.i]).encode()
+                                                    self.ctl.server_recv_max_idx[self.i]).encode()
                                                 )
                             + self.split
                         )
@@ -264,10 +262,10 @@ class ServerReceiver(asyncore.dispatcher):
             b_idx = bytes(
                 str(self.ctl.clientreceivers_dict[cli_id].to_remote_buffer_index), 'utf-8')
             buf = self.ctl.clientreceivers_dict[
-                cli_id].to_remote_buffer[:SEG_SIZE]
+                      cli_id].to_remote_buffer[:SEG_SIZE]
             self.ctl.clientreceivers_dict[cli_id].next_to_remote_buffer()
             self.ctl.clientreceivers_dict[cli_id].to_remote_buffer = self.ctl.clientreceivers_dict[
-                cli_id].to_remote_buffer[len(buf):]
+                                                                         cli_id].to_remote_buffer[len(buf):]
             if cli_id not in self.ctl.server_send_buf_pool[self.i]:
                 self.ctl.server_send_buf_pool[self.i][cli_id] = []
         else:
