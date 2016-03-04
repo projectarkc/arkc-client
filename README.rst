@@ -22,7 +22,7 @@ Setup and Requirement
 For a probably more detailed guide: `Deployment and Installation <https://arkc.org/12-2/deployment-and-installation/>`__. 对于安装与部署的中文说明在 `部署与安装ArkC <https://arkc.org/12-2/deployment_install_zh_cn/>`__
 这一页面。
 
-For Windows users, you are recommended to use our Windows executable in the Github `release page <https://github.com/projectarkc/arkc-client/releases/latest>`__. Installing pycrypto and miniupnpc often involves configuration of compilers.
+For Windows users, you are recommended to use our Windows GUI, installer along with latest ArkC client binary executable, in the Github `release page <https://github.com/projectarkc/arkc-client-GUI-dotnet/releases/latest>`__. Just pick your .Net Framework version and download.
 
 For users with python3 pip development environment (Note: We don't
 recommend using python 2):
@@ -73,7 +73,21 @@ Run
 
 In this version, any private certificate should be in the form of PEM
 without encryption, while any public certificate should be in the form
-of ssh-rsa. Generate a key pair with ssh-keygen on GNU/Linux.
+of ssh-rsa.
+
+We could generate a keypair with
+
+::
+
+    arkcclient -kg [--kg-path Key_Generated_Path]
+
+And the keys can be sent to an email address used by the server provider with this command    
+
+:
+
+    arkcclient -reg Email_Address_to_send
+
+Automatically the server should add the key to its key storage.
 
 For the configuration file, you can find an example here:
 
