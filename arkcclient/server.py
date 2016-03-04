@@ -47,7 +47,6 @@ class ServerControl(asyncore.dispatcher):
 
 class punching_server(asyncore.dispatcher):
     #TODO: disconnect after some time
-
     def __init__(self,ctl):
         self.ctl=ctl
         self.client_matching={} # A client-server matching with client's address as key and server's address as value
@@ -100,7 +99,7 @@ class tcp_punching_connect(asyncore.dispatcher):
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET,socket.SOCK_STREAM)
         self.set_reuse_addr()
-        self.bind("127.0.0.1",self.port)
+        self.bind(("127.0.0.1",self.port))
         self.connect(self.remote_addr)
 
     def handle_connect(self):
