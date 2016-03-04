@@ -16,7 +16,7 @@ from string import ascii_letters
 from common import weighted_choice, get_ip, urlsafe_b64_short_encode, int2base
 from meekclient import main as meekexec
 
-from server import ServerControl,tcp_punching_connect
+from server import ServerControl,tcp_punching_connect,punching_server
 from client import ClientControl
 
 from pyotp.totp import TOTP
@@ -89,6 +89,7 @@ class Coordinate(object):
                 self.traversal_status = 1
         else:
             self.traversal_status = 2
+            self.punching_server=punching_server(self)
 
         # obfs4 = level 1 and 2, meek (GAE) = level 3
         if 1 <= self.obfs_level <= 2:
@@ -189,8 +190,7 @@ class Coordinate(object):
         TXT_rec = dnslib.DNSRecord.parse(TXT_query.send(addr[0], addr[1]))
         punching_port = int((TXT_rec.short()))
         self.punching_addr = (punching_ip, punching_port)
-        tcp_punching_connect(self.punching_addr,self.remote_port,self)
-        # real punching step?
+        self.tcp_punching_connection=tcp_punching_connect(self.punching_addr,self.remote_port,self)
 
 
     def reqconn(self):

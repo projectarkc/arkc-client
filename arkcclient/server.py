@@ -46,6 +46,7 @@ class ServerControl(asyncore.dispatcher):
         return self.ctl.offerconn()
 
 class punching_server(asyncore.dispatcher):
+    #TODO: disconnect after some time
 
     def __init__(self,ctl):
         self.ctl=ctl
@@ -107,6 +108,7 @@ class tcp_punching_connect(asyncore.dispatcher):
         self.send(str)
         data=self.recv(512).split(' ')
         addr=(data[0],int(data[1]))
+        self.ctl.traversal_status=1
         threading.Thread(target=tcp_punching_send(addr,self.port)).start()
     def auth_string(self):
         pass
