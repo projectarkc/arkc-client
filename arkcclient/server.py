@@ -44,6 +44,9 @@ class ServerControl(asyncore.dispatcher):
     def getrecv(self):
         return self.ctl.offerconn()
 
+    def startlisten(self):
+        self.listen(self.backlog)
+
 
 class ServerReceiver(asyncore.dispatcher):
     '''represent each connection with arkc-server'''
@@ -262,10 +265,10 @@ class ServerReceiver(asyncore.dispatcher):
             b_idx = bytes(
                 str(self.ctl.clientreceivers_dict[cli_id].to_remote_buffer_index), 'utf-8')
             buf = self.ctl.clientreceivers_dict[
-                      cli_id].to_remote_buffer[:SEG_SIZE]
+                cli_id].to_remote_buffer[:SEG_SIZE]
             self.ctl.clientreceivers_dict[cli_id].next_to_remote_buffer()
             self.ctl.clientreceivers_dict[cli_id].to_remote_buffer = self.ctl.clientreceivers_dict[
-                                                                         cli_id].to_remote_buffer[len(buf):]
+                cli_id].to_remote_buffer[len(buf):]
             if cli_id not in self.ctl.server_send_buf_pool[self.i]:
                 self.ctl.server_send_buf_pool[self.i][cli_id] = []
         else:

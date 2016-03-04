@@ -121,7 +121,8 @@ class Coordinate(object):
             local_port
         )
 
-        self.sctl.startlisten()
+        if self.traversal_status != 0:
+            self.sctl.startlisten()
 
         req.start()
 
@@ -207,6 +208,8 @@ class Coordinate(object):
                     self.dns_servers[self.dns_count][1],
                     self.tcp, 1
                 ))
+                if self.traversal_status != 0:
+                    self.sctl.startlisten()
             else:
                 d = dnslib.DNSRecord(dnslib.DNSQuestion(
                     q=requestdata + "." + self.ctl_domain))
