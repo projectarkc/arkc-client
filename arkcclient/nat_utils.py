@@ -40,12 +40,12 @@ class punching_server_handler(asyncore.dispatcher):
             if self.source:
                 for cli, ser in self.client_matching.items():
                     if ser == self.cli_addr:
-                        self.write_buffer = str(cli[0]) + ' ' + str(cli[1])
+                        self.write_buffer = str(cli[0]) + ' ' + str(cli[1]+'\n')
                         self.client_matching.pop(cli)
                         break
             else:
                 ser = self.client_matching[self.cli_addr]
-                self.write_buffer = str(ser[0] + ' ' + str(ser[1]))
+                self.write_buffer = str(ser[0] + ' ' + str(ser[1])+ '\n')
         self.sent_buffer = self.send(self.write_buffer[self.sent_buffer:])
 
     def match_client(self, data):
