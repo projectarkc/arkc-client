@@ -56,7 +56,7 @@ class ClientReceiver(asyncore.dispatcher):
         while self.writable() and i <= 4:
             tosend = self.from_remote_buffer_dict.pop(
                 self.from_remote_buffer_index)
-            while len(tosend > 0):
+            while len(tosend) > 0:
                 sent = self.send(tosend)
                 logging.debug('%04i to client ' % sent + self.idchar)
                 tosend = tosend[sent:]

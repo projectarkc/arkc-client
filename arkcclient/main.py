@@ -29,7 +29,7 @@ DEFAULT_REQUIRED = 3
 DEFAULT_DNS_SERVERS = [["8.8.8.8", 53]]
 DEFAULT_OBFS4_EXECADDR = "obfs4proxy"
 
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 
 
 def genkey(options):
