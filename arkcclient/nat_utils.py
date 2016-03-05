@@ -4,23 +4,20 @@ import logging
 import time
 import threading
 
+from server import ServerReceiver
+
 
 class punching_server(asyncore.dispatcher):
-    # TODO: wrong structure, two dispatcher at different level!
-    # TODO: disconnect after some time
 
     def __init__(self, ctl):
+        asyncore.dispatcher.__init__(self)
         self.ctl = ctl
         # A client-server matching with client's address as key and server's
         # address as value
         self.client_matching = {}
-        asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.bind(("127.0.0.1", ctl.punching_server_port))
         self.listen(6)
-
-        # TODO: write buffer and read buffer!
-        # Read asyncore docs! socket recv and send here can be incomplete
 
     def handle_accept(self):
         conn, self.cli_addr = self.accept()
@@ -28,25 +25,17 @@ class punching_server(asyncore.dispatcher):
 
 
 class punching_server_handler(asyncore.dispatcher):
+
     def __init__(self, sock):
+        asyncore.dispatcher.__init__(self, sock)
         self.read_buffer = ""
         self.write_buffer = ""
         self.sent_buffer = 0
-        self.read_finished=0
-        asyncore.dispatcher.__init__(self, sock=sock)
+        self.read_finished = 0
 
     def handle_write(self):
-        if not self.write_buffer:
-            if self.source:
-                for cli, ser in self.client_matching.items():
-                    if ser == self.cli_addr:
-                        self.write_buffer = str(cli[0]) + ' ' + str(cli[1]+'\n')
-                        self.client_matching.pop(cli)
-                        break
-            else:
-                ser = self.client_matching[self.cli_addr]
-                self.write_buffer = str(ser[0] + ' ' + str(ser[1])+ '\n')
-        self.sent_buffer = self.send(self.write_buffer[self.sent_buffer:])
+        sent = self.send(self.write_buffer)
+        self.write_buffer = self.write_buffer[sent:]
 
     def match_client(self, data):
         # TODO: recieve authentication strings from client and server, then
@@ -57,10 +46,24 @@ class punching_server_handler(asyncore.dispatcher):
     def handle_read(self):
         self.read_buffer += self.recv(512)
         if '\n' in self.read_buffer:
-            self.read_finished=1
-            self.match_client(self.read_buffer)
+            self.read_finished = 1
+            # all below should be done in matching
+            self.match_client(self.read_buffer.split('\n'[0]))
+#             if :
+#
+#                 for cli, ser in self.client_matching.items():
+#                     if ser == self.cli_addr:
+#                         self.write_buffer = str(
+#                             cli[0]) + ' ' + str(cli[1] + '\n')
+#                         self.client_matching.pop(cli)
+#                         break
+#             else:
+#                 ser = self.client_matching[self.cli_addr]
+#                 self.write_buffer = str(ser[0] + ' ' + str(ser[1]) + '\n')
 
     def writable(self):
+        return len(self.write_buffer) > 0
+
         if not self.write_buffer:
             if self.source == 1:
                 return (self.cli_addr in self.client_matching.values())
@@ -76,6 +79,7 @@ class punching_server_handler(asyncore.dispatcher):
 
 
 class tcp_punching_connect(asyncore.dispatcher):
+
     def __init__(self, addr, binding_port, ctl):
         asyncore.dispatcher.__init__(self)
         self.remote_addr = addr
@@ -113,14 +117,16 @@ class tcp_punching_connect(asyncore.dispatcher):
                 self.close()  # TODO: return failure
         # TODO: recv may not get complete message back!
         addr = (data[0], int(data[1]))
-        self.ctl.traversal_status = 1
-        self.p = threading.Thread(target=tcp_punching_send(addr, self.port))
+        self.p = threading.Thread(
+            target=tcp_punching_send(addr, self.port, self.ctl))
         self.p.start()
         self.finished = True
 
 
 class tcp_punching_send(threading.Thread):
-    def __init__(self, addr, port):
+
+    def __init__(self, addr, port, ctl):
+        self.ctl = ctl
         self._stopevent = threading.Event()
         self._stopevent.set()
         self.addr = addr
@@ -128,15 +134,20 @@ class tcp_punching_send(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        s.bind(("127.0.0.1", self.port))
-        while 1:
+        # TODO: counting
+        # TODO: be reused
+        while True:
             self._stopevent.wait()
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            s.bind(("", self.port))
+            s.settimeout(3)
             try:
                 s.connect(self.addr)
+                ServerReceiver(s, self.ctl)
             except Exception as err:
-                pass
+                # error processing should be in types
+                s.close()
 
     def join(self, timeout=None):
         self._stopevent.clear()

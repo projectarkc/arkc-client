@@ -27,6 +27,7 @@ class ServerControl(asyncore.dispatcher):
         else:
             self.create_socket(socket.AF_INET6, socket.SOCK_STREAM)
         self.set_reuse_addr()
+        self.listen(self.backlog)
 
         if pt:
             # TODO: implement or test pt related traversal
@@ -36,16 +37,11 @@ class ServerControl(asyncore.dispatcher):
 
     def handle_accept(self):
         conn, addr = self.accept()
-        if self.ctl.traversal_status == 0:
-            self.ctl.tcp_punching_connection.p.join()
         logging.info('Serv_recv_Accept from %s' % str(addr))
         ServerReceiver(conn, self.ctl)
 
     def getrecv(self):
         return self.ctl.offerconn()
-
-    def startlisten(self):
-        self.listen(self.backlog)
 
 
 class ServerReceiver(asyncore.dispatcher):

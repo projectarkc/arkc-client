@@ -109,12 +109,6 @@ class Coordinate(object):
             pt.setDaemon(True)
             pt.start()
 
-        self.sctl = ServerControl(
-            self.remote_host,
-            self.remote_port,
-            self,
-            pt=bool(self.obfs_level)
-        )
         self.cctl = ClientControl(
             self,
             local_host,
@@ -122,7 +116,12 @@ class Coordinate(object):
         )
 
         if self.traversal_status != 0:
-            self.sctl.startlisten()
+            self.sctl = ServerControl(
+                self.remote_host,
+                self.remote_port,
+                self,
+                pt=bool(self.obfs_level)
+            )
 
         req.start()
 
@@ -202,6 +201,7 @@ class Coordinate(object):
             self.check.wait()
             requestdata = self.generatereq()
 
+            # TODO: should be moved aside to reuse the thread
             if self.traversal_status == 0:
                 self.tcp_punching(requestdata + "." + self.ctl_domain, (
                     self.dns_servers[self.dns_count][0],
