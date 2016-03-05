@@ -271,6 +271,7 @@ class ServerReceiver(asyncore.dispatcher):
                 self.ctl.server_send_buf_pool[self.i][cli_id] = []
         else:
             buf = bytes(buf, "utf-8")
+        # TODO: send with buffer
         self.send(self.cipher.encrypt(b"0" + b_id + b_idx + buf) +
                   self.split)
         self.ctl.server_send_buf_pool[self.i][cli_id].append((buf, b_idx))

@@ -54,6 +54,7 @@ class ClientReceiver(asyncore.dispatcher):
         i = 0
         self.retransmit_lock = False
         while self.writable() and i <= 4:
+            # TODO: send with buffer
             sent = self.send(
                 self.from_remote_buffer_dict.pop(self.from_remote_buffer_index))
             i += 1
