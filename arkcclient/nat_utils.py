@@ -32,6 +32,7 @@ class punching_server_handler(asyncore.dispatcher):
         self.read_buffer = ""
         self.write_buffer = ""
         self.sent_buffer = 0
+        self.read_finished=0
         asyncore.dispatcher.__init__(self, sock=sock)
 
     def handle_write(self):
@@ -56,6 +57,7 @@ class punching_server_handler(asyncore.dispatcher):
     def handle_read(self):
         self.read_buffer += self.recv(512)
         if '\n' in self.read_buffer:
+            self.read_finished=1
             self.match_client(self.read_buffer)
 
     def writable(self):
@@ -70,7 +72,7 @@ class punching_server_handler(asyncore.dispatcher):
             return (self.sent_buffer == len(self.write_buffer))
 
     def readable(self):
-        return ('\n' in self.read_buffer)
+        return not self.read_finished
 
 
 class tcp_punching_connect(asyncore.dispatcher):
