@@ -24,44 +24,56 @@ class punching_server(asyncore.dispatcher):
 
     def handle_accept(self):
         conn, self.cli_addr = self.accept()
-        data = conn.recv(512)
-        self.source = self.match_client(data)
-        while 1:
-            if self.diy_writable():
-                break
-            time.sleep(1)
-        self.handle_write()
+        punching_server_handler(conn)
+
+
+class punching_server_handler(asyncore.dispatcher):
+    def __init__(self, sock):
+        self.read_buffer = ""
+        self.write_buffer = ""
+        self.sent_buffer = 0
+        asyncore.dispatcher.__init__(self, sock=sock)
+
+    def handle_write(self):
+        if not self.write_buffer:
+            if self.source:
+                for cli, ser in self.client_matching.items():
+                    if ser == self.cli_addr:
+                        self.write_buffer = str(cli[0]) + ' ' + str(cli[1])
+                        self.client_matching.pop(cli)
+                        break
+            else:
+                ser = self.client_matching[self.cli_addr]
+                self.write_buffer = str(ser[0] + ' ' + str(ser[1]))
+        self.sent_buffer = self.send(self.write_buffer[self.sent_buffer:])
 
     def match_client(self, data):
         # TODO: recieve authentication strings from client and server, then
         # match them in client_matching, at last return 0 if
-        pass
         # its from client or 1 if its from server
+        pass
 
-    def handle_write(self):
-        if self.source:
-            for cli, ser in self.client_matching.items():
-                if ser == self.cli_addr:
-                    send_addr = str(cli[0]) + ' ' + str(cli[1])
-                    self.client_matching.pop(cli)
-                    break
-            self.send(send_addr)
-        else:
-            send_addr = self.client_matching[self.cli_addr]
-            self.send(str(send_addr[0] + ' ' + str(send_addr[1])))
+    def handle_read(self):
+        self.read_buffer += self.recv(512)
+        if '\n' in self.read_buffer:
+            self.match_client(self.read_buffer)
 
     def writable(self):
-        return False
-
-    def diy_writable(self):
-        if self.source:
-            return (self.cli_addr in self.client_matching.values())
+        if not self.write_buffer:
+            if self.source == 1:
+                return (self.cli_addr in self.client_matching.values())
+            elif self.source == 0:
+                return (self.cli_addr in self.client_matching.keys())
+            else:
+                return 0
         else:
-            return (self.cli_addr in self.client_matching.keys())
+            return (self.sent_buffer == len(self.write_buffer))
+
+    def readable(self):
+        return ('\n' in self.read_buffer)
 
 
 class tcp_punching_connect(asyncore.dispatcher):
-
     def __init__(self, addr, binding_port, ctl):
         asyncore.dispatcher.__init__(self)
         self.remote_addr = addr
@@ -76,7 +88,7 @@ class tcp_punching_connect(asyncore.dispatcher):
         self.connect(self.remote_addr)
 
     def readable(self):
-        return not(self.finished)
+        return not (self.finished)
 
     def handle_connect(self):
         pass
@@ -106,7 +118,6 @@ class tcp_punching_connect(asyncore.dispatcher):
 
 
 class tcp_punching_send(threading.Thread):
-
     def __init__(self, addr, port):
         self._stopevent = threading.Event()
         self._stopevent.set()
