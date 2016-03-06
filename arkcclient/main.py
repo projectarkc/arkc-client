@@ -1,4 +1,5 @@
 #! /usr/bin/env python3
+# coding:utf-8
 
 # By ArkC developers
 # Released under GNU General Public License 2
