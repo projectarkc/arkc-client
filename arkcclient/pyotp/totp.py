@@ -21,7 +21,7 @@ class TOTP(OTP):
         if self.systime_offset is None:
             c = ntplib.NTPClient()
             self.systime_offset = int(c.request(
-                's2a.time.edu.cn', version=3).offset())
+                's2a.time.edu.cn', version=3).offset)
         super(TOTP, self).__init__(*args, **kwargs)
 
     def at(self, for_time, counter_offset=0):
@@ -40,7 +40,7 @@ class TOTP(OTP):
         Generate the current time OTP
         @return [Integer] the OTP as an integer
         """
-        return self.generate_otp(self.timecode(datetime.datetime.now() + self.systime_offset))
+        return self.generate_otp(self.timecode(datetime.datetime.now()))
 
     def verify(self, otp, for_time=None, valid_window=0):
         """
