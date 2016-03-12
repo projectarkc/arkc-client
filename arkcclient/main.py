@@ -195,7 +195,10 @@ The programs is distributed under GNU General Public License Version 2.
             data["number"] = 100
 
         if "dns_servers" not in data:
-            data["dns_servers"] = DEFAULT_DNS_SERVERS
+            if "dns_server" in data:
+                data["dns_servers"] = data["dns_server"]
+            else:
+                data["dns_servers"] = DEFAULT_DNS_SERVERS
 
         if "pt_exec" not in data:
             data["pt_exec"] = DEFAULT_OBFS4_EXECADDR
