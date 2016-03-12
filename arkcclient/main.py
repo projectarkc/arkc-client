@@ -41,9 +41,9 @@ def genkey(options):
         commonpath = os.getenv('APPDATA') + os.sep + "ArkC" + os.sep
     else:
         commonpath = os.path.expanduser('~') + os.sep
-    if not os.path.exists(directory):
+    if not os.path.exists(commonpath):
         try:
-            os.makedirs(directory)
+            os.makedirs(commonpath)
             print("Writing to directory " + commonpath)
         except OSError:
             print("Cannot write to directory" + commonpath)
@@ -190,6 +190,9 @@ The programs is distributed under GNU General Public License Version 2.
 
         if "number" not in data:
             data["number"] = DEFAULT_REQUIRED
+        elif data["number"] > 20:
+            logging.warning(
+                "Requesting " + str(data["number"]) + " connections. Note: most servers impose a limit of 20. You may not receive response at all.")
 
         if data["number"] > 100:
             data["number"] = 100
