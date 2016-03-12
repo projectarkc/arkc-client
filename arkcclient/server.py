@@ -178,7 +178,6 @@ class ServerReceiver(asyncore.dispatcher):
                         idchar = self.read[768:770].decode('utf-8')
                         self.i = int(idchar)
                         self.ctl.newconn(self)
-                        print(repr(self.cipher))
                         logging.debug(
                             "Authentication succeed, connection established")
                         self.send(
