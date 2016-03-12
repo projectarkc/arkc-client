@@ -16,7 +16,7 @@ else:
         'arkcserver': ['README.md', 'LICENSE'],
 	'arkcclient.pyotp': ['LICENSE']
     }
-    required = ['pycrypto','dnslib', 'requests', 'miniupnpc']
+    required = ['ntplib', 'pycrypto','dnslib', 'requests', 'miniupnpc']
     entry = """
     [console_scripts]
     arkcclient = arkcclient.main:main
