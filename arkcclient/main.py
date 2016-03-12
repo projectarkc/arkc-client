@@ -41,7 +41,13 @@ def genkey(options):
         commonpath = os.getenv('APPDATA') + os.sep + "ArkC" + os.sep
     else:
         commonpath = os.path.expanduser('~') + os.sep
-    print("Writing to directory " + commonpath)
+    if not os.path.exists(directory):
+        try:
+            os.makedirs(directory)
+            print("Writing to directory " + commonpath)
+        except OSError:
+            print("Cannot write to directory" + commonpath)
+            sys.exit()
     pri_sha1 = generate_RSA(
         commonpath + 'arkc_pri.asc', commonpath + 'arkc_pub.asc')
     print("SHA1 of the private key is " + pri_sha1)
