@@ -141,7 +141,7 @@ For a full list of settings:
 +--------------------+---------------------------------------------------+----------------------------------+
 | control\_domain    | str, standard domain                              | REQUIRED                         |
 +--------------------+---------------------------------------------------+----------------------------------+
-| dns\_server        | list, servers to send dns query to                | [] (use system resolver)         |
+| dns\_servers       | list, servers to send dns query to                | [] (use system resolver)         |
 +--------------------+---------------------------------------------------+----------------------------------+
 | debug\_ip          | str, address of the client (only for debug use)   | None                             |
 +--------------------+---------------------------------------------------+----------------------------------+
