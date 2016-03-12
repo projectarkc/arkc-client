@@ -20,7 +20,7 @@ class TOTP(OTP):
         self.interval = kwargs.pop('interval', 30)
         if self.systime_offset is None:
             c = ntplib.NTPClient()
-            self.systime_offset = int(c.request(
+            TOTP.systime_offset = int(c.request(
                 's2a.time.edu.cn', version=3).offset)
         super(TOTP, self).__init__(*args, **kwargs)
 
