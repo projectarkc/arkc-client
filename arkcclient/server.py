@@ -182,8 +182,8 @@ class ServerReceiver(asyncore.dispatcher):
                         self.cl_speed()
                         self.sever_speed(b_dec[1:].decode("UTF-8"))
                         self.time = time.time()
-                    
-                    else
+
+                    else:
                         # receive ping
                         self.ping_recv(b_dec[1:].decode("UTF-8"))
 
