@@ -80,7 +80,7 @@ class ServerReceiver(asyncore.dispatcher):
         self.send_speed = 0
         self.se_send_speed = 0
         self.se_recv_speed = 0
-        self.send_recv_time = 0
+        self.send_recv_time = 1
 
     def ping_recv(self, msg):
         """Parse ping (without flag) and send back when necessary."""
@@ -114,8 +114,11 @@ class ServerReceiver(asyncore.dispatcher):
             interval = time.time() - self.time
             self.recv_speed = self.recv_count / interval
             self.send_speed = self.send_count / interval
-            self.connect_speed = self.recv_count / self.send_recv_time
-            self.send_recv_time = 0
+            if self.send_recv_time != 0:
+                self.connect_speed = self.recv_count / self.send_recv_time
+                self.send_recv_time = 0
+            else:
+                self.connect_speed = 0
             raw_packet = "9" + \
                 repr([self.recv_speed, self.send_speed, self.connect_speed])
             to_write = self.cipher.encrypt(raw_packet) + self.split
