@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# coding:utf-8
+
 import threading
 import logging
 import os
@@ -224,7 +227,7 @@ class Coordinate(object):
             self.ready = recv
             recv.preferred = True
         self.refreshconn()
-        if self.serverreceivers_pool.count(None) <= 2:
+        if self.serverreceivers_pool.count(None) == 0:
             self.check.clear()
         logging.info("Running socket %d" %
                      (self.req_num - self.serverreceivers_pool.count(None)))

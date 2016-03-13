@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# coding:utf-8
+
 import socket
 import asyncore
 import logging
@@ -314,9 +317,11 @@ class ServerReceiver(asyncore.dispatcher):
                 self.ctl.server_send_buf_pool[self.i][cli_id] = []
         else:
             buf = bytes(buf, "utf-8")
-        to_send = self.cipher.encrypt(b"0" + b_id + b_idx + buf) + self.split
-        self.send(to_send)
-        self.send_count += len(to_send)
+        tosend = self.cipher.encrypt(
+            b"0" + b_id + b_idx + buf) + self.split
+        while len(tosend) > 0:
+            sent = self.send(tosend)
+            tosend = tosend[sent:]
         self.ctl.server_send_buf_pool[self.i][cli_id].append((buf, b_idx))
         return len(buf)
 

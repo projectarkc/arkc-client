@@ -2,6 +2,7 @@ from __future__ import print_function, unicode_literals, division, absolute_impo
 
 import datetime
 import time
+import ntplib
 
 from . import utils
 from .otp import OTP
@@ -9,12 +10,18 @@ from .otp import OTP
 
 class TOTP(OTP):
 
+    systime_offset = None
+
     def __init__(self, *args, **kwargs):
         """
         @option options [Integer] interval (30) the time interval in seconds
             for OTP This defaults to 30 which is standard.
         """
         self.interval = kwargs.pop('interval', 30)
+        if self.systime_offset is None:
+            c = ntplib.NTPClient()
+            TOTP.systime_offset = int(c.request(
+                's2a.time.edu.cn', version=3).offset)
         super(TOTP, self).__init__(*args, **kwargs)
 
     def at(self, for_time, counter_offset=0):
@@ -63,5 +70,5 @@ class TOTP(OTP):
         return utils.build_uri(self.secret, name, issuer_name=issuer_name)
 
     def timecode(self, for_time):
-        i = time.mktime(for_time.timetuple())
+        i = time.mktime(for_time.timetuple()) + self.systime_offset
         return int(i / self.interval)

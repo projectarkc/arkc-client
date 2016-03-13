@@ -1,4 +1,5 @@
 #! /usr/bin/env python3
+# coding:utf-8
 
 # By ArkC developers
 # Released under GNU General Public License 2
@@ -15,7 +16,7 @@ import requests
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from common import certloader, generate_RSA
+from common import certloader, generate_RSA, sendkey
 from coordinator import Coordinate
 from server import ServerControl
 from client import ClientControl
@@ -29,6 +30,76 @@ DEFAULT_REQUIRED = 3
 DEFAULT_DNS_SERVERS = [["8.8.8.8", 53]]
 DEFAULT_OBFS4_EXECADDR = "obfs4proxy"
 
+VERSION = "0.2.3"
+
+
+def genkey(options):
+    print("Generating 2048 bit RSA key.")
+    if options.kg_save_path is not None:
+        commonpath = options.kg_save_path
+    elif sys.platform == 'win32':
+        commonpath = os.getenv('APPDATA') + os.sep + "ArkC" + os.sep
+    else:
+        commonpath = os.path.expanduser('~') + os.sep
+    if not os.path.exists(commonpath):
+        try:
+            os.makedirs(commonpath)
+            print("Writing to directory " + commonpath)
+        except OSError:
+            print("Cannot write to directory" + commonpath)
+            sys.exit()
+    pri_sha1 = generate_RSA(
+        commonpath + 'arkc_pri.asc', commonpath + 'arkc_pub.asc')
+    print("SHA1 of the private key is " + pri_sha1)
+    if options.email_dest is None:
+        print(
+            "Please save the above settings to client and server side config files.")
+    else:
+        if sendkey(options.email_dest, pri_sha1, commonpath + 'arkc_pub.asc'):
+            print("Keys sent via email to " + options.email_dest)
+            print(
+                "Please save the above settings to client config file.")
+        else:
+            print("Keys sent failed to " + options.email_dest)
+            print(
+                "Please save the above settings to client and, manually, to server side config files.")
+    sys.exit()
+
+
+def dlmeek():
+    if sys.platform == 'linux2':
+        link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-server"
+        localfile = os.path.expanduser('~') + os.sep + "meek-server"
+    elif sys.platform == 'win32':
+        link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-server.exe"
+        localfile = os.path.expanduser(
+            '~') + os.sep + "meek-server.exe"
+    else:
+        print(
+            "MEEK for ArkC has no compiled executable for your OS platform. Please compile and install from source.")
+        print(
+            "Get source at https://github.com/projectarkc/meek/tree/master/meek-server")
+        sys.exit()
+    print(
+        "Downloading meek plugin (meek-server) from github to your home directory.")
+    meekfile = requests.get(link, stream=True)
+    if meekfile.status_code == '200':
+        print("Saving to " + localfile)
+    else:
+        print("Error downloading.")
+        sys.exit()
+    with open(localfile, 'wb') as f:
+        for chunk in meekfile.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+    if sys.platform == 'linux2':
+        st = os.stat(localfile)
+        os.chmod(localfile, st.st_mode | stat.S_IEXEC)
+        print("File made executable.")
+    print("Download complete.\nYou may change obfs_level and update pt_exec to " +
+          localfile + " to use meek.")
+    sys.exit()
+
 
 def main():
     parser = argparse.ArgumentParser(description=None)
@@ -38,8 +109,15 @@ def main():
             "-v", dest="v", action="store_true", help="show detailed logs")
         parser.add_argument(
             "-vv", dest="vv", action="store_true", help="show debug logs")
-        parser.add_argument('-kg', '--keygen', dest="kg", action="store_true",
-                            help="Generate a key string and quit, overriding other options")
+        # TODO: use native function
+        parser.add_argument(
+            "--version", dest="version", action="store_true", help="show version number")
+        parser.add_argument('-kg', '--keygen', dest="kg", action='store_true',
+                            help="Generate a key string and quit, overriding other options.")
+        parser.add_argument('--kg-path', '--keygen-path', dest="kg_save_path",
+                            help="Where to store a key string, if not set, use default.")
+        parser.add_argument('-reg', '--keygen-email-register', dest="email_dest",
+                            help="Email destination to register the key.")
         parser.add_argument('--get-meek', dest="dlmeek", action="store_true",
                             help="Download meek to home directory, overriding normal options")
         parser.add_argument('-c', '--config', dest="config", default=None,
@@ -51,58 +129,33 @@ def main():
 
         parser.add_argument("-v6", dest="ipv6", default="",
                             help="Enable this option to use IPv6 address (only use it if you have one)")
-        print("""ArkC Client V0.1.2,  by ArkC Technology.
+        print("""ArkC Client V0.2,  by ArkC Technology.
 The programs is distributed under GNU General Public License Version 2.
 """)
 
         options = parser.parse_args()
 
-        if options.kg:
-            print("Generating 2048 bit RSA key.")
-            print("Writing to home directory " + os.path.expanduser('~'))
-            pri_sha1 = generate_RSA(os.path.expanduser(
-                '~' + os.sep + 'arkc_pri.asc'), os.path.expanduser('~' + os.sep + 'arkc_pub.asc'))
-            print("SHA1 of the private key is " + pri_sha1)
-            print(
-                "Please save the above settings to client and server side config files.")
-            quit()
+        if options.vv:
+            logging.basicConfig(
+                stream=sys.stdout, level=logging.DEBUG, format="%(levelname)s: %(asctime)s; %(message)s")
+        elif options.v:
+            logging.basicConfig(
+                stream=sys.stdout, level=logging.INFO, format="%(levelname)s: %(asctime)s; %(message)s")
+        else:
+            logging.basicConfig(
+                stream=sys.stdout, level=logging.WARNING, format="%(levelname)s: %(asctime)s; %(message)s")
+
+        if options.version:
+            print("ArkC Client Version " + VERSION)
+            sys.exit()
+        elif options.kg:
+            genkey(options)
         elif options.dlmeek:
-            if sys.platform == 'linux2':
-                link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-server"
-                localfile = os.path.expanduser('~') + os.sep + "meek-server"
-            elif sys.platform == 'win32':
-                link = "https://github.com/projectarkc/meek/releases/download/v0.2/meek-server.exe"
-                localfile = os.path.expanduser(
-                    '~') + os.sep + "meek-server.exe"
-            else:
-                print(
-                    "MEEK for ArkC has no compiled executable for your OS platform. Please compile and install from source.")
-                print(
-                    "Get source at https://github.com/projectarkc/meek/tree/master/meek-server")
-                quit()
-            print(
-                "Downloading meek plugin (meek-server) from github to your home directory.")
-            meekfile = requests.get(link, stream=True)
-            if meekfile.status_code == '200':
-                print("Saving to " + localfile)
-            else:
-                print("Error downloading.")
-                quit()
-            with open(localfile, 'wb') as f:
-                for chunk in meekfile.iter_content(chunk_size=1024):
-                    if chunk:
-                        f.write(chunk)
-            if sys.platform == 'linux2':
-                st = os.stat(localfile)
-                os.chmod(localfile, st.st_mode | stat.S_IEXEC)
-                print("File made executable.")
-            print("Download complete.\nYou may change obfs_level and update pt_exec to " +
-                  localfile + " to use meek.")
-            quit()
+            dlmeek()
         elif options.config is None:
             logging.fatal("Config file (-c or --config) must be specified.\n")
             parser.print_help()
-            quit()
+            sys.exit()
 
         data = {}
 
@@ -114,11 +167,11 @@ The programs is distributed under GNU General Public License Version 2.
         except Exception as err:
             logging.fatal(
                 "Fatal error while loading configuration file.\n" + err)
-            quit()
+            sys.exit()
 
         if "control_domain" not in data:
             logging.fatal("missing control domain")
-            quit()
+            sys.exit()
 
         # Apply default values
         if "local_host" not in data:
@@ -137,12 +190,18 @@ The programs is distributed under GNU General Public License Version 2.
 
         if "number" not in data:
             data["number"] = DEFAULT_REQUIRED
+        elif data["number"] > 20:
+            logging.warning(
+                "Requesting " + str(data["number"]) + " connections. Note: most servers impose a limit of 20. You may not receive response at all.")
 
         if data["number"] > 100:
             data["number"] = 100
 
         if "dns_servers" not in data:
-            data["dns_servers"] = DEFAULT_DNS_SERVERS
+            if "dns_server" in data:
+                data["dns_servers"] = data["dns_server"]
+            else:
+                data["dns_servers"] = DEFAULT_DNS_SERVERS
 
         if "pt_exec" not in data:
             data["pt_exec"] = DEFAULT_OBFS4_EXECADDR
@@ -163,11 +222,11 @@ The programs is distributed under GNU General Public License Version 2.
         except KeyError as e:
             logging.fatal(
                 e.tostring() + "is not found in the config file. Quitting.")
-            quit()
+            sys.exit()
         except Exception as err:
             print ("Fatal error while loading remote host certificate.")
             print (err)
-            quit()
+            sys.exit()
 
         try:
             clientpri_data = open(data["local_cert"], "r").read()
@@ -182,11 +241,11 @@ The programs is distributed under GNU General Public License Version 2.
         except KeyError as e:
             logging.fatal(
                 e.tostring() + "is not found in the config file. Quitting.")
-            quit()
+            sys.exit()
         except Exception as err:
             print ("Fatal error while loading local certificate.")
             print (err)
-            quit()
+            sys.exit()
 
         try:
             clientpub_data = open(data["local_cert_pub"], "r").read()
@@ -195,22 +254,13 @@ The programs is distributed under GNU General Public License Version 2.
         except KeyError as e:
             logging.fatal(
                 e.tostring() + "is not found in the config file. Quitting.")
-            quit()
+            sys.exit()
         except Exception as err:
             print ("Fatal error while calculating SHA1 digest.")
             print (err)
-            quit()
+            sys.exit()
 
         # TODO: make it more elegant
-        if options.vv:
-            logging.basicConfig(
-                stream=sys.stdout, level=logging.DEBUG, format="%(levelname)s: %(asctime)s; %(message)s")
-        elif options.v:
-            logging.basicConfig(
-                stream=sys.stdout, level=logging.INFO, format="%(levelname)s: %(asctime)s; %(message)s")
-        else:
-            logging.basicConfig(
-                stream=sys.stdout, level=logging.WARNING, format="%(levelname)s: %(asctime)s; %(message)s")
 
         if options.fs:
             swapfq = 3
@@ -222,6 +272,7 @@ The programs is distributed under GNU General Public License Version 2.
         print(e)
 
     # Start the main event loop
+
     try:
         ctl = Coordinate(
             data["control_domain"],
@@ -251,11 +302,10 @@ The programs is distributed under GNU General Public License Version 2.
             data["local_host"],
             data["local_port"]
         )
-
     except KeyError as e:
         print(e)
         logging.fatal("Bad config file. Quitting.")
-        quit()
+        sys.exit()
 
     except Exception as e:
         print ("An error occurred: \n")

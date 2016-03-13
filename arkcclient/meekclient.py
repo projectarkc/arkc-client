@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# coding:utf-8
+
 """Adapted from PTproxy, https://github.com/gumblex/ptproxy"""
 
 """ Original License: The MIT License (MIT)

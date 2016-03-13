@@ -16,7 +16,7 @@ else:
         'arkcserver': ['README.md', 'LICENSE'],
 	'arkcclient.pyotp': ['LICENSE']
     }
-    required = ['pycrypto','dnslib', 'requests', 'miniupnpc']
+    required = ['ntplib', 'pycrypto','dnslib', 'requests', 'miniupnpc']
     entry = """
     [console_scripts]
     arkcclient = arkcclient.main:main
@@ -36,10 +36,10 @@ else:
 
 setup(
     name=pkg_name,
-    version="0.2.1",
+    version="0.2.3",
     license='https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt',
     description="A lightweight proxy designed to be proof to IP blocking measures",
-    author='Noah, Teba',
+    author='Noah, Teba, Ddeerreekk',
     author_email='noah@arkc.org',
     url='https://arkc.org',
     packages=pkg,

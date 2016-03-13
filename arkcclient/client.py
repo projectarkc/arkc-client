@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# coding:utf-8
+
 import socket
 import logging
 import asyncore
@@ -54,13 +57,16 @@ class ClientReceiver(asyncore.dispatcher):
         i = 0
         self.retransmit_lock = False
         while self.writable() and i <= 4:
-            sent = self.send(
-                self.from_remote_buffer_dict.pop(self.from_remote_buffer_index))
+            tosend = self.from_remote_buffer_dict.pop(
+                self.from_remote_buffer_index)
+            while len(tosend) > 0:
+                sent = self.send(tosend)
+                logging.debug('%04i to client ' % sent + self.idchar)
+                tosend = tosend[sent:]
             i += 1
         if self.next_from_remote_buffer() % self.control.req_num == 0:
             self.control.received_confirm(
                 self.idchar, self.from_remote_buffer_index)
-        logging.debug('%04i to client ' % sent + self.idchar)
 
     def handle_close(self):
         self.control.remove(self.idchar)
