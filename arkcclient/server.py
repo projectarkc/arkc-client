@@ -77,6 +77,7 @@ class ServerReceiver(asyncore.dispatcher):
         self.send_speed=0
         self.se_send_speed=0
         self.se_recv_speed=0
+        self.send_recv_time=0
 
     def ping_recv(self, msg):
         """Parse ping (without flag) and send back when necessary."""
@@ -103,12 +104,14 @@ class ServerReceiver(asyncore.dispatcher):
          "9"                     (1 byte)    (type flag for speed)
          send_speed     (how much bytes per second)
          recv_speed      (how much bytes per second)
+         connect speed    (how much bytes per second)
         """
         if self.time!=0:
             interval=time.time()-self.time
             self.recv_speed=self.recv_count/interval
             self.send_speed=self.send_count/interval
-            raw_packet="9"+repr([self.recv_speed,self.send_speed])
+            self.connect_speed=self.recv_count/self.send_recv_time
+            raw_packet="9"+repr([self.recv_speed,self.send_speed,self.connect_speed])
             to_write=self.cipher.encrypt(raw_packet)+self.split
             self.send(to_write)
 
@@ -135,7 +138,9 @@ class ServerReceiver(asyncore.dispatcher):
                         try:
                             cli_id = b_dec[1:3].decode("UTF-8")
                             seq = int(b_dec[3:9].decode("UTF-8"))
-                            b_data = b_dec[9:]
+                            send_time=int(b_dec[9:17]).decode("UTF-8")
+                            self.send_re_time+=time()-send_time/100
+                            b_data = b_dec[17:]
                         except Exception:
                             logging.warning("decode error")
                             cli_id = None
