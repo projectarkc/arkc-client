@@ -93,8 +93,9 @@ class ServerReceiver(asyncore.dispatcher):
 
     def sever_speed(self, msg):
         """Parse sever's speed for sending and  receiving"""
-        self.se_send_speed = int(msg[0])
-        self.se_recv_speed = int(msg[1])
+        msg = eval(msg)
+        self.se_send_speed = msg[0]
+        self.se_recv_speed = msg[1]
 
     def cl_speed(self):
         """get client's speeds for sending and receiving
