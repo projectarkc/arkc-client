@@ -178,13 +178,14 @@ class ServerReceiver(asyncore.dispatcher):
                                 read_count += len(b_data)
                             # else:
                             #    self.encrypt_and_send(cli_id, CLOSECHAR)
-                    elif flag == 0:
-                        # receive ping
-                        self.ping_recv(b_dec[1:].decode("UTF-8"))
                     elif flag == 9:
                         self.cl_speed()
                         self.sever_speed(b_dec[1:].decode("UTF-8"))
                         self.time = time.time()
+                    
+                    else
+                        # receive ping
+                        self.ping_recv(b_dec[1:].decode("UTF-8"))
 
                 else:
                     self.from_remote_buffer_raw = bytessplit[Index]
