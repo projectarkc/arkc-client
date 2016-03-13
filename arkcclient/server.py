@@ -169,7 +169,7 @@ class ServerReceiver(asyncore.dispatcher):
                             if cli_id in self.ctl.clientreceivers_dict:
                                 if seq == 30:
                                     self.update_max_idx(cli_id,
-                                                        int(b_data.encode('utf-8')))
+                                                        int(b_data.decode('utf-8')))
                                 elif b_data != b_close:
                                     self.ctl.server_recv_max_idx[
                                         self.i][cli_id] = seq
