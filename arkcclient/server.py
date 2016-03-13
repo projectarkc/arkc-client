@@ -147,7 +147,7 @@ class ServerReceiver(asyncore.dispatcher):
                         try:
                             cli_id = b_dec[1:3].decode("UTF-8")
                             seq = int(b_dec[3:9].decode("UTF-8"))
-                            send_time = int(b_dec[9:17]).decode("UTF-8")
+                            send_time = int(b_dec[9:17].decode("UTF-8"), 36)
                             self.send_recv_time += time() - send_time / 100
                             b_data = b_dec[17:]
                         except Exception:
