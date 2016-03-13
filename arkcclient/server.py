@@ -112,6 +112,7 @@ class ServerReceiver(asyncore.dispatcher):
             self.recv_speed = self.recv_count / interval
             self.send_speed = self.send_count / interval
             self.connect_speed = self.recv_count / self.send_recv_time
+            self.send_recv_time = 0
             raw_packet = "9" + \
                 repr([self.recv_speed, self.send_speed, self.connect_speed])
             to_write = self.cipher.encrypt(raw_packet) + self.split
