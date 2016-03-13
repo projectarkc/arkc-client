@@ -70,14 +70,14 @@ class ServerReceiver(asyncore.dispatcher):
         self.latency = 10000
         time.sleep(0.05)  # async
         self.begin_auth()
-        self.send_count=0
-        self.recv_count=0
-        self.time=0
-        self.recv_speed=0
-        self.send_speed=0
-        self.se_send_speed=0
-        self.se_recv_speed=0
-        self.send_recv_time=0
+        self.send_count = 0
+        self.recv_count = 0
+        self.time = 0
+        self.recv_speed = 0
+        self.send_speed = 0
+        self.se_send_speed = 0
+        self.se_recv_speed = 0
+        self.send_recv_time = 0
 
     def ping_recv(self, msg):
         """Parse ping (without flag) and send back when necessary."""
@@ -90,29 +90,30 @@ class ServerReceiver(asyncore.dispatcher):
             time1 = parse_timestamp(msg[1:])
             self.latency = int(time.time() * 1000) - time1
             logging.debug("latency: %dms" % self.latency)
-            
-    def sever_speed(self,msg):
+
+    def sever_speed(self, msg):
         """Parse sever's speed for sending and  receiving"""
-        self.se_send_speed=int(spe[0])
-        self.se_recv_speed=int(spe[1])
-                
+        self.se_send_speed = int(msg[0])
+        self.se_recv_speed = int(msg[1])
+
     def cl_speed(self):
         """get client's speeds for sending and receiving
         and send them to the sever
-        
+
         packet format:
          "9"                     (1 byte)    (type flag for speed)
          send_speed     (how much bytes per second)
          recv_speed      (how much bytes per second)
          connect speed    (how much bytes per second)
         """
-        if self.time!=0:
-            interval=time.time()-self.time
-            self.recv_speed=self.recv_count/interval
-            self.send_speed=self.send_count/interval
-            self.connect_speed=self.recv_count/self.send_recv_time
-            raw_packet="9"+repr([self.recv_speed,self.send_speed,self.connect_speed])
-            to_write=self.cipher.encrypt(raw_packet)+self.split
+        if self.time != 0:
+            interval = time.time() - self.time
+            self.recv_speed = self.recv_count / interval
+            self.send_speed = self.send_count / interval
+            self.connect_speed = self.recv_count / self.send_recv_time
+            raw_packet = "9" + \
+                repr([self.recv_speed, self.send_speed, self.connect_speed])
+            to_write = self.cipher.encrypt(raw_packet) + self.split
             self.send(to_write)
 
     def handle_connect(self):
@@ -138,8 +139,8 @@ class ServerReceiver(asyncore.dispatcher):
                         try:
                             cli_id = b_dec[1:3].decode("UTF-8")
                             seq = int(b_dec[3:9].decode("UTF-8"))
-                            send_time=int(b_dec[9:17]).decode("UTF-8")
-                            self.send_re_time+=time()-send_time/100
+                            send_time = int(b_dec[9:17]).decode("UTF-8")
+                            self.send_re_time += time() - send_time / 100
                             b_data = b_dec[17:]
                         except Exception:
                             logging.warning("decode error")
@@ -176,19 +177,18 @@ class ServerReceiver(asyncore.dispatcher):
                                 read_count += len(b_data)
                             # else:
                             #    self.encrypt_and_send(cli_id, CLOSECHAR)
-                    elif flag==0:
-                        #receive ping
+                    elif flag == 0:
+                        # receive ping
                         self.ping_recv(b_dec[1:].decode("UTF-8"))
-                    elif flag==9:
+                    elif flag == 9:
                         self.cl_speed()
                         self.sever_speed(b_dec[1:].decode("UTF-8"))
-                        self.time=time.time()
-                        
+                        self.time = time.time()
 
                 else:
                     self.from_remote_buffer_raw = bytessplit[Index]
             if read_count > 0:
-                self.recv_count+=read_count
+                self.recv_count += read_count
                 logging.debug('%04i from server' % read_count)
 
     def begin_auth(self):
@@ -311,10 +311,9 @@ class ServerReceiver(asyncore.dispatcher):
                 self.ctl.server_send_buf_pool[self.i][cli_id] = []
         else:
             buf = bytes(buf, "utf-8")
-        to_send=self.cipher.encrypt(b"0" + b_id + b_idx + buf) +
-                  self.split
+        to_send = self.cipher.encrypt(b"0" + b_id + b_idx + buf) + self.split
         self.send(to_send)
-        self.send_count+=len(to_send)
+        self.send_count += len(to_send)
         self.ctl.server_send_buf_pool[self.i][cli_id].append((buf, b_idx))
         return len(buf)
 
@@ -339,4 +338,3 @@ class ServerReceiver(asyncore.dispatcher):
                 queue.popleft()
         except Exception:
             pass
-        
