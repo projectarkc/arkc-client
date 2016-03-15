@@ -30,7 +30,7 @@ DEFAULT_REQUIRED = 3
 DEFAULT_DNS_SERVERS = [["8.8.8.8", 53]]
 DEFAULT_OBFS4_EXECADDR = "obfs4proxy"
 
-VERSION = "0.2.3"
+VERSION = "0.3.0"
 
 
 def genkey(options):
@@ -41,9 +41,9 @@ def genkey(options):
         commonpath = os.getenv('APPDATA') + os.sep + "ArkC" + os.sep
     else:
         commonpath = os.path.expanduser('~') + os.sep
-    if not os.path.exists(directory):
+    if not os.path.exists(commonpath):
         try:
-            os.makedirs(directory)
+            os.makedirs(commonpath)
             print("Writing to directory " + commonpath)
         except OSError:
             print("Cannot write to directory" + commonpath)

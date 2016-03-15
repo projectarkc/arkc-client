@@ -36,7 +36,7 @@ else:
 
 setup(
     name=pkg_name,
-    version="0.2.3",
+    version="0.3.0",
     license='https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt',
     description="A lightweight proxy designed to be proof to IP blocking measures",
     author='Noah, Teba, Ddeerreekk',
