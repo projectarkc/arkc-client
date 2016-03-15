@@ -22,6 +22,7 @@ from meekclient import main as meekexec
 from pyotp.totp import TOTP
 
 CLOSECHAR = chr(4) * 5
+PROTO_VERSION = "00"
 
 rng = random.SystemRandom()
 
@@ -171,7 +172,7 @@ class Coordinate(object):
             (
                 req_num_connection_number (HEX, 2 bytes) +
                     used_remote_listening_port (HEX, 4 bytes) +
-                    sha1(cert_pub) ,
+                    sha1(cert_pub) + version (ascii, 2 bytes),
                 pyotp.TOTP(pri_sha1 + ip_in_hex_form + salt),
                 main_pw,    # must send in encrypted form to avoid MITM
                 ip_in_hex_form,
@@ -185,6 +186,7 @@ class Coordinate(object):
         msg[0] += number_in_hex
         msg[0] += "%04X" % self.remote_port
         msg[0] += self.clientpub_sha1
+        msg[0] += PROTO_VERSION
         if self.ipv6 == "":
             myip = int2base(self.ip)
         else:

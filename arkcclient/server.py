@@ -164,7 +164,7 @@ class ServerReceiver(asyncore.dispatcher):
                 # TODO: fix an error in int(signature,16)
                 try:
                     verify = self.ctl.serverpub.verify(
-                        self.ctl.main_pw, (int(signature, 16), None))
+                        self.ctl.main_pw, (int(signature, 36), None))
                 except ValueError:
                     logging.debug("ValueError captured at server.py line 165")
                     verify = False
