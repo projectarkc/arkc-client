@@ -83,7 +83,7 @@ def dlmeek():
     print(
         "Downloading meek plugin (meek-server) from github to your home directory.")
     meekfile = requests.get(link, stream=True)
-    if meekfile.status_code == '200':
+    if meekfile.status_code == 200:
         print("Saving to " + localfile)
     else:
         print("Error downloading.")
