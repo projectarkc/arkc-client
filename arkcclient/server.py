@@ -128,7 +128,7 @@ class ServerReceiver(asyncore.dispatcher):
                             if cli_id in self.ctl.clientreceivers_dict:
                                 if seq == 30:
                                     self.update_max_idx(cli_id,
-                                                        int(b_data.encode('utf-8')))
+                                                        int(b_data.decode('utf-8')))
                                 elif b_data != b_close:
                                     self.ctl.server_recv_max_idx[
                                         self.i][cli_id] = seq
@@ -159,11 +159,12 @@ class ServerReceiver(asyncore.dispatcher):
         try:
             self.read += self.recv(2048)
             if self.split in self.read:
-                signature = self.read[:512]
+                authdata = self.read.split(b'\r\n')
+                signature = authdata[0]
                 # TODO: fix an error in int(signature,16)
                 try:
                     verify = self.ctl.serverpub.verify(
-                        self.ctl.main_pw, (int(signature, 16), None))
+                        self.ctl.main_pw, (int(signature, 36), None))
                 except ValueError:
                     logging.debug("ValueError captured at server.py line 165")
                     verify = False
@@ -173,22 +174,23 @@ class ServerReceiver(asyncore.dispatcher):
                 else:
                     try:
                         self.cipher = AESCipher(
-                            self.ctl.clientpri.decrypt(self.read[512:768]), self.ctl.main_pw)
+                            self.ctl.clientpri.decrypt(authdata[1]), self.ctl.main_pw)
                         self.full = False
-                        idchar = self.read[768:770].decode('utf-8')
+                        idchar = authdata[2].decode('utf-8')
                         self.i = int(idchar)
                         self.ctl.newconn(self)
                         logging.debug(
                             "Authentication succeed, connection established")
                         self.send(
-                            self.cipher.encrypt(b"2AUTHENTICATED" + self.read[768:770] +
+                            self.cipher.encrypt(b"2AUTHENTICATED" + authdata[2] +
                                                 repr(
                                                 self.ctl.server_recv_max_idx[self.i]).encode()
                                                 )
                             + self.split
                         )
                         self.send_legacy(
-                            eval(self.read[770:].rstrip(self.split).decode('utf-8')))
+                            eval(authdata[3].rstrip(self.split).decode('utf-8')))
+                        self.read = None
                     except ValueError:
                         # TODO: figure out why
                         logging.warning(
