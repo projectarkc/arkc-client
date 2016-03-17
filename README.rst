@@ -11,7 +11,7 @@ client is behind a router.
 
 Note: ArkC 0.3 is not compatible with 0.2 or earlier versions.
 
-`(中文)快速入门教程<https://github.com/projectarkc/arkc-client/wiki/ArkC-VPS%E7%89%88-%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8B%E6%95%99%E7%A8%8B>`__
+`(中文)快速入门教程 <https://github.com/projectarkc/arkc-client/wiki/ArkC-VPS%E7%89%88-%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8B%E6%95%99%E7%A8%8B>`__
 
 What is ArkC?
 -------------
