@@ -30,7 +30,7 @@ DEFAULT_REQUIRED = 3
 DEFAULT_DNS_SERVERS = [["8.8.8.8", 53]]
 DEFAULT_OBFS4_EXECADDR = "obfs4proxy"
 
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 
 
 def genkey(options):
@@ -129,7 +129,7 @@ def main():
 
         parser.add_argument("-v6", dest="ipv6", default="",
                             help="Enable this option to use IPv6 address (only use it if you have one)")
-        print("""ArkC Client V0.2,  by ArkC Technology.
+        print("""ArkC Client V""" + VERSION + """,  by ArkC Technology.
 The programs is distributed under GNU General Public License Version 2.
 """)
 

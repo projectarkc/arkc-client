@@ -16,7 +16,7 @@ Note: ArkC 0.3 is not compatible with 0.2 or earlier versions.
 What is ArkC?
 -------------
 
-ArkC allows users to enjoy free web browsing without worrying about censorship measures like IP blacklists. For VPS owners they are better equipped to share their VPS to people around them, or share online, the proxy hosted on their VPS.
+ArkC enables VPS owners to share their VPS to people around them, or share online, the proxy hosted on their VPS, without worrying about IP blacklists.
 
 For a more detailed description, please visit our website and read our page `Understand ArkC <https://arkc.org/understand-arkc/>`__. 中文版本的介绍在这一页面 `ArkC的原理 <https://arkc.org/understand_arkc_zh_cn/>`__。
 
@@ -99,7 +99,7 @@ We could generate a keypair with
 
 And the keys can be sent to an email address used by the server provider with this command    
 
-:
+::
 
     arkcclient -reg Email_Address_to_send
 
@@ -127,29 +127,29 @@ For a full list of settings:
 +--------------------+---------------------------------------------------+----------------------------------+
 | Index name         | Value Type & Description                          | Required / Default               |
 +====================+===================================================+==================================+
-| local\_host        | str, proxy listening addr                         | "127.0.0.1"                      |
+| local\_host        | string, proxy listening addr                      | "127.0.0.1"                      |
 +--------------------+---------------------------------------------------+----------------------------------+
 | local\_port        | integer, proxy port                               | 8001                             |
 +--------------------+---------------------------------------------------+----------------------------------+
-| remote\_host       | str, listening host                               | "0.0.0.0"                        |
+| remote\_host       | string, listening host                            | "0.0.0.0"                        |
 +--------------------+---------------------------------------------------+----------------------------------+
 | remote\_port       | integer, listening port                           | random between 20000 and 60000   |
 +--------------------+---------------------------------------------------+----------------------------------+
 | number             | integer, how many conn. (max. 100)                | 3                                |
 +--------------------+---------------------------------------------------+----------------------------------+
-| local\_cert        | str, path of client pri                           | REQUIRED                         |
+| local\_cert        | string, path of client pri                        | REQUIRED                         |
 +--------------------+---------------------------------------------------+----------------------------------+
-| local\_cert\_pub   | str, path of client pub                           | REQUIRED                         |
+| local\_cert\_pub   | string, path of client pub                        | REQUIRED                         |
 +--------------------+---------------------------------------------------+----------------------------------+
-| remote\_cert       | str, path of server pub                           | REQUIRED                         |
+| remote\_cert       | string, path of server pub                        | REQUIRED                         |
 +--------------------+---------------------------------------------------+----------------------------------+
-| control\_domain    | str, standard domain                              | REQUIRED                         |
+| control\_domain    | string, standard domain                           | REQUIRED                         |
 +--------------------+---------------------------------------------------+----------------------------------+
 | dns\_servers       | list, servers to send dns query to                | [] (use system resolver)         |
 +--------------------+---------------------------------------------------+----------------------------------+
-| debug\_ip          | str, address of the client (only for debug use)   | None                             |
+| debug\_ip          | string, address of the client (only for debug use)| None                             |
 +--------------------+---------------------------------------------------+----------------------------------+
-| pt\_exec           | str, command line of PT executable                | "obfs4proxy"                     |
+| pt\_exec           | string, command line of PT executable             | "obfs4proxy"                     |
 +--------------------+---------------------------------------------------+----------------------------------+
 | obfs\_level        | integer, obfs leve 0~3, the same as server side   | 0                                |
 +--------------------+---------------------------------------------------+----------------------------------+
