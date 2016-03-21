@@ -30,7 +30,6 @@ And making it a little bit more complicated, e.g. set obfs_level to 3 or use a s
 .. image:: https://arkc.org/wp-content/uploads/2016/03/ArkCProxy.png 
    :height: 400px
 
-Note, "anonymous_proxy" can be anything you set!
 
 Setup and Requirement
 ---------------------
