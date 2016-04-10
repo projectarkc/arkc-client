@@ -51,22 +51,16 @@ class ClientReceiver(asyncore.dispatcher):
         self.to_remote_buffer += read
 
     def writable(self):
-        return self.from_remote_buffer_index in self.from_remote_buffer_dict
+        return len(self.from_remote_buffer_dict)>0
 
     def handle_write(self):
-        i = 0
-        self.retransmit_lock = False
-        while self.writable() and i <= 4:
-            tosend = self.from_remote_buffer_dict.pop(
-                self.from_remote_buffer_index)
+        tosend_iter = self.from_remote_buffer_dict.itervalues()
+        for tosend in tosend_iter:
             while len(tosend) > 0:
                 sent = self.send(tosend)
                 logging.debug('%04i to client ' % sent + self.idchar)
                 tosend = tosend[sent:]
-            i += 1
-        if self.next_from_remote_buffer() % self.control.req_num == 0:
-            self.control.received_confirm(
-                self.idchar, self.from_remote_buffer_index)
+        
 
     def handle_close(self):
         self.control.remove(self.idchar)

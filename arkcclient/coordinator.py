@@ -186,6 +186,8 @@ class Coordinate(object):
         msg[0] += number_in_hex
         msg[0] += "%04X" % self.remote_port
         msg[0] += self.clientpub_sha1
+        #print(self.clientpub_sha1)
+        #print("======================")
         msg[0] += PROTO_VERSION
         if self.ipv6 == "":
             myip = int2base(self.ip)
@@ -198,6 +200,8 @@ class Coordinate(object):
             (self.clientpri_sha1 + myip + salt + number_in_hex).encode('utf-8'))
         msg.append(TOTP(bytes(h.hexdigest(), "UTF-8")).now())
         msg.append(binascii.hexlify(self.main_pw).decode("ASCII"))
+        print(self.main_pw)
+        #print("======================")
         msg.append(myip)
         msg.append(salt)
         if 1 <= self.obfs_level <= 2:

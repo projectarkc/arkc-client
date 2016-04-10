@@ -7,6 +7,9 @@ import logging
 import time
 import struct
 
+from Crypto.Hash import SHA256
+from Crypto.Signature import PKCS1_v1_5
+
 from common import AESCipher
 from common import get_timestamp, parse_timestamp
 from _io import BlockingIOError
@@ -134,8 +137,8 @@ class ServerReceiver(asyncore.dispatcher):
                                         self.i][cli_id] = seq
                                     self.ctl.clientreceivers_dict[
                                         cli_id].from_remote_buffer_dict[seq] = b_data
-                                    self.ctl.clientreceivers_dict[
-                                        cli_id].retransmission_check()
+                                    #self.ctl.clientreceivers_dict[
+                                    #    cli_id].retransmission_check()
                                 else:
                                     for _ in self.ctl.server_recv_max_idx:
                                         if _ is not None:
@@ -157,19 +160,24 @@ class ServerReceiver(asyncore.dispatcher):
     def begin_auth(self):
         # Deal with the beginning authentication
         try:
+            
             self.read += self.recv(2048)
-            if self.split in self.read:
+            print("CALL AUTH")
+            if b'\r\n' in self.read:
                 authdata = self.read.split(b'\r\n')
+                print (authdata)
+                print(self.ctl.main_pw)
                 signature = authdata[0]
                 # TODO: fix an error in int(signature,16)
                 try:
-                    verify = self.ctl.serverpub.verify(
-                        self.ctl.main_pw, (int(signature, 36), None))
+                    signer = PKCS1_v1_5.new(self.ctl.serverpub)
+                    h = SHA256.new(self.ctl.main_pw)
+                    verify = signer.verify(h, signature)
                 except ValueError:
                     logging.debug("ValueError captured at server.py line 165")
                     verify = False
                 if not verify:
-                    logging.warning("Authentication failed, socket closing")
+                    logging.warning("Authentication failed, socket closing, case 1")
                     self.close()
                 else:
                     try:
@@ -191,10 +199,10 @@ class ServerReceiver(asyncore.dispatcher):
                         self.send_legacy(
                             eval(authdata[3].rstrip(self.split).decode('utf-8')))
                         self.read = None
-                    except ValueError:
+                    except IOError:#ValueError:
                         # TODO: figure out why
                         logging.warning(
-                            "Authentication failed, socket closing")
+                            "Authentication failed, socket closing, , case 2")
                         self.handle_close()
             else:
                 if len(self.read) == 0:
@@ -268,10 +276,9 @@ class ServerReceiver(asyncore.dispatcher):
             b_idx = bytes(
                 str(self.ctl.clientreceivers_dict[cli_id].to_remote_buffer_index), 'utf-8')
             buf = self.ctl.clientreceivers_dict[
-                cli_id].to_remote_buffer[:SEG_SIZE]
+                cli_id]#[SEG SIZE]
             self.ctl.clientreceivers_dict[cli_id].next_to_remote_buffer()
-            self.ctl.clientreceivers_dict[cli_id].to_remote_buffer = self.ctl.clientreceivers_dict[
-                cli_id].to_remote_buffer[len(buf):]
+            self.ctl.clientreceivers_dict[cli_id].to_remote_buffer = b""
             if cli_id not in self.ctl.server_send_buf_pool[self.i]:
                 self.ctl.server_send_buf_pool[self.i][cli_id] = []
         else:
