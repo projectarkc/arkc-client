@@ -57,6 +57,10 @@ class Coordinate(object):
         self.clientreceivers_dict = dict()
         self.main_pw = (''.join(rng.choice(ascii_letters) for _ in range(16)))\
             .encode('ASCII')
+        
+        #DEBUG:
+        #self.main_pw = b"bbbbbbbbbbbbbbbb"
+                
         # each dict maps client connection id to the max index received
         # by the corresponding serverreceiver
         self.serverreceivers_pool = [None] * self.req_num
@@ -186,7 +190,7 @@ class Coordinate(object):
         msg[0] += number_in_hex
         msg[0] += "%04X" % self.remote_port
         msg[0] += self.clientpub_sha1
-        #print(self.clientpub_sha1)
+        print(self.clientpub_sha1)
         #print("======================")
         msg[0] += PROTO_VERSION
         if self.ipv6 == "":

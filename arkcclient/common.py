@@ -117,7 +117,12 @@ class AESCipher:
     def __init__(self, password, iv):
         self.password = password
         self.iv = iv
-        self.cipher = AES.new(self.password, AES.MODE_CFB, self.iv)
+        try:
+            self.cipher = AES.new(self.password, AES.MODE_CFB, self.iv)
+        except Exception as err:
+            print(err)
+            print(self.password)
+            print(len(self.password))
 
     def encrypt(self, data):
         enc = self.cipher.encrypt(data)

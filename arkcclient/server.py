@@ -9,6 +9,8 @@ import struct
 
 from Crypto.Hash import SHA256
 from Crypto.Signature import PKCS1_v1_5
+from Crypto.Cipher import PKCS1_v1_5 as PKCS_Cipher
+from Crypto import Random
 
 from common import AESCipher
 from common import get_timestamp, parse_timestamp
@@ -181,25 +183,31 @@ class ServerReceiver(asyncore.dispatcher):
                     self.close()
                 else:
                     try:
+                        auth_cipher = PKCS_Cipher.new(self.ctl.clientpri)
+                        sentinel = Random.new().read(32)
+                        message = auth_cipher.decrypt(authdata[1], sentinel)
+                        if len(message) != 16:
+                            raise ValueError
                         self.cipher = AESCipher(
-                            self.ctl.clientpri.decrypt(authdata[1]), self.ctl.main_pw)
+                            message, self.ctl.main_pw)
                         self.full = False
                         idchar = authdata[2].decode('utf-8')
                         self.i = int(idchar)
                         self.ctl.newconn(self)
                         logging.debug(
                             "Authentication succeed, connection established")
+                        print(message)
                         self.send(
-                            self.cipher.encrypt(b"2AUTHENTICATED" + authdata[2] +
-                                                repr(
-                                                self.ctl.server_recv_max_idx[self.i]).encode()
+                            self.cipher.encrypt(b"2AUTHENTICATED" + authdata[2] #+
+                                                #repr(
+                                                #self.ctl.server_recv_max_idx[self.i]).encode()
                                                 )
-                            + self.split
+                            #+ self.split
                         )
-                        self.send_legacy(
-                            eval(authdata[3].rstrip(self.split).decode('utf-8')))
+                        #self.send_legacy(
+                        #    eval(authdata[3].rstrip(self.split).decode('utf-8')))
                         self.read = None
-                    except IOError:#ValueError:
+                    except IOError:
                         # TODO: figure out why
                         logging.warning(
                             "Authentication failed, socket closing, , case 2")
