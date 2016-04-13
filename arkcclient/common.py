@@ -136,7 +136,7 @@ class AESCipher:
         return enc
 
     def decrypt(self, data):
-        dec = self.cipher.decrypt()
+        dec = self.cipher.decrypt(data)
         self.cipher = AES.new(
             self.password, AES.MODE_CFB, self.iv, segment_size=AES.block_size * 8)
         return dec.rstrip(b'\x01')

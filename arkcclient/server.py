@@ -68,8 +68,8 @@ class ServerReceiver(asyncore.dispatcher):
         self.split = bytes(
             chr(27) +
             chr(28) +
-            "%X" % struct.unpack('B', self.ctl.main_pw[-2:-1])[0] +
-            "%X" % struct.unpack('B', self.ctl.main_pw[-3:-2])[0] +
+            #"%X" % struct.unpack('B', self.ctl.main_pw[-2:-1])[0] +
+            #"%X" % struct.unpack('B', self.ctl.main_pw[-3:-2])[0] +
             chr(31),
             "UTF-8"
         )
@@ -104,6 +104,7 @@ class ServerReceiver(asyncore.dispatcher):
         else:
             read_count = 0
             self.from_remote_buffer_raw += self.recv(8192)
+            print("CALL READ")
             bytessplit = self.from_remote_buffer_raw.split(self.split)
             for Index in range(len(bytessplit)):
                 if Index < len(bytessplit) - 1:
@@ -240,6 +241,8 @@ class ServerReceiver(asyncore.dispatcher):
             except Exception:
                 pass
 
+#WRITE PARTS NEED TO BE OPTIMIZED
+
     def writable(self):
         if self.preferred:
             for cli_id in self.ctl.clientreceivers_dict:
@@ -283,10 +286,12 @@ class ServerReceiver(asyncore.dispatcher):
         if buf is None:
             b_idx = bytes(
                 str(self.ctl.clientreceivers_dict[cli_id].to_remote_buffer_index), 'utf-8')
-            buf = self.ctl.clientreceivers_dict[
-                cli_id]  # [SEG SIZE]
+            splitted = self.ctl.clientreceivers_dict[
+                cli_id].to_remote_buffer.split(b'\x00\x01\x02\x03\x04')[0]  # [SEG SIZE]
+            buf = splitted[0]
+            splitted.
             self.ctl.clientreceivers_dict[cli_id].next_to_remote_buffer()
-            self.ctl.clientreceivers_dict[cli_id].to_remote_buffer = b""
+            self.ctl.clientreceivers_dict[cli_id].to_remote_buffer = b'\x00\x01\x02\x03\x04'.join(splitted[1:])
             if cli_id not in self.ctl.server_send_buf_pool[self.i]:
                 self.ctl.server_send_buf_pool[self.i][cli_id] = []
         else:
