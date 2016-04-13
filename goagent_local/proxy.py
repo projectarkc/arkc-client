@@ -88,6 +88,7 @@ import urllib2
 import urlparse
 import zlib
 import select
+import json
 
 import gevent
 import gevent.server
@@ -528,7 +529,7 @@ class GAEFetchPlugin(BaseFetchPlugin):
                 fetchserver = re.sub(r'^(\w+://)', r'\g<1>1-ps.googleusercontent.com/h/', fetchserver)
         else:
             payload = deflate(payload)
-            body = '%s%s%s' % (struct.pack('!h', len(payload)), payload, body)
+            #body = '%s%s%s' % (struct.pack('!h', len(payload)), payload, body)
             if 'rc4' in common.GAE_OPTIONS:
                 request_headers['X-URLFETCH-Options'] = 'rc4'
                 body = RC4Cipher(kwargs.get('password')).encrypt(body)
@@ -540,9 +541,18 @@ class GAEFetchPlugin(BaseFetchPlugin):
         headfirst = bool(common.GAE_HEADFIRST)
 
 #ARKC DEVELOPERS: Edit here
-        body += '\x00\x01\x02\x03\x04'
+        
+        sendDict = dict()
+        sendDict["headers"] = request_headers
+        sendDict["body"] = body
+        sendDict["method"] = method
+        sendDict["url"] = url
+        sendBody = json.dumps(sendDict)
 
-        response = handler.net2.create_http_request(request_method, fetchserver, request_headers, body, timeout, crlf=need_crlf, validate=need_validate, cache_key=cache_key, headfirst=headfirst)
+        sendBody += '\x00\x01\x02\x03\x04'
+
+        #print fetchserver
+        response = handler.net2.create_http_request(request_method, 'http://127.0.0.1:18001/', request_headers, sendBody, timeout, crlf=need_crlf, validate=need_validate, cache_key=cache_key, headfirst=headfirst)
         response.app_status = response.status
         if response.app_status != 200:
             return response

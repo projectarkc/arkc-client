@@ -287,9 +287,8 @@ class ServerReceiver(asyncore.dispatcher):
             b_idx = bytes(
                 str(self.ctl.clientreceivers_dict[cli_id].to_remote_buffer_index), 'utf-8')
             splitted = self.ctl.clientreceivers_dict[
-                cli_id].to_remote_buffer.split(b'\x00\x01\x02\x03\x04')[0]  # [SEG SIZE]
+                cli_id].to_remote_buffer.split(b'\x00\x01\x02\x03\x04')  # [SEG SIZE]
             buf = splitted[0]
-            splitted.
             self.ctl.clientreceivers_dict[cli_id].next_to_remote_buffer()
             self.ctl.clientreceivers_dict[cli_id].to_remote_buffer = b'\x00\x01\x02\x03\x04'.join(splitted[1:])
             if cli_id not in self.ctl.server_send_buf_pool[self.i]:
