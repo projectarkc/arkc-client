@@ -553,6 +553,7 @@ class GAEFetchPlugin(BaseFetchPlugin):
 
         #print fetchserver
         response = handler.net2.create_http_request(request_method, 'http://127.0.0.1:18001/', request_headers, sendBody, timeout, crlf=need_crlf, validate=need_validate, cache_key=cache_key, headfirst=headfirst)
+        print response.status
         response.app_status = response.status
         if response.app_status != 200:
             return response

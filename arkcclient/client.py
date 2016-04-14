@@ -54,12 +54,11 @@ class ClientReceiver(asyncore.dispatcher):
         return len(self.from_remote_buffer_dict)>0
 
     def handle_write(self):
-        tosend_iter = self.from_remote_buffer_dict.itervalues()
-        for tosend in tosend_iter:
-            while len(tosend) > 0:
-                sent = self.send(tosend)
-                logging.debug('%04i to client ' % sent + self.idchar)
-                tosend = tosend[sent:]
+        tosend = self.from_remote_buffer_dict.popitem()[1]
+        while len(tosend) > 0:
+            sent = self.send(tosend)
+            logging.debug('%04i to client ' % sent + self.idchar)
+            tosend = tosend[sent:]
         
 
     def handle_close(self):

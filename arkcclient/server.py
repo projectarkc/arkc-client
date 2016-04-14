@@ -104,11 +104,14 @@ class ServerReceiver(asyncore.dispatcher):
         else:
             read_count = 0
             self.from_remote_buffer_raw += self.recv(8192)
-            print("CALL READ")
+            
             bytessplit = self.from_remote_buffer_raw.split(self.split)
+            print("CALL READ %d" % len(bytessplit))
             for Index in range(len(bytessplit)):
+
                 if Index < len(bytessplit) - 1:
                     b_dec = self.cipher.decrypt(bytessplit[Index])
+                    print(b_dec)
                     # flag is 0 for normal data packet, 1 for ping packet
                     flag = int(b_dec[:1].decode("UTF-8"))
                     if flag == 0:
@@ -288,7 +291,10 @@ class ServerReceiver(asyncore.dispatcher):
                 str(self.ctl.clientreceivers_dict[cli_id].to_remote_buffer_index), 'utf-8')
             splitted = self.ctl.clientreceivers_dict[
                 cli_id].to_remote_buffer.split(b'\x00\x01\x02\x03\x04')  # [SEG SIZE]
+            if len(splitted) <= 1:
+                return 0
             buf = splitted[0]
+            print(repr(buf))
             self.ctl.clientreceivers_dict[cli_id].next_to_remote_buffer()
             self.ctl.clientreceivers_dict[cli_id].to_remote_buffer = b'\x00\x01\x02\x03\x04'.join(splitted[1:])
             if cli_id not in self.ctl.server_send_buf_pool[self.i]:
