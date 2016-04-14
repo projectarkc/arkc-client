@@ -22,7 +22,7 @@ MAX_HANDLE = 100
 CLOSECHAR = chr(4) * 5
 REAL_SERVERPORT = 55000
 SEG_SIZE = 4080     # 4096(total) - 1(type) - 2(id) - 6(index) - 7(splitchar)
-
+SPLIT2 = b'\x00\x01\x02\x03\x04'
 
 class ServerControl(asyncore.dispatcher):
 
@@ -104,9 +104,10 @@ class ServerReceiver(asyncore.dispatcher):
         else:
             read_count = 0
             self.from_remote_buffer_raw += self.recv(8192)
-            
+            #print(self.from_remote_buffer_raw)
             bytessplit = self.from_remote_buffer_raw.split(self.split)
-            print("CALL READ %d" % len(bytessplit))
+            #print("CALL READ %d" % len(bytessplit))
+            #print("PASSWORD IS " + repr(self.cipher.password))
             for Index in range(len(bytessplit)):
 
                 if Index < len(bytessplit) - 1:
@@ -254,8 +255,9 @@ class ServerReceiver(asyncore.dispatcher):
                         "Client receiver %s NoneType error" % cli_id)
                     del self.ctl.clientreceivers_dict[cli_id]
                 else:
-                    if len(self.ctl.clientreceivers_dict[cli_id].to_remote_buffer) > 0:
+                    if SPLIT2 in self.ctl.clientreceivers_dict[cli_id].to_remote_buffer:
                         return True
+            return False
         else:
             return False
 
@@ -265,7 +267,7 @@ class ServerReceiver(asyncore.dispatcher):
             if self.ctl.ready == self:
                 written = 0
                 for cli_id in self.ctl.clientreceivers_dict:
-                    if self.ctl.clientreceivers_dict[cli_id].to_remote_buffer:
+                    if SPLIT2 in self.ctl.clientreceivers_dict[cli_id].to_remote_buffer:
                         self.id_write(cli_id)
                         written += 1
                     if written >= self.ctl.swapcount:
@@ -290,7 +292,7 @@ class ServerReceiver(asyncore.dispatcher):
             b_idx = bytes(
                 str(self.ctl.clientreceivers_dict[cli_id].to_remote_buffer_index), 'utf-8')
             splitted = self.ctl.clientreceivers_dict[
-                cli_id].to_remote_buffer.split(b'\x00\x01\x02\x03\x04')  # [SEG SIZE]
+                cli_id].to_remote_buffer.split(SPLIT2)  # [SEG SIZE]
             if len(splitted) <= 1:
                 return 0
             buf = splitted[0]
