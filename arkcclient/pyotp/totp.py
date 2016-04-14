@@ -21,7 +21,7 @@ class TOTP(OTP):
         if self.systime_offset is None:
             c = ntplib.NTPClient()
             TOTP.systime_offset = int(c.request(
-                's2a.time.edu.cn', version=3).offset)
+                'cn.pool.ntp.org', version=3).offset)
         super(TOTP, self).__init__(*args, **kwargs)
 
     def at(self, for_time, counter_offset=0):
