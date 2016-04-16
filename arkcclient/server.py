@@ -112,7 +112,13 @@ class ServerReceiver(asyncore.dispatcher):
             for Index in range(len(bytessplit)):
 
                 if Index < len(bytessplit) - 1:
-                    b_dec = self.cipher.decrypt(bytessplit[Index])
+                    try:
+                        b_dec = self.cipher.decrypt(bytessplit[Index])
+                    except ValueError:
+                        raw = bytessplit[Index]
+                        print(raw)
+                        print(len(raw))
+                        raise
                     if len(b_dec) == 0:
                         continue
                     # flag is 0 for normal data packet, 1 for ping packet
