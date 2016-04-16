@@ -1510,25 +1510,27 @@ class Net2(object):
         return ssl_sock
 
     def create_http_request(self, method, url, headers, body, timeout, **kwargs):
-        scheme, netloc, path, query, _ = urlparse.urlsplit(url)
-        if netloc.rfind(':') <= netloc.rfind(']'):
-            # no port number
-            host = netloc
-            port = 443 if scheme == 'https' else 80
-        else:
-            host, _, port = netloc.rpartition(':')
-            port = int(port)
-        if query:
-            path += '?' + query
-        if 'Host' not in headers:
-            headers['Host'] = host
-        if body and 'Content-Length' not in headers:
-            headers['Content-Length'] = str(len(body))
-        headers = dict((k.title(), v) for k, v in headers.items() if k.title() not in self.skip_headers)
-        ConnectionType = httplib.HTTPSConnection if scheme == 'https' else httplib.HTTPConnection
-        connection = ConnectionType(netloc, timeout=timeout)
-        connection.request(method, path, body=body, headers=headers)
-        response = connection.getresponse()
+        # scheme, netloc, path, query, _ = urlparse.urlsplit(url)
+        # if netloc.rfind(':') <= netloc.rfind(']'):
+        #     # no port number
+        #     host = netloc
+        #     port = 443 if scheme == 'https' else 80
+        # else:
+        #     host, _, port = netloc.rpartition(':')
+        #     port = int(port)
+        # if query:
+        #     path += '?' + query
+        # if 'Host' not in headers:
+        #     headers['Host'] = host
+        # if body and 'Content-Length' not in headers:
+        #     headers['Content-Length'] = str(len(body))
+        # headers = dict((k.title(), v) for k, v in headers.items() if k.title() not in self.skip_headers)
+        # ConnectionType = httplib.HTTPSConnection if scheme == 'https' else httplib.HTTPConnection
+        # connection = ConnectionType(netloc, timeout=timeout)
+        # connection.request(method, path, body=body, headers=headers)
+        # response = connection.getresponse()
+
+        response=requests.request(method,url,headers=headers,timeout=(handler.net2.connect_timeout,self.read_timeout),data=body)
         return response
 
 
