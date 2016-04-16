@@ -35,7 +35,7 @@ import urllib2
 import urlparse
 import OpenSSL
 import dnslib
-
+import requests
 
 gevent = sys.modules.get('gevent') or logging.warn('please enable gevent.')
 
@@ -1098,7 +1098,7 @@ class DirectFetchPlugin(BaseFetchPlugin):
         try:
             if rescue_bytes:
                 headers['Range'] = 'bytes=%d-' % rescue_bytes
-            response = handler.net2.create_http_request(method, url, headers, body, timeout=handler.net2.connect_timeout, read_timeout=self.read_timeout, **kwargs)
+            response=requests.request(method,url,headers=headers,timeout=(handler.net2.connect_timeout,self.read_timeout),data=body)
             logging.info('%s "DIRECT %s %s %s" %s %s', handler.address_string(), handler.command, url, handler.protocol_version, response.status, response.getheader('Content-Length', '-'))
             need_chunked = bool(response.getheader('Transfer-Encoding'))
             if not rescue_bytes:
