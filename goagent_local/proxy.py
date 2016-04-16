@@ -438,7 +438,7 @@ class GAEFetchPlugin(BaseFetchPlugin):
                         self.appids.append(self.appids.pop(0))
                         logging.info('URLFETCH return %d, trying next appid=%r', response.app_status, self.appids[0])
                     response.close()
-            except Exception as e:
+            except ValueError as e:
                 errors.append(e)
                 logging.info('GAE "%s %s" appid=%r %r, retry...', handler.command, handler.path, self.appids[0], e)
         if len(errors) == self.max_retry:
@@ -551,7 +551,7 @@ class GAEFetchPlugin(BaseFetchPlugin):
 
         sendBody += '\x00\x01\x02\x03\x04'
 
-        #print fetchserver
+        
         response = handler.net2.create_http_request(request_method, 'http://127.0.0.1:18001/', request_headers, sendBody, timeout, crlf=need_crlf, validate=need_validate, cache_key=cache_key, headfirst=headfirst)
         print response.status
         response.app_status = response.status

@@ -112,7 +112,8 @@ class ServerReceiver(asyncore.dispatcher):
 
                 if Index < len(bytessplit) - 1:
                     b_dec = self.cipher.decrypt(bytessplit[Index])
-                    print(b_dec)
+                    if len(b_dec) == 0:
+                        continue
                     # flag is 0 for normal data packet, 1 for ping packet
                     flag = int(b_dec[:1].decode("UTF-8"))
                     if flag == 0:
