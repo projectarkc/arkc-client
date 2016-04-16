@@ -24,6 +24,7 @@ REAL_SERVERPORT = 55000
 SEG_SIZE = 4080     # 4096(total) - 1(type) - 2(id) - 6(index) - 7(splitchar)
 SPLIT2 = b'\x00\x01\x02\x03\x04'
 
+
 class ServerControl(asyncore.dispatcher):
 
     '''listen at the required port'''
@@ -104,7 +105,7 @@ class ServerReceiver(asyncore.dispatcher):
         else:
             read_count = 0
             self.from_remote_buffer_raw += self.recv(8192)
-            #print(self.from_remote_buffer_raw)
+            # print(self.from_remote_buffer_raw)
             bytessplit = self.from_remote_buffer_raw.split(self.split)
             #print("CALL READ %d" % len(bytessplit))
             #print("PASSWORD IS " + repr(self.cipher.password))
@@ -246,7 +247,7 @@ class ServerReceiver(asyncore.dispatcher):
             except Exception:
                 pass
 
-#WRITE PARTS NEED TO BE OPTIMIZED
+# WRITE PARTS NEED TO BE OPTIMIZED
 
     def writable(self):
         if self.preferred:
@@ -299,7 +300,8 @@ class ServerReceiver(asyncore.dispatcher):
             buf = splitted[0]
             print(repr(buf))
             self.ctl.clientreceivers_dict[cli_id].next_to_remote_buffer()
-            self.ctl.clientreceivers_dict[cli_id].to_remote_buffer = b'\x00\x01\x02\x03\x04'.join(splitted[1:])
+            self.ctl.clientreceivers_dict[
+                cli_id].to_remote_buffer = b'\x00\x01\x02\x03\x04'.join(splitted[1:])
             if cli_id not in self.ctl.server_send_buf_pool[self.i]:
                 self.ctl.server_send_buf_pool[self.i][cli_id] = []
         else:
