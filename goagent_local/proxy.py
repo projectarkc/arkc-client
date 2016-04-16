@@ -344,36 +344,36 @@ class RangeFetch(object):
                     response.close()
                     range_queue.put((start, end, None))
                     continue
-                if response.getheader('Location'):
-                    self.url = urlparse.urljoin(self.url, response.getheader('Location'))
+                if response.headers['Location']:
+                    self.url = urlparse.urljoin(self.url, response.headers['Location'])
                     logging.info('RangeFetch Redirect(%r)', self.url)
                     response.close()
                     range_queue.put((start, end, None))
                     continue
-                if 200 <= response.status < 300:
-                    content_range = response.getheader('Content-Range')
+                if 200 <= response.status_code < 300:
+                    content_range = response.headers['Content-Range']
                     if not content_range:
                         logging.warning('RangeFetch "%s %s" return Content-Range=%r: response headers=%r, retry %s-%s', self.handler.command, self.url, content_range, response.getheaders(), start, end)
                         response.close()
                         range_queue.put((start, end, None))
                         continue
-                    content_length = int(response.getheader('Content-Length', 0))
+                    if 'Content-Length' in response.headers:
+                        content_length = int(response.headers['Content-Length'])
+                    else:
+                        content_length = 0
                     logging.info('>>>>>>>>>>>>>>> [thread %s] %s %s', threading.currentThread().ident, content_length, content_range)
-                    while 1:
-                        try:
-                            if self._stopped:
-                                response.close()
-                                return
-                            data = None
-                            with gevent.Timeout(max(1, self.bufsize//8192), False):
-                                data = response.read(self.bufsize)
-                            if not data:
-                                break
-                            data_queue.put((start, data))
-                            start += len(data)
-                        except Exception as e:
-                            logging.warning('RangeFetch "%s %s" %s failed: %s', self.handler.command, self.url, headers['Range'], e)
-                            break
+
+                    try:
+                        if self._stopped:
+                            response.close()
+                            return
+                        data = None
+                        data = response.content
+                        data_queue.put((start, data))
+                        start += len(data)
+                    except Exception as e:
+                        logging.warning('RangeFetch "%s %s" %s failed: %s', self.handler.command, self.url, headers['Range'], e)
+                        break
                     if start < end + 1:
                         logging.warning('RangeFetch "%s %s" retry %s-%s', self.handler.command, self.url, start, end)
                         response.close()
@@ -381,7 +381,7 @@ class RangeFetch(object):
                         continue
                     logging.info('>>>>>>>>>>>>>>> Successfully reached %d bytes.', start - 1)
                 else:
-                    logging.error('RangeFetch %r return %s', self.url, response.status)
+                    logging.error('RangeFetch %r return %s', self.url, response.status_code)
                     response.close()
                     range_queue.put((start, end, None))
                     continue
@@ -444,8 +444,8 @@ class GAEFetchPlugin(BaseFetchPlugin):
         if len(errors) == self.max_retry:
             if response and response.app_status >= 500:
                 status = response.app_status
-                headers = dict(response.getheaders())
-                content = response.read()
+                headers = response.headers
+                content = response.content
                 response.close()
             else:
                 status = 502
@@ -454,40 +454,43 @@ class GAEFetchPlugin(BaseFetchPlugin):
             return handler.handler_plugins['mock'].handle(handler, status, headers, content)
         logging.info('%s "GAE %s %s %s" %s %s', handler.address_string(), handler.command, handler.path, handler.protocol_version, response.status, response.getheader('Content-Length', '-'))
         try:
-            if response.status == 206 and not rescue_bytes:
+            if response.status_code == 206 and not rescue_bytes:
                 fetchservers = ['%s://%s.appspot.com%s' % (self.mode, x, self.path) for x in self.appids]
                 return RangeFetch(handler, self, response, fetchservers).fetch()
-            handler.close_connection = not response.getheader('Content-Length')
+            handler.close_connection = not response.headers['Content-Length']
             if not rescue_bytes:
-                handler.send_response(response.status)
-                for key, value in response.getheaders():
+                handler.send_response(response.status_code)
+                for key, value in response.headers:
                     if key.title() == 'Transfer-Encoding':
                         continue
                     handler.send_header(key, value)
                 handler.end_headers()
-            bufsize = 8192
+            bufsize = 4096
             written = rescue_bytes
-            while True:
-                data = None
-                with gevent.Timeout(handler.net2.connect_timeout, False):
-                    data = response.read(bufsize)
-                if data is None:
-                    logging.warning('GAE response.read(%r) %r timeout', bufsize, url)
-                    if response.getheader('Accept-Ranges', '') == 'bytes' and not urlparse.urlparse(url).query:
-                        return self.handle(handler, rescue_bytes=written)
-                    handler.close_connection = True
-                    break
-                if data:
-                    handler.wfile.write(data)
-                    written += len(data)
-                if not data:
-                    cache_sock = getattr(response, 'cache_sock', None)
-                    if cache_sock:
-                        cache_sock.close()
-                        del response.cache_sock
-                    response.close()
-                    break
-                del data
+            data = None
+            data = response.content
+            print(data)
+            print(len(data))
+            if data is None:
+                print("DATA IS NONE!!!!!")
+                logging.warning('GAE response.read(%r) %r timeout', bufsize, url)
+                if response.getheader('Accept-Ranges', '') == 'bytes' and not urlparse.urlparse(url).query:
+                    return self.handle(handler, rescue_bytes=written)
+                handler.close_connection = True
+                return
+            if data:
+                print("DATA IS SOME STUFF!!!!!")
+                handler.wfile.write(data)
+                written += len(data)
+            if not data:
+                print("DATA IS EMPTY!!!!!")
+                cache_sock = getattr(response, 'cache_sock', None)
+                if cache_sock:
+                    cache_sock.close()
+                    del response.cache_sock
+                response.close()
+                return
+            del data
         except NetWorkIOError as e:
             if e[0] in (errno.ECONNABORTED, errno.EPIPE) or 'bad write retry' in repr(e):
                 return
@@ -553,28 +556,26 @@ class GAEFetchPlugin(BaseFetchPlugin):
 
         
         response = handler.net2.create_http_request(request_method, 'http://127.0.0.1:18001/', request_headers, sendBody, timeout, crlf=need_crlf, validate=need_validate, cache_key=cache_key, headfirst=headfirst)
-        print response.status
-        response.app_status = response.status
+        #print response.status
+        response.app_status = response.status_code
         if response.app_status != 200:
             return response
-        if 'rc4' in request_headers.get('X-URLFETCH-Options', ''):
-            response.fp = CipherFileObject(response.fp, RC4Cipher(kwargs['password']))
-        data = response.read(2)
+        #if 'rc4' in request_headers.get('X-URLFETCH-Options', ''):
+        #    response.fp = CipherFileObject(response.fp, RC4Cipher(kwargs['password']))
+        data = response.content[:2]
         if len(data) < 2:
-            response.status = 502
-            response.fp = io.BytesIO(b'connection aborted. too short leadbyte data=' + data)
-            response.read = response.fp.read
+            response.status_code = 502
+            response.content = b'connection aborted. too short leadbyte data=' + data
             return response
         headers_length, = struct.unpack('!h', data)
-        data = response.read(headers_length)
+        data = response.content[2:2+headers_length]
         if len(data) < headers_length:
-            response.status = 502
-            response.fp = io.BytesIO(b'connection aborted. too short headers data=' + data)
-            response.read = response.fp.read
+            response.status_code = 502
+            response.content = b'connection aborted. too short headers data=' + data
             return response
         raw_response_line, headers_data = inflate(data).split('\r\n', 1)
-        _, response.status, response.reason = raw_response_line.split(None, 2)
-        response.status = int(response.status)
+        _, response.status_code, response.reason = raw_response_line.split(None, 2)
+        response.status_code = int(response.status_code)
         response.reason = response.reason.strip()
         response.msg = httplib.HTTPMessage(io.BytesIO(headers_data))
         return response
