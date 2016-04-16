@@ -562,12 +562,17 @@ class GAEFetchPlugin(BaseFetchPlugin):
         data = response.read(2)
         if len(data) < 2:
             response.status = 502
+            print("Changed to 502, A")
+            print(data)
             response.fp = io.BytesIO(b'connection aborted. too short leadbyte data=' + data)
             response.read = response.fp.read
             return response
         headers_length, = struct.unpack('!h', data)
         data = response.read(headers_length)
         if len(data) < headers_length:
+            print("Changed to 502, A")
+            print(data)
+            print(headers_length)
             response.status = 502
             response.fp = io.BytesIO(b'connection aborted. too short headers data=' + data)
             response.read = response.fp.read
