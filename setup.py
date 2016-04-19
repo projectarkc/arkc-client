@@ -23,9 +23,6 @@ else:
     """
     categories = [
         'License :: OSI Approved :: GNU General Public License v2 or later (GPLv2+)',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
@@ -36,7 +33,7 @@ else:
 
 setup(
     name=pkg_name,
-    version="0.3.1",
+    version="0.4.0.alpha1",
     license='https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt',
     description="A lightweight proxy designed to be proof to IP blocking measures",
     author='Noah, Teba, Ddeerreekk',

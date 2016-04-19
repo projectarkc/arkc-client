@@ -1,4 +1,4 @@
-ArkC-Client V0.3
+ArkC-Client V0.4
 ================
 
 ArkC is a lightweight proxy designed to be proof to IP blocking measures
@@ -9,12 +9,14 @@ ArkC-Client is the client-side utility. In a LAN environment, it either
 works with UPnP-enabled routers or requires NAT configuration if the
 client is behind a router.
 
-Note: ArkC 0.3 is not compatible with 0.2 or earlier versions.
+Note: ArkC 0.4 is not compatible with earlier versions.
 
 `(中文)快速入门教程 <https://github.com/projectarkc/arkc-client/wiki/ArkC-VPS%E7%89%88-%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8B%E6%95%99%E7%A8%8B>`__
 
 What is ArkC?
 -------------
+
+[To be updated with the new GAE trick!]
 
 ArkC enables VPS owners to share their VPS to people around them, or share online, the proxy hosted on their VPS, without worrying about IP blacklists.
 
@@ -82,9 +84,11 @@ Run
 
 ::
 
-    arkcclient [-h] [-v|-vv] [-pn] -c <Path of the config Json file>
+    arkcclient [-g] [-h] [-v|-vv] [-pn] -c <Path of the config Json file>
 
 [-pn] is used to disable UPnP.
+
+[-g] makes ArkC work on GAE mode and use a GAE application as the server.
 
 In this version, any private certificate should be in the form of PEM
 without encryption, while any public certificate should be in the form
