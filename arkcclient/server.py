@@ -69,6 +69,8 @@ class ServerReceiver(asyncore.dispatcher):
         self.split = bytes(
             chr(27) +
             chr(28) +
+            chr(27) +
+            chr(28) +
             #"%X" % struct.unpack('B', self.ctl.main_pw[-2:-1])[0] +
             #"%X" % struct.unpack('B', self.ctl.main_pw[-3:-2])[0] +
             chr(31),

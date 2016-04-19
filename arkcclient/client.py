@@ -66,6 +66,7 @@ class ClientReceiver(asyncore.dispatcher):
             logging.debug('%04i to client ' % sent + self.idchar)
             tosend = tosend[sent:]
         if flag:
+            print("CALL CLOSE by CLOSE STRING!!!!!!!!!!!")
             self.close()
 
     def handle_close(self):

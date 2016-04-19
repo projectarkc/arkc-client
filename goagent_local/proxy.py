@@ -553,7 +553,7 @@ class GAEFetchPlugin(BaseFetchPlugin):
 
         
         response = handler.net2.create_http_request(request_method, 'http://127.0.0.1:18001/', request_headers, sendBody, timeout, crlf=need_crlf, validate=need_validate, cache_key=cache_key, headfirst=headfirst)
-        print response.status
+        
         response.app_status = response.status
         if response.app_status != 200:
             return response
@@ -570,7 +570,7 @@ class GAEFetchPlugin(BaseFetchPlugin):
         headers_length, = struct.unpack('!h', data)
         data = response.read(headers_length)
         if len(data) < headers_length:
-            print("Changed to 502, A")
+            print("Changed to 502, B")
             print(data)
             print(headers_length)
             response.status = 502
@@ -582,6 +582,8 @@ class GAEFetchPlugin(BaseFetchPlugin):
         response.status = int(response.status)
         response.reason = response.reason.strip()
         response.msg = httplib.HTTPMessage(io.BytesIO(headers_data))
+        print response.status
+        print "PASSSSSSSSSSSSSSSSSSSSSSSSS"
         return response
 
 
