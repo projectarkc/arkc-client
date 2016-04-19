@@ -7,6 +7,8 @@ import asyncore
 
 # Need to switch to asyncio
 
+from common import Mode
+
 
 class ClientControl(asyncore.dispatcher):
 
@@ -23,7 +25,10 @@ class ClientControl(asyncore.dispatcher):
     def handle_accept(self):
         conn, addr = self.accept()
         logging.info('Client_recv_Accept from %s' % str(addr))
-        ClientReceiver(conn, self.control)
+        if Mode == "VPS":
+            ClientReceiver(conn, self.control)
+        elif Mode == "GAE":
+            ClientReceiver_GAE(conn, self.control)
 
 
 class ClientReceiver(asyncore.dispatcher):
@@ -51,23 +56,22 @@ class ClientReceiver(asyncore.dispatcher):
         self.to_remote_buffer += read
 
     def writable(self):
-        return len(self.from_remote_buffer_dict) > 0
+        return self.from_remote_buffer_index in self.from_remote_buffer_dict
 
     def handle_write(self):
-        tosend = self.from_remote_buffer_dict.popitem()[1]
-        print(tosend)
-        if b'\x00\x00\x00\x00\x00' in tosend:
-            flag = True
-            tosend = tosend.strip(b'\x00')
-        else:
-            flag = False
-        while len(tosend) > 0:
-            sent = self.send(tosend)
-            logging.debug('%04i to client ' % sent + self.idchar)
-            tosend = tosend[sent:]
-        if flag:
-            print("CALL CLOSE by CLOSE STRING!!!!!!!!!!!")
-            self.close()
+        i = 0
+        self.retransmit_lock = False
+        while self.writable() and i <= 4:
+            tosend = self.from_remote_buffer_dict.pop(
+                self.from_remote_buffer_index)
+            while len(tosend) > 0:
+                sent = self.send(tosend)
+                logging.debug('%04i to client ' % sent + self.idchar)
+                tosend = tosend[sent:]
+            i += 1
+        if self.next_from_remote_buffer() % self.control.req_num == 0:
+            self.control.received_confirm(
+                self.idchar, self.from_remote_buffer_index)
 
     def handle_close(self):
         self.control.remove(self.idchar)
@@ -101,3 +105,30 @@ class ClientReceiver(asyncore.dispatcher):
             # TODO: raise exception or close connection
             self.from_remote_buffer_index = 100000
         return self.from_remote_buffer_index
+
+
+class ClientReceiver_GAE(ClientReceiver):
+
+    '''adapt for GAE'''
+
+    def __init__(self, conn, control):
+        ClientReceiver.__init__(self, conn, control)
+
+    def writable(self):
+        return len(self.from_remote_buffer_dict) > 0
+
+    def handle_write(self):
+        tosend = self.from_remote_buffer_dict.popitem()[1]
+        print(tosend)
+        if b'\x00\x00\x00\x00\x00' in tosend:
+            flag = True
+            tosend = tosend.strip(b'\x00')
+        else:
+            flag = False
+        while len(tosend) > 0:
+            sent = self.send(tosend)
+            logging.debug('%04i to client ' % sent + self.idchar)
+            tosend = tosend[sent:]
+        if flag:
+            print("CALL CLOSE by CLOSE STRING!!!!!!!!!!!")
+            self.close()

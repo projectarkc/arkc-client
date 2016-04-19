@@ -17,6 +17,7 @@ import requests
 sys.path.insert(0, os.path.dirname(__file__))
 
 from common import certloader, generate_RSA, sendkey
+from common import Mode
 from coordinator import Coordinate
 from server import ServerControl
 from client import ClientControl
@@ -31,8 +32,6 @@ DEFAULT_DNS_SERVERS = [["8.8.8.8", 53]]
 DEFAULT_OBFS4_EXECADDR = "obfs4proxy"
 
 VERSION = "0.4.0"
-
-Mode = "VPS"
 
 
 def genkey(options):

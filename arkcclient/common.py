@@ -24,6 +24,8 @@ from Crypto.Util.number import long_to_bytes
 from Crypto.Util.py3compat import bord, bchr, b
 import binascii
 
+Mode = "VPS"
+
 logging.getLogger("requests").setLevel(logging.DEBUG)
 
 # TODO:Need to switch to PKCS for better security
