@@ -30,7 +30,9 @@ DEFAULT_REQUIRED = 3
 DEFAULT_DNS_SERVERS = [["8.8.8.8", 53]]
 DEFAULT_OBFS4_EXECADDR = "obfs4proxy"
 
-VERSION = "0.3.1"
+VERSION = "0.4.0"
+
+Mode = "VPS"
 
 
 def genkey(options):
@@ -102,6 +104,7 @@ def dlmeek():
 
 
 def main():
+    global Mode
     parser = argparse.ArgumentParser(description=None)
     try:
         # Load arguments
@@ -122,6 +125,8 @@ def main():
                             help="Download meek to home directory, overriding normal options")
         parser.add_argument('-c', '--config', dest="config", default=None,
                             help="Specify a configuration files, REQUIRED for ArkC Client to start")
+        parser.add_argument('-g', '--gae', dest="gae", action='store_true',
+                            help="Use GAE mode")
         parser.add_argument('-fs', '--frequent-swap', dest="fs", action="store_true",
                             help="Use frequent connection swapping")
         parser.add_argument('-pn', '--public-addr', dest="pn", action="store_true",
@@ -144,6 +149,13 @@ The programs is distributed under GNU General Public License Version 2.
         else:
             logging.basicConfig(
                 stream=sys.stdout, level=logging.WARNING, format="%(levelname)s: %(asctime)s; %(message)s")
+
+        if options.gae:
+            Mode = "GAE"
+            logging.info("Using GAE mode.")
+        else:
+            Mode = "VPS"
+            logging.info("Using VPS mode.")
 
         if options.version:
             print("ArkC Client Version " + VERSION)
@@ -209,11 +221,14 @@ The programs is distributed under GNU General Public License Version 2.
         if "debug_ip" not in data:
             data["debug_ip"] = None
 
-        if "obfs_level" not in data:
-            data["obfs_level"] = 0
-        elif 1 <= int(data["obfs_level"]) <= 2:
-            logging.error(
-                "Support for obfs4proxy is experimental with known bugs. Run this mode at your own risk.")
+        if Mode == "VPS":
+            if "obfs_level" not in data:
+                data["obfs_level"] = 0
+            elif 1 <= int(data["obfs_level"]) <= 2:
+                logging.error(
+                    "Support for obfs4proxy is experimental with known bugs. Run this mode at your own risk.")
+        else:
+            data["obfs_level"] = 3
 
         # Load certificates
         try:
