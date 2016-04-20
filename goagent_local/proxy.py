@@ -559,20 +559,18 @@ class GAEFetchPlugin(BaseFetchPlugin):
             return response
         if 'rc4' in request_headers.get('X-URLFETCH-Options', ''):
             response.fp = CipherFileObject(response.fp, RC4Cipher(kwargs['password']))
-        data = response.read(2)
-        if len(data) < 2:
+        data = response.read(4)
+        if len(data) < 4:
             response.status = 502
-            print("Changed to 502, A")
-            print(data)
             response.fp = io.BytesIO(b'connection aborted. too short leadbyte data=' + data)
             response.read = response.fp.read
             return response
-        headers_length, = struct.unpack('!h', data)
+        headers_length = int(data, 16)
         data = response.read(headers_length)
         if len(data) < headers_length:
             print("Changed to 502, B")
-            print(data)
-            print(headers_length)
+            #print(data)
+            #print(headers_length)
             response.status = 502
             response.fp = io.BytesIO(b'connection aborted. too short headers data=' + data)
             response.read = response.fp.read
