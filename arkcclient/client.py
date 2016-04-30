@@ -55,7 +55,7 @@ class ClientReceiver(asyncore.dispatcher):
 
     def handle_write(self):
         tosend = self.from_remote_buffer_dict.popitem()[1]
-        print(tosend)
+        #print(tosend)
         if b'\x00\x00\x00\x00\x00' in tosend:
             flag = True
             tosend = tosend.strip(b'\x00')
@@ -66,7 +66,7 @@ class ClientReceiver(asyncore.dispatcher):
             logging.debug('%04i to client ' % sent + self.idchar)
             tosend = tosend[sent:]
         if flag:
-            print("CALL CLOSE by CLOSE STRING!!!!!!!!!!!")
+#            print("CALL CLOSE by CLOSE STRING!!!!!!!!!!!")
             self.close()
 
     def handle_close(self):

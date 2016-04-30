@@ -179,7 +179,7 @@ class ServerReceiver(asyncore.dispatcher):
         try:
 
             self.read += self.recv(2048)
-            print("CALL AUTH")
+            #print("CALL AUTH")
             if b'\r\n' in self.read:
                 authdata = self.read.split(b'\r\n')
                 #print (authdata)
@@ -306,7 +306,7 @@ class ServerReceiver(asyncore.dispatcher):
             if len(splitted) <= 1:
                 return 0
             buf = splitted[0]
-            print(repr(buf))
+            #print(repr(buf))
             self.ctl.clientreceivers_dict[cli_id].next_to_remote_buffer()
             self.ctl.clientreceivers_dict[
                 cli_id].to_remote_buffer = b'\x00\x01\x02\x03\x04'.join(splitted[1:])
