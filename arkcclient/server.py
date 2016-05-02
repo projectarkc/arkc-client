@@ -118,9 +118,11 @@ class ServerReceiver(asyncore.dispatcher):
                         b_dec = self.cipher.decrypt(bytessplit[Index])
                     except ValueError:
                         raw = bytessplit[Index]
+                        logging.fatal(
+                            "Decrypt error at server read, data lost permanently. Debug info:")
+                        print("Content length: %d" % len(raw))
                         print(raw)
-                        print(len(raw))
-                        raise
+                        continue
                     if len(b_dec) == 0:
                         continue
                     # flag is 0 for normal data packet, 1 for ping packet
@@ -131,8 +133,9 @@ class ServerReceiver(asyncore.dispatcher):
                             seq = int(b_dec[3:9].decode("UTF-8"))
                             b_data = b_dec[9:]
                         except Exception:
-                            logging.warning("decode error")
-                            cli_id = None
+                            logging.warning(
+                                "Not recognizable data from server, length = %d" % len(b_dec))
+                            continue
                         if cli_id == "00":
                             if b_data == b_close:
 
@@ -140,6 +143,9 @@ class ServerReceiver(asyncore.dispatcher):
                                 self.closing = True
                                 self.ctl.closeconn(self)
                                 self.close()
+                            else:
+                                logging.warning(
+                                    "Not recognizable data from server, length = %d" % len(b_dec))
               #               elif seq == 50:
               #                   id_list = b_data.decode("UTF-8").split(',')
                             # self.ctl.server_check(id_list)
@@ -163,11 +169,17 @@ class ServerReceiver(asyncore.dispatcher):
                                     self.ctl.clientreceivers_dict[
                                         cli_id].close()
                                 read_count += len(b_data)
+                            else:
+                                logging.debug(
+                                    "Deleted connection, %s" % cli_id)
                             # else:
                             #    self.encrypt_and_send(cli_id, CLOSECHAR)
-                    else:
+                    elif flag == 1:
                         # strip off type (always 1)
                         self.ping_recv(b_dec[1:].decode("UTF-8"))
+                    else:
+                        logging.warning(
+                            "Not recognizable data from server, length = %d" % len(b_dec))
 
                 else:
                     self.from_remote_buffer_raw = bytessplit[Index]
@@ -306,7 +318,7 @@ class ServerReceiver(asyncore.dispatcher):
             if len(splitted) <= 1:
                 return 0
             buf = splitted[0]
-            #print(repr(buf))
+            # print(repr(buf))
             self.ctl.clientreceivers_dict[cli_id].next_to_remote_buffer()
             self.ctl.clientreceivers_dict[
                 cli_id].to_remote_buffer = b'\x00\x01\x02\x03\x04'.join(splitted[1:])
