@@ -208,6 +208,7 @@ class Coordinate(object):
         # print("======================")
         msg.append(myip)
         msg.append(salt)
+        msg.append("0100")     #reqtype and version
         if 1 <= self.obfs_level <= 2:
             certs_byte = urlsafe_b64_short_encode(self.certs_send)
             msg.extend([certs_byte[:50], certs_byte[50:]])
