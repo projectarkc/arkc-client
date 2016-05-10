@@ -111,13 +111,13 @@ class ServerReceiver(asyncore.dispatcher):
             bytessplit = self.from_remote_buffer_raw.split(self.split)
             #print("CALL READ %d" % len(bytessplit))
             #print("PASSWORD IS " + repr(self.cipher.password))
-            for Index in range(len(bytessplit)):
-                if len(bytessplit[Index]) == 0:
-                        continue
-                    
+            for Index in range(len(bytessplit)):    
                 if Index < len(bytessplit) - 1:
+                    if len(bytessplit[Index]) == 0:
+                        continue
                     try:
                         b_dec = self.cipher.decrypt(bytessplit[Index])
+                    #    print(b_dec)
                     except ValueError:
                         raw = bytessplit[Index]
                         logging.fatal(

@@ -523,9 +523,13 @@ class GAEFetchPlugin(BaseFetchPlugin):
                         cache_sock.close()
                         del response.cache_sock
                     response.close()
-                    assert written == int(response.getheader('Content-Length', '0'))
+        #            assert written == int(response.getheader('Content-Length', '0'))
                     break
                 del data
+        #except AssertionError:
+        #    logging.warning("Wrong content length")
+        #    print("written = %i", written)
+        #    print("content length = %i", int(response.getheader('Content-Length', '0')))
         except NetWorkIOError as e:
             if e[0] in (errno.ECONNABORTED, errno.EPIPE) or 'bad write retry' in repr(e):
                 return
