@@ -112,7 +112,9 @@ class ServerReceiver(asyncore.dispatcher):
             #print("CALL READ %d" % len(bytessplit))
             #print("PASSWORD IS " + repr(self.cipher.password))
             for Index in range(len(bytessplit)):
-
+                if len(bytessplit[Index]) == 0:
+                        continue
+                    
                 if Index < len(bytessplit) - 1:
                     try:
                         b_dec = self.cipher.decrypt(bytessplit[Index])
@@ -123,10 +125,11 @@ class ServerReceiver(asyncore.dispatcher):
                         print("Content length: %d" % len(raw))
                         print(raw)
                         continue
-                    if len(b_dec) == 0:
-                        continue
                     # flag is 0 for normal data packet, 1 for ping packet
-                    flag = int(b_dec[:1].decode("UTF-8"))
+                    try:
+                        flag = int(b_dec[:1].decode("UTF-8"))
+                    except Exception:
+                        logging.fatal("AES decrypt failed or bad encoding. Data lost permanently.")
                     if flag == 0:
                         try:
                             cli_id = b_dec[1:3].decode("UTF-8")
@@ -156,30 +159,30 @@ class ServerReceiver(asyncore.dispatcher):
                                     self.update_max_idx(cli_id,
                                                         int(b_data.decode('utf-8')))
                                 elif b_data != b_close:
-                                    self.ctl.server_recv_max_idx[
-                                        self.i][cli_id] = seq
                                     self.ctl.clientreceivers_dict[
-                                        cli_id].from_remote_buffer_dict[seq] = b_data
+                                        cli_id].from_remote_buffer_list.append(b_data)
                                     # self.ctl.clientreceivers_dict[
                                     #    cli_id].retransmission_check()
                                 else:
-                                    for _ in self.ctl.server_recv_max_idx:
-                                        if _ is not None:
-                                            _.pop(cli_id, None)
-                                    self.ctl.clientreceivers_dict[
-                                        cli_id].close()
+                                    logging.warning(
+                                    "Not recognizable data from server, length = %d" % len(b_dec))
+                                    #for _ in self.ctl.server_recv_max_idx:
+                                    #    if _ is not None:
+                                    #        _.pop(cli_id, None)
+                                    #self.ctl.clientreceivers_dict[
+                                    #    cli_id].close()
                                 read_count += len(b_data)
                             else:
                                 logging.debug(
                                     "Deleted connection, %s" % cli_id)
                             # else:
                             #    self.encrypt_and_send(cli_id, CLOSECHAR)
-                    elif flag == 1:
-                        # strip off type (always 1)
-                        self.ping_recv(b_dec[1:].decode("UTF-8"))
-                    else:
-                        logging.warning(
-                            "Not recognizable data from server, length = %d" % len(b_dec))
+                    #elif flag == 1:
+                    #    # strip off type (always 1)
+                    #    self.ping_recv(b_dec[1:].decode("UTF-8"))
+                    #else:
+                    #    logging.warning(
+                    #        "Not recognizable data from server, length = %d" % len(b_dec))
 
                 else:
                     self.from_remote_buffer_raw = bytessplit[Index]

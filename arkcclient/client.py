@@ -36,7 +36,7 @@ class ClientReceiver(asyncore.dispatcher):
         self.idchar = self.control.register(self)
         if self.idchar is None:
             self.close()
-        self.from_remote_buffer_dict = {}
+        self.from_remote_buffer_list = []
         self.from_remote_buffer_index = 100000
         self.to_remote_buffer = b''
         self.to_remote_buffer_index = 100000
@@ -51,10 +51,10 @@ class ClientReceiver(asyncore.dispatcher):
         self.to_remote_buffer += read
 
     def writable(self):
-        return len(self.from_remote_buffer_dict) > 0
+        return len(self.from_remote_buffer_list) > 0
 
     def handle_write(self):
-        tosend = self.from_remote_buffer_dict.popitem()[1]
+        tosend = self.from_remote_buffer_list.pop(0)
         #print(tosend)
         if b'\x00\x00\x00\x00\x00' in tosend:
             flag = True
@@ -65,8 +65,13 @@ class ClientReceiver(asyncore.dispatcher):
             sent = self.send(tosend)
             logging.debug('%04i to client ' % sent + self.idchar)
             tosend = tosend[sent:]
+            if sent == 0:
+                logging.debug("Client side close conn, %i lost", len(tosend))
+                flag = True
+                break
         if flag:
-#            print("CALL CLOSE by CLOSE STRING!!!!!!!!!!!")
+            self.from_remote_buffer_list = []
+            self.control.remove(self.idchar)
             self.close()
 
     def handle_close(self):
@@ -75,7 +80,7 @@ class ClientReceiver(asyncore.dispatcher):
 
     def retransmission_check(self):
         if not self.writable() and self.retransmit_lock and \
-            all(_ in self.from_remote_buffer_dict
+            all(_ in self.from_remote_buffer_list
                 for _ in range(self.from_remote_buffer_index + 1,
                                self.from_remote_buffer_index + self.control.req_num + 1)):
             self.control.retransmit(
@@ -93,8 +98,8 @@ class ClientReceiver(asyncore.dispatcher):
         if self.from_remote_buffer_index % 20 == 0:
             for i in range(self.from_remote_buffer_index - 20,
                            self.from_remote_buffer_index):
-                if i in self.from_remote_buffer_dict:
-                    self.from_remote_buffer_dict.pop(i)
+                if i in self.from_remote_buffer_list:
+                    self.from_remote_buffer_list.pop(i)
 
         self.from_remote_buffer_index += 1
         if self.from_remote_buffer_index == 1000000:

@@ -523,6 +523,7 @@ class GAEFetchPlugin(BaseFetchPlugin):
                         cache_sock.close()
                         del response.cache_sock
                     response.close()
+                    assert written == int(response.getheader('Content-Length', '0'))
                     break
                 del data
         except NetWorkIOError as e:
