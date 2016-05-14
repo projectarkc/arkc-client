@@ -158,14 +158,14 @@ class ServerReceiver(asyncore.dispatcher):
                                 if seq == 30:
                                     self.update_max_idx(cli_id,
                                                         int(b_data.decode('utf-8')))
-                                elif b_data != b_close:
+                                else:
                                     self.ctl.clientreceivers_dict[
                                         cli_id].from_remote_buffer_list.append(b_data)
                                     # self.ctl.clientreceivers_dict[
                                     #    cli_id].retransmission_check()
-                                else:
-                                    logging.warning(
-                                    "Not recognizable data from server, length = %d" % len(b_dec))
+                                #else:
+                                #    logging.warning(
+                                #    "Not recognizable data from server, length = %d" % len(b_dec))
                                     #for _ in self.ctl.server_recv_max_idx:
                                     #    if _ is not None:
                                     #        _.pop(cli_id, None)

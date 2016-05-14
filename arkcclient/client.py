@@ -7,6 +7,7 @@ import asyncore
 
 # Need to switch to asyncio
 
+CLOSECHAR = chr(4) * 5
 
 class ClientControl(asyncore.dispatcher):
 
@@ -56,11 +57,10 @@ class ClientReceiver(asyncore.dispatcher):
     def handle_write(self):
         tosend = self.from_remote_buffer_list.pop(0)
         #print(tosend)
-        if b'\x00\x00\x00\x00\x00' in tosend:
-            flag = True
-            tosend = tosend.strip(b'\x00')
-        else:
-            flag = False
+        if CLOSECHAR.encode("UTF-8") == tosend:
+            self.control.remove(self.idchar)
+            self.close()
+            return
         while len(tosend) > 0:
             sent = self.send(tosend)
             logging.debug('%04i to client ' % sent + self.idchar)
@@ -69,11 +69,7 @@ class ClientReceiver(asyncore.dispatcher):
                 logging.debug("Client side close conn, %i lost", len(tosend))
                 flag = True
                 break
-        if flag:
-            self.from_remote_buffer_list = []
-            self.control.remove(self.idchar)
-            self.close()
-
+            
     def handle_close(self):
         self.control.remove(self.idchar)
         self.close()
