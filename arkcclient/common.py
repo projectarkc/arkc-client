@@ -110,7 +110,7 @@ def int2base(num, base=36, numerals="0123456789abcdefghijklmnopqrstuvwxyz"):
         return int2base(left_digits, base, numerals) + numerals[num % base]
 
 
-class AESCipher:
+class AESCipher_old:
     """A reusable wrapper of PyCrypto's AES cipher, i.e. resets every time."""
     """ BY Teba 2015 """
 
@@ -139,6 +139,35 @@ class AESCipher:
         dec = self.cipher.decrypt(data)
         self.cipher = AES.new(
             self.password, AES.MODE_CFB, self.iv, segment_size=AES.block_size * 8)
+        return dec.rstrip(b'\x01')
+    
+class AESCipher:
+    """Real CFB cipher. Noah, May, 2016"""
+    # segment size is 128
+
+    def __init__(self, password, iv=""): # IV for compatibility purpose only
+        self.password = password
+        try:
+            AES.new(self.password, AES.MODE_CFB, '0'*16, segment_size=AES.block_size * 8)
+        except Exception as err:
+            print(err)
+            print(self.password)
+            print(len(self.password))
+
+    def encrypt(self, data):
+        raw = data.ljust(16 * (len(data) // 16 + 1), b'\x01')
+        iv = os.urandom(16)
+        cipher = AES.new(self.password, AES.MODE_CFB, iv, segment_size=AES.block_size * 8)
+        enc = cipher.encrypt(raw)
+        enc = iv + enc
+        return enc
+
+    def decrypt(self, data):
+        assert len(data) >= 16
+        iv = data[:16]
+        data = data[16:]
+        cipher = AES.new(self.password, AES.MODE_CFB, iv, segment_size=AES.block_size * 8)
+        dec = cipher.decrypt(data)
         return dec.rstrip(b'\x01')
 
 

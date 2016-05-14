@@ -12,7 +12,7 @@ from Crypto.Signature import PKCS1_v1_5
 from Crypto.Cipher import PKCS1_v1_5 as PKCS_Cipher
 from Crypto import Random
 
-from common import AESCipher
+from common import AESCipher, AESCipher_old
 from common import get_timestamp, parse_timestamp
 from _io import BlockingIOError
 
@@ -117,7 +117,6 @@ class ServerReceiver(asyncore.dispatcher):
                         continue
                     try:
                         b_dec = self.cipher.decrypt(bytessplit[Index])
-                    #    print(b_dec)
                     except ValueError:
                         raw = bytessplit[Index]
                         logging.fatal(
@@ -221,6 +220,8 @@ class ServerReceiver(asyncore.dispatcher):
                             raise ValueError
                         self.cipher = AESCipher(
                             message, self.ctl.main_pw)
+                        oldCipher = AESCipher_old(
+                            message, self.ctl.main_pw)
                         self.full = False
                         idchar = authdata[2].decode('utf-8')
                         self.i = int(idchar)
@@ -228,14 +229,7 @@ class ServerReceiver(asyncore.dispatcher):
                         logging.debug(
                             "Authentication succeed, connection established")
                         self.send(
-                            self.cipher.encrypt(b"2AUTHENTICATED" + authdata[2]  # +
-                                                # repr(
-                                                # self.ctl.server_recv_max_idx[self.i]).encode()
-                                                )
-                            #+ self.split
-                        )
-                        # self.send_legacy(
-                        #    eval(authdata[3].rstrip(self.split).decode('utf-8')))
+                            oldCipher.encrypt(b"2AUTHENTICATED" + authdata[2]))
                         self.read = None
                     except IOError:
                         # TODO: figure out why

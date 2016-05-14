@@ -56,10 +56,10 @@ class ClientReceiver(asyncore.dispatcher):
 
     def handle_write(self):
         tosend = self.from_remote_buffer_list.pop(0)
-        #print(tosend)
         if CLOSECHAR.encode("UTF-8") == tosend:
             self.control.remove(self.idchar)
             self.close()
+            #logging.debug("Closing client connection")
             return
         while len(tosend) > 0:
             sent = self.send(tosend)
